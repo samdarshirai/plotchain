@@ -166,8 +166,8 @@
 // The Invoice registers (13 / 12 columns) only fit as a fixed-height table on wide desktops. Below each screen's
 // viewport width they use the stacked-card layout; at and above it, the fixed table (see the mixin block after the @each).
 // Sized from measurements: card width = viewport - 410px (248px sidebar + page padding).
-$invoice-loans-stack-max: 1511px;
-$invoice-payments-stack-max: 1439px;
+$invoice-loans-stack-max: 1279px;
+$invoice-payments-stack-max: 1279px;
 $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $invoice-payments-stack-max);
 
 // The four management lists share the same compact card layout. Tablets use it too:
@@ -346,18 +346,17 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
 }
 
 // Advance Loans: 1 S No, 2 Date, 3 Id, 4 Name*, 5 Amount, 6 Prev Dues, 7 Repaid, 8 Outstanding, 9 Mode, 10 Bank*, 11 Ref*, 12 Remarks*, 13 Action
-// (* = takes the leftover width, shared equally; ~79px each at a 1512px viewport).
+// (* = takes the leftover width, shared equally; ~60px each at a 1280px viewport).
 @media (min-width: #{$invoice-loans-stack-max + 1}) {
   @include invoice-fixed-table(invoice-loans);
 
   .invoice-loans .editable-table {
-    th:nth-child(1) { width: 36px; }
-    th:nth-child(2) { width: 92px; }
-    th:nth-child(3) { width: 80px; }
-    th:nth-child(n + 5):nth-child(-n + 7) { width: 98px; }
-    th:nth-child(8) { width: 100px; }
-    th:nth-child(9) { width: 76px; }
-    th:nth-child(13) { width: 108px; }
+    th:nth-child(1) { width: 32px; }
+    th:nth-child(2) { width: 80px; }
+    th:nth-child(3) { width: 66px; }
+    th:nth-child(n + 5):nth-child(-n + 8) { width: 72px; }
+    th:nth-child(9) { width: 60px; }
+    th:nth-child(13) { width: 100px; }
     th:nth-child(n + 5):nth-child(-n + 8),
     td:nth-child(n + 5):nth-child(-n + 8) { text-align: right; }
   }
@@ -370,15 +369,15 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
   @include invoice-fixed-table(invoice-payments);
 
   .invoice-payments .editable-table {
-    th:nth-child(1) { width: 36px; }
-    th:nth-child(2) { width: 112px; }
-    th:nth-child(3) { width: 80px; }
-    th:nth-child(5) { width: 92px; }
-    th:nth-child(6) { width: 108px; }
-    th:nth-child(7) { width: 92px; }
-    th:nth-child(8) { width: 98px; }
-    th:nth-child(9) { width: 92px; }
-    th:nth-child(12) { width: 92px; }
+    th:nth-child(1) { width: 32px; }
+    th:nth-child(2) { width: 100px; }
+    th:nth-child(3) { width: 66px; }
+    th:nth-child(5) { width: 84px; }
+    th:nth-child(6) { width: 90px; }
+    th:nth-child(7) { width: 80px; }
+    th:nth-child(8) { width: 80px; }
+    th:nth-child(9) { width: 56px; }
+    th:nth-child(12) { width: 76px; }
     th:nth-child(8), td:nth-child(8) { text-align: right; }
   }
 

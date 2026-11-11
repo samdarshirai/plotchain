@@ -100,3 +100,65 @@ for (const width of [1280, 1366, 1440]) {
     }
   });
 }
+
+// Advance Loans used to stack into cards below 1512px; with a realistic, fully populated row it must stay a table on laptops.
+for (const width of [1280, 1366, 1440]) {
+  test.describe(`advance-loans stays a table at ${width}px`, () => {
+    test.use({ viewport: { width, height: 900 } });
+    test.beforeEach(({ page }) => page.addInitScript(() => {
+      localStorage.setItem('plotchain.auth.admin.token', 'e30.' + btoa(JSON.stringify({ exp: 4102444800 })) + '.x'); // fake JWT, exp year 2100
+      localStorage.setItem('plotchain.auth.admin.mustChange', 'false');
+      localStorage.setItem('plotchain.auth.admin.role', 'ADMIN');
+    }));
+
+    test('is not stacked', async ({ page }) => {
+      await page.route('**/api/**', r => r.fulfill({ json: { name: 'Admin' } }));
+      await page.route('**/api/company/setup-state', r => r.fulfill({ json: { launchedAt: '2026-01-01T00:00:00Z' } }));
+      await page.route('**/api/admin/advance-loans', r => r.fulfill({ json: [{
+        id: 'l1', associateId: 'a1', associateUserId: 'VP00001', associateName: 'Associate With A Longer Display Name',
+        loanDate: '2026-10-01', amount: 12500000, previousDues: 9500000, repaid: 3500000, outstanding: 18500000,
+        payMode: 'CASH', bankName: 'State Bank Of India', instrumentNo: 'INSTR-0012345', remarks: 'A fairly long remark for this loan' }] }));
+      await page.route('**/api/associates', r => r.fulfill({ json: [] }));
+      await page.goto('/admin/settings/advance-loans', { waitUntil: 'networkidle' });
+      await expect(page.locator('.invoice-loans .editable-table tbody tr')).toHaveCount(1);
+      await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
+      await expect(page.locator('.invoice-loans .editable-table')).not.toHaveClass(/table--stacked/);
+      // The fixed-width layout (one line per row, ellipsis) is what keeps the real, longer data from overflowing into cards.
+      await expect(page.locator('.invoice-loans .editable-table')).toHaveCSS('table-layout', 'fixed');
+      const cramped = await page.locator('.invoice-loans .editable-table tbody tr:first-child td').evaluateAll(tds =>
+        tds.map((td, i) => ({ i, w: td.clientWidth })).filter(c => c.w === 0));
+      expect(cramped).toEqual([]);
+      expect(await page.evaluate(audit)).toEqual([]);
+    });
+  });
+}
+
+// Payment Details used to stack into cards below 1440px; with a populated row it must stay a table on laptops.
+for (const width of [1280, 1366, 1440]) {
+  test.describe(`payment-details stays a table at ${width}px`, () => {
+    test.use({ viewport: { width, height: 900 } });
+    test.beforeEach(({ page }) => page.addInitScript(() => {
+      localStorage.setItem('plotchain.auth.admin.token', 'e30.' + btoa(JSON.stringify({ exp: 4102444800 })) + '.x'); // fake JWT, exp year 2100
+      localStorage.setItem('plotchain.auth.admin.mustChange', 'false');
+      localStorage.setItem('plotchain.auth.admin.role', 'ADMIN');
+    }));
+
+    test('is not stacked', async ({ page }) => {
+      await page.route('**/api/**', r => r.fulfill({ json: { name: 'Admin' } }));
+      await page.route('**/api/company/setup-state', r => r.fulfill({ json: { launchedAt: '2026-01-01T00:00:00Z' } }));
+      await page.route('**/api/admin/loan-repayments*', r => r.fulfill({ json: [{
+        id: 'r1', loanId: 'l1', receiptNo: 'RCPT-000123', paymentDate: '2026-10-01', associateId: 'a1', associateUserId: 'VP00001',
+        associateName: 'Associate With A Longer Display Name', associatePhone: '9876543210', amount: 12500000, payMode: 'CASH',
+        bankName: 'State Bank Of India', txnNo: 'TXN-0012345678', recordedAt: '2026-10-01T12:34:56Z' }] }));
+      await page.goto('/admin/settings/payment-details', { waitUntil: 'networkidle' });
+      await expect(page.locator('.invoice-payments .editable-table tbody tr')).toHaveCount(1);
+      await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
+      await expect(page.locator('.invoice-payments .editable-table')).not.toHaveClass(/table--stacked/);
+      await expect(page.locator('.invoice-payments .editable-table')).toHaveCSS('table-layout', 'fixed');
+      const cramped = await page.locator('.invoice-payments .editable-table tbody tr:first-child td').evaluateAll(tds =>
+        tds.map((td, i) => ({ i, w: td.clientWidth })).filter(c => c.w === 0));
+      expect(cramped).toEqual([]);
+      expect(await page.evaluate(audit)).toEqual([]);
+    });
+  });
+}
