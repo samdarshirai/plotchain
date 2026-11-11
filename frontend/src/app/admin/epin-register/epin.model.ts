@@ -25,6 +25,9 @@ export interface EPin {
   expired: boolean;
 }
 
+export interface EPinCounts { generated: number; used: number; allocated: number; unused: number; }
+export interface EPinStats { topup: EPinCounts; registration: EPinCounts; }
+
 export interface EPinPage {
   epins: EPin[];
   page: number;

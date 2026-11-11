@@ -8,12 +8,13 @@ import { AdminService } from '../admin.service';
 import { CompensationPlanService } from '../../setup/steps/compensation/compensation-plan.service';
 import { AssociateSummary } from '../models/associate-summary.model';
 import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
+import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { toFieldErrors } from '../../core/api/field-errors.model';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
 import { FormIssue } from '../../shared/validation/validation';
-import { AllocateResult, EPin, EPinEvent, EPinFilters, EPinPage, EPinStatus, EPinType, RedemptionType } from './epin.model';
+import { AllocateResult, EPin, EPinEvent, EPinFilters, EPinPage, EPinStats, EPinStatus, EPinType, RedemptionType } from './epin.model';
 
 const PAGE_SIZE = 100000; // show all rows; backend caps at this
 const MAX_COUNT = 2000;
@@ -28,7 +29,7 @@ type Panel =
 @Component({
   selector: 'app-epin-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, AssociateLookupComponent, FieldErrorComponent, ErrorSummaryComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, StatTileComponent, InlineBannerComponent, AssociateLookupComponent, FieldErrorComponent, ErrorSummaryComponent],
   providers: [DatePipe],
   template: `
     <div class="epin-register">
@@ -47,6 +48,16 @@ type Panel =
             {{ 'admin.epinRegister.generateAction' | translate }}
           </button>
         </div>
+      </div>
+
+      <div class="epin-register__stats" *ngIf="stats">
+        <section class="epin-register__stats-group" *ngFor="let g of statGroups">
+          <h2 class="epin-register__stats-title">{{ 'admin.epinRegister.stats.' + g.key | translate }}</h2>
+          <div class="epin-register__stats-grid">
+            <app-stat-tile *ngFor="let m of statMetrics" [label]="'admin.epinRegister.stats.' + m.key | translate"
+              [value]="'' + stats[g.key][m.key]" [tone]="m.tone"></app-stat-tile>
+          </div>
+        </section>
       </div>
 
       <div class="epin-register__filters">
@@ -269,6 +280,12 @@ export class EPinRegisterComponent implements OnInit {
   readonly statuses: EPinStatus[] = ['UNUSED', 'ALLOCATED', 'USED', 'BLOCKED'];
   readonly pinTypes: EPinType[] = ['REGISTRATION', 'TOPUP'];
   page: EPinPage | null = null;
+  stats: EPinStats | null = null;
+  readonly statGroups: { key: keyof EPinStats }[] = [{ key: 'topup' }, { key: 'registration' }];
+  readonly statMetrics: { key: keyof EPinStats['topup']; tone: 'default' | 'success' | 'warning' | 'brand' }[] = [
+    { key: 'generated', tone: 'default' }, { key: 'used', tone: 'success' },
+    { key: 'allocated', tone: 'warning' }, { key: 'unused', tone: 'brand' }
+  ];
   associates: AssociateSummary[] = [];
   loadError = false;
   actionError = '';
@@ -376,6 +393,7 @@ export class EPinRegisterComponent implements OnInit {
     if (this.redeemedToId) filters.redeemedTo = this.redeemedToId;
     if (this.appliedBatchId) filters.batchId = this.appliedBatchId;
     if (this.expiredOnly) filters.expired = true;
+    this.service.summary().subscribe({ next: s => (this.stats = s) });
     const seq = ++this.loadSeq;
     this.service.list(filters, page, PAGE_SIZE).subscribe({
       next: res => { if (seq === this.loadSeq) this.page = res; },

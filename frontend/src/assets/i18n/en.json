@@ -1276,6 +1276,10 @@
       }
     },
     "epinRegister": {
+      "stats": {
+        "topup": "Top Up Pins", "registration": "Registration Pins",
+        "generated": "Generated", "used": "Used", "allocated": "Allocated", "unused": "Unused"
+      },
       "title": "e-Pin Register",
       "subtitle": "Generate, allocate, block and redeem e-pins, and audit each pin's history.",
       "generateAction": "Generate batch",

@@ -53,6 +53,11 @@ public class EPinController {
         return epinService.list(status, pinType, redeemedTo, batchId, allocatedTo, expired, page, size);
     }
 
+    @GetMapping("/summary")
+    public EPinStatsResponse summary() {
+        return epinService.stats();
+    }
+
     @PostMapping("/allocate")
     public AllocateEPinResponse allocate(@Valid @RequestBody AllocateEPinRequest request,
                                          @AuthenticationPrincipal UUID actorId) {

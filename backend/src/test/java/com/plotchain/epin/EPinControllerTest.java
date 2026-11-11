@@ -154,6 +154,27 @@ class EPinControllerTest {
     }
 
     @Test
+    void summaryCountsGeneratedUsedAllocatedAndUnusedPerPinType() throws Exception {
+        when(epinRepository.countByTypeAndStatus()).thenReturn(List.of(
+            new Object[] {EPinType.TOPUP, EPinStatus.USED, 2L},
+            new Object[] {EPinType.TOPUP, EPinStatus.UNUSED, 3L},
+            new Object[] {EPinType.TOPUP, EPinStatus.BLOCKED, 1L},
+            new Object[] {EPinType.REGISTRATION, EPinStatus.ALLOCATED, 4L},
+            new Object[] {EPinType.REGISTRATION, EPinStatus.UNUSED, 5L}));
+
+        mockMvc.perform(get("/api/admin/epins/summary")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.topup.generated").value(6))
+            .andExpect(jsonPath("$.topup.used").value(2))
+            .andExpect(jsonPath("$.topup.allocated").value(0))
+            .andExpect(jsonPath("$.topup.unused").value(3))
+            .andExpect(jsonPath("$.registration.generated").value(9))
+            .andExpect(jsonPath("$.registration.allocated").value(4))
+            .andExpect(jsonPath("$.registration.unused").value(5));
+    }
+
+    @Test
     void listReturns200WithAnEmptyPageWhenUnfiltered() throws Exception {
         when(epinRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), any(), any()))
             .thenReturn(new PageImpl<>(List.of()));

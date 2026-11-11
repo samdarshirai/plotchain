@@ -34,7 +34,25 @@ describe('EPinRegisterComponent', () => {
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
   });
-  afterEach(() => httpMock.verify());
+  const stats = {
+    topup: { generated: 6, used: 2, allocated: 1, unused: 3 },
+    registration: { generated: 9, used: 0, allocated: 4, unused: 5 }
+  };
+  afterEach(() => {
+    httpMock.match('/api/admin/epins/summary').forEach(r => r.flush(stats));
+    httpMock.verify();
+  });
+
+  it('shows Top Up and Registration pin stats', () => {
+    flushInitial([]);
+    httpMock.expectOne('/api/admin/epins/summary').flush(stats);
+    fixture.detectChanges();
+    const text = fixture.nativeElement.querySelector('.epin-register__stats').textContent;
+    expect(text).toContain('admin.epinRegister.stats.topup');
+    expect(text).toContain('admin.epinRegister.stats.registration');
+    expect(fixture.nativeElement.querySelectorAll('.epin-register__stats app-stat-tile').length).toBe(8);
+    expect(text).toContain('9');
+  });
 
   it('renders a row per pin with the holder shown by userId', () => {
     flushInitial([pin()]);

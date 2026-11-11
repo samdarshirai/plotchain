@@ -165,6 +165,22 @@ class EPinRepositoryTest {
         assertThat(result.getTotalElements()).isZero();
     }
 
+    @Test
+    void countByTypeAndStatusGroupsAllPins() {
+        UUID admin = persistAdmin();
+        persistPin(admin, EPinStatus.UNUSED, null, null);
+        persistPin(admin, EPinStatus.UNUSED, null, null);
+        persistPin(admin, EPinStatus.BLOCKED, null, null);
+
+        List<Object[]> rows = epinRepository.countByTypeAndStatus();
+
+        assertThat(rows).anySatisfy(r -> {
+            assertThat(r[0]).isEqualTo(EPinType.REGISTRATION);
+            assertThat(r[1]).isEqualTo(EPinStatus.UNUSED);
+            assertThat((Long) r[2]).isGreaterThanOrEqualTo(2L);
+        });
+    }
+
     private EPin persistPin(UUID adminId, EPinStatus status, UUID allocatedTo, Instant expiresAt) {
         EPin epin = new EPin();
         epin.setId(UUID.randomUUID());

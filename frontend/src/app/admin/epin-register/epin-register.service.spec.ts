@@ -24,6 +24,11 @@ describe('EPinRegisterService', () => {
     req.flush({ epins: [], page: 1, size: 20, totalElements: 0 });
   });
 
+  it('fetches the pin stats summary', () => {
+    service.summary().subscribe();
+    httpMock.expectOne('/api/admin/epins/summary').flush({});
+  });
+
   it('omits expired when false', () => {
     service.list({ expired: false }, 0, 20).subscribe();
     const req = httpMock.expectOne(r => r.url === '/api/admin/epins');

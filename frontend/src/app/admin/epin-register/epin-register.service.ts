@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
-  AllocateResult, EPin, EPinBatchResult, EPinEvent, EPinFilters, EPinPage, EPinType, RedemptionType
+  AllocateResult, EPin, EPinBatchResult, EPinEvent, EPinFilters, EPinPage, EPinStats, EPinType, RedemptionType
 } from './epin.model';
 
 @Injectable({ providedIn: 'root' })
@@ -17,6 +17,10 @@ export class EPinRegisterService {
       }
     }
     return this.http.get<EPinPage>('/api/admin/epins', { params });
+  }
+
+  summary(): Observable<EPinStats> {
+    return this.http.get<EPinStats>('/api/admin/epins/summary');
   }
 
   generate(count: number, expiresAt?: string, pinType?: EPinType): Observable<EPinBatchResult> {

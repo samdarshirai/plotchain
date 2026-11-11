@@ -49,6 +49,10 @@ public interface EPinRepository extends JpaRepository<EPin, UUID> {
         @Param("now") Instant now,
         Pageable pageable);
 
+    // Admin register stats panel: [pinType, status, count] over all pins.
+    @Query("SELECT e.pinType, e.status, COUNT(e) FROM EPin e GROUP BY e.pinType, e.status")
+    List<Object[]> countByTypeAndStatus();
+
     @Query("""
         SELECT e FROM EPin e
         WHERE (e.allocatedTo = :me OR e.redeemedTo = :me OR e.redeemedBy = :me

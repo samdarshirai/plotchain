@@ -96,6 +96,24 @@ public class EPinService {
         return new EPinPageResponse(epins, page, size, result.getTotalElements());
     }
 
+    public EPinStatsResponse stats() {
+        long[][] c = new long[2][4]; // [type][generated, used, allocated, unused]
+        for (Object[] r : epinRepository.countByTypeAndStatus()) {
+            long[] t = c[r[0] == EPinType.TOPUP ? 0 : 1];
+            long n = (Long) r[2];
+            t[0] += n;
+            switch ((EPinStatus) r[1]) {
+                case USED -> t[1] += n;
+                case ALLOCATED -> t[2] += n;
+                case UNUSED -> t[3] += n;
+                default -> { }
+            }
+        }
+        return new EPinStatsResponse(
+            new EPinStatsResponse.Counts(c[0][0], c[0][1], c[0][2], c[0][3]),
+            new EPinStatsResponse.Counts(c[1][0], c[1][1], c[1][2], c[1][3]));
+    }
+
     public EPinPageResponse listForAssociate(UUID me, EPinStatus status, int page, int size) {
         Page<EPin> result = epinRepository.searchForAssociate(me, status, PageRequest.of(page, size));
         List<EPinResponse> epins = result.getContent().stream().map(this::toResponse).toList();
