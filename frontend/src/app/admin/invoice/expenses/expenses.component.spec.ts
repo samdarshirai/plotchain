@@ -18,6 +18,7 @@ describe('ExpensesComponent', () => {
     fixture.detectChanges();
     httpMock.expectOne('/api/admin/expense-types').flush([type, inactive]);
     httpMock.expectOne('/api/company/projects').flush([{ id: 'p1', name: 'Green Acres' }]);
+    httpMock.expectOne(r => r.url === '/api/admin/cycles').flush({ cycles: [], page: 0, size: 100, totalElements: 0 });
     httpMock.expectOne(r => r.url === '/api/admin/expenses').flush([row]);
     fixture.detectChanges();
   });
@@ -116,7 +117,7 @@ describe('ExpensesComponent default filters', () => {
 
   it('defaultsFromAndToToTheLast30DaysInclusiveInLocalTime', () => {
     const fixture = TestBed.createComponent(ExpensesComponent);
-    expect(fixture.componentInstance.filters.getRawValue()).toEqual({ from: '2026-09-19', to: '2026-10-18', typeId: '', projectId: '' });
+    expect(fixture.componentInstance.filters.getRawValue()).toEqual({ from: '2026-09-19', to: '2026-10-18', typeId: '', cycleId: '' });
   });
 
   it('sendsTheDefaultDatesOnTheFirstListRequest', () => {
@@ -124,6 +125,7 @@ describe('ExpensesComponent default filters', () => {
     fixture.detectChanges();
     httpMock.expectOne('/api/admin/expense-types').flush([]);
     httpMock.expectOne('/api/company/projects').flush([]);
+    httpMock.expectOne(r => r.url === '/api/admin/cycles').flush({ cycles: [], page: 0, size: 100, totalElements: 0 });
     const req = httpMock.expectOne(r => r.url === '/api/admin/expenses');
     expect(req.request.params.get('from')).toBe('2026-09-19');
     expect(req.request.params.get('to')).toBe('2026-10-18');
@@ -133,11 +135,36 @@ describe('ExpensesComponent default filters', () => {
     httpMock.verify();
   });
 
+  it('selectingACycleFiltersByItsDates_openCycleRunsToToday', () => {
+    const fixture = TestBed.createComponent(ExpensesComponent);
+    fixture.detectChanges();
+    httpMock.expectOne('/api/admin/expense-types').flush([]);
+    httpMock.expectOne('/api/company/projects').flush([]);
+    httpMock.expectOne(r => r.url === '/api/admin/cycles').flush({ cycles: [
+      { id: 'c1', periodStart: '2026-08-01', periodEnd: '2026-08-31', status: 'CLOSED' },
+      { id: 'c2', periodStart: '2026-10-01', periodEnd: null, status: 'OPEN' }], page: 0, size: 100, totalElements: 2 });
+    httpMock.expectOne(r => r.url === '/api/admin/expenses').flush([]);
+
+    fixture.componentInstance.filters.controls.cycleId.setValue('c1');
+    let req = httpMock.expectOne(r => r.url === '/api/admin/expenses');
+    expect(req.request.params.get('from')).toBe('2026-08-01');
+    expect(req.request.params.get('to')).toBe('2026-08-31');
+    expect(req.request.params.has('projectId')).toBeFalse();
+    req.flush([]);
+
+    fixture.componentInstance.filters.controls.cycleId.setValue('c2');
+    req = httpMock.expectOne(r => r.url === '/api/admin/expenses');
+    expect(req.request.params.get('from')).toBe('2026-10-01');
+    expect(req.request.params.get('to')).toBe('2026-10-18');
+    req.flush([]);
+  });
+
   it('stillLetsTheUserClearADateToRemoveThatBound', () => {
     const fixture = TestBed.createComponent(ExpensesComponent);
     fixture.detectChanges();
     httpMock.expectOne('/api/admin/expense-types').flush([]);
     httpMock.expectOne('/api/company/projects').flush([]);
+    httpMock.expectOne(r => r.url === '/api/admin/cycles').flush({ cycles: [], page: 0, size: 100, totalElements: 0 });
     httpMock.expectOne(r => r.url === '/api/admin/expenses').flush([]);
     fixture.componentInstance.filters.patchValue({ from: '' });
     const req = httpMock.expectOne(r => r.url === '/api/admin/expenses');
@@ -164,6 +191,7 @@ describe('ExpensesComponent add popup', () => {
     fixture.detectChanges();
     httpMock.expectOne('/api/admin/expense-types').flush([type]);
     httpMock.expectOne('/api/company/projects').flush([]);
+    httpMock.expectOne(r => r.url === '/api/admin/cycles').flush({ cycles: [], page: 0, size: 100, totalElements: 0 });
     httpMock.expectOne(listReq).flush([]);
     fixture.detectChanges();
   });

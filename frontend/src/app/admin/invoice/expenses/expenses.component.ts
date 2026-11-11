@@ -5,6 +5,8 @@ import { AbstractControl, ReactiveFormsModule, FormBuilder, ValidationErrors, Va
 import { HttpErrorResponse } from '@angular/common/http';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ExpenseType, ExpenseTypesService } from '../../expense-types/expense-types.service';
+import { CycleManagementService } from '../../cycle-management/cycle-management.service';
+import { CycleSummary } from '../../models/cycle.model';
 import { InvoiceService, PAY_MODES, PayMode, ProjectOption, ExpenseRow, ExpenseCreate } from '../invoice.service';
 import { toFieldErrors } from '../../../core/api/field-errors.model';
 import { EditableTableColumn, EditableTableComponent } from '../../../shared/components/editable-table/editable-table.component';
@@ -63,10 +65,10 @@ const requiredUnlessCash = (c: AbstractControl): ValidationErrors | null =>
           </select>
         </div>
         <div class="invoice-expenses__field">
-          <label>{{ 'admin.invoiceExpenses.project' | translate }}</label>
-          <select formControlName="projectId">
-            <option value="">{{ 'admin.invoiceExpenses.allProjects' | translate }}</option>
-            <option *ngFor="let p of projects" [value]="p.id">{{ p.name }}</option>
+          <label>{{ 'admin.ledgerRegister.cycleFilterLabel' | translate }}</label>
+          <select formControlName="cycleId">
+            <option value="">{{ 'admin.ledgerRegister.cycleFilterAllOption' | translate }}</option>
+            <option *ngFor="let c of cycles" [value]="c.id">{{ c.periodStart.slice(0, 10) }} – {{ c.periodEnd ? c.periodEnd.slice(0, 10) : ('admin.cycleManagement.ongoing' | translate) }}</option>
           </select>
         </div>
       </form>
@@ -149,6 +151,7 @@ const requiredUnlessCash = (c: AbstractControl): ValidationErrors | null =>
 })
 export class ExpensesComponent implements OnInit {
   private service = inject(InvoiceService);
+  private cycleService = inject(CycleManagementService);
   private typesService = inject(ExpenseTypesService);
   private translate = inject(TranslateService);
   private fb = inject(FormBuilder);
@@ -157,6 +160,7 @@ export class ExpensesComponent implements OnInit {
   allTypes: ExpenseType[] = [];
   activeTypes: ExpenseType[] = [];
   projects: ProjectOption[] = [];
+  cycles: CycleSummary[] = [];
   columns: EditableTableColumn[] = [];
   rows: Record<string, string>[] = [];
   loadError = false;
@@ -183,7 +187,7 @@ export class ExpensesComponent implements OnInit {
     remarks: ['']
   });
   private readonly defaultRange = last30Days();
-  filters = this.fb.nonNullable.group({ from: [this.defaultRange.from], to: [this.defaultRange.to], typeId: [''], projectId: [''] });
+  filters = this.fb.nonNullable.group({ from: [this.defaultRange.from], to: [this.defaultRange.to], typeId: [''], cycleId: [''] });
 
   ngOnInit(): void {
     const t = (key: string) => this.translate.instant(`admin.invoiceExpenses.${key}`);
@@ -210,6 +214,13 @@ export class ExpensesComponent implements OnInit {
     this.form.controls.payMode.valueChanges.subscribe(() => {
       this.form.controls.bankName.updateValueAndValidity();
       this.form.controls.txnNo.updateValueAndValidity();
+    });
+    this.cycleService.list('', 0, 100).subscribe({ next: r => (this.cycles = r.cycles), error: () => (this.loadError = true) });
+    // A cycle maps to its date range (open cycle runs to today); "All cycles" goes back to the last 30 days.
+    this.filters.controls.cycleId.valueChanges.subscribe(id => {
+      const c = this.cycles.find(x => x.id === id);
+      const range = c ? { from: c.periodStart.slice(0, 10), to: c.periodEnd?.slice(0, 10) ?? localIsoDate(new Date()) } : last30Days();
+      this.filters.patchValue(range, { emitEvent: false });
     });
     this.filters.valueChanges.subscribe(() => this.load());
     this.load();
@@ -304,7 +315,7 @@ export class ExpensesComponent implements OnInit {
   private load(): void {
     this.loadError = false;
     const f = this.filters.getRawValue();
-    this.service.expenses({ from: f.from, to: f.to, typeId: f.typeId, projectId: f.projectId }).subscribe({
+    this.service.expenses({ from: f.from, to: f.to, typeId: f.typeId }).subscribe({
       next: items => (this.rows = items.map((e, i) => this.toRow(e, i))),
       error: () => (this.loadError = true)
     });
