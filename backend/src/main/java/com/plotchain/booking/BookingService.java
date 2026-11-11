@@ -646,10 +646,6 @@ public class BookingService {
         }).toList();
     }
 
-    public List<EmiReportRow> getEmiReport(UUID associateId, LocalDate from, LocalDate to) {
-        return emiInstallmentRepository.findEmiReport(associateId, fromInstant(from), toInstant(to));
-    }
-
     // Flat, no-interest amortization: BookingEmiConfig carries no down-payment-percentage or
     // interest-rate field (only emiEnabled and defaultInstallmentCount --
     // confirmed by reading the entity directly, not assumed), so

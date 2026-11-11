@@ -107,6 +107,40 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
     Page<PlotBooking> findByDownline(@Param("associateId") UUID associateId, @Param("position") String position,
             @Param("from") Instant from, @Param("to") Instant to, Pageable pageable);
 
+    // Associate "Pending EMI": ACTIVE bookings in the caller's downline with at least one PENDING
+    // installment (same predicate as the admin register's pendingOnly). position null = whole team.
+    // code = lowercased associate login id, '' = no filter. Order is fixed in SQL (Pageable UNSORTED).
+    @Query(value = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate WHERE parent_id = :associateId
+              AND (CAST(:position AS text) IS NULL OR position = CAST(:position AS text))
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT b.* FROM plot_booking b JOIN downline d ON b.associate_id = d.id
+        JOIN associate ba ON ba.id = b.associate_id
+        WHERE b.status = 'ACTIVE' AND b.booked_at >= :from AND b.booked_at < :to
+          AND (:code = '' OR LOWER(ba.user_id) = :code)
+          AND EXISTS (SELECT 1 FROM emi_installment i WHERE i.booking_id = b.id AND i.status = 'PENDING')
+        ORDER BY b.booked_at DESC, b.id DESC
+        """,
+        countQuery = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate WHERE parent_id = :associateId
+              AND (CAST(:position AS text) IS NULL OR position = CAST(:position AS text))
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT count(*) FROM plot_booking b JOIN downline d ON b.associate_id = d.id
+        JOIN associate ba ON ba.id = b.associate_id
+        WHERE b.status = 'ACTIVE' AND b.booked_at >= :from AND b.booked_at < :to
+          AND (:code = '' OR LOWER(ba.user_id) = :code)
+          AND EXISTS (SELECT 1 FROM emi_installment i WHERE i.booking_id = b.id AND i.status = 'PENDING')
+        """,
+        nativeQuery = true)
+    Page<PlotBooking> findPendingByDownline(@Param("associateId") UUID associateId, @Param("position") String position,
+            @Param("code") String code, @Param("from") Instant from, @Param("to") Instant to, Pageable pageable);
+
     // "My Business Datewise": same downline CTE as findByDownline, restricted to booked_at in [from, to).
     // position is 'L' or 'R'. CANCELLED bookings are not business.
     @Query(value = """

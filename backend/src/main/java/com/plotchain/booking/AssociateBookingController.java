@@ -1,5 +1,6 @@
 package com.plotchain.booking;
 
+import com.plotchain.cycle.CycleSummaryResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,9 +21,11 @@ import java.util.UUID;
 public class AssociateBookingController {
 
     private final BookingService bookingService;
+    private final AssociatePendingEmiService pendingEmiService;
 
-    public AssociateBookingController(BookingService bookingService) {
+    public AssociateBookingController(BookingService bookingService, AssociatePendingEmiService pendingEmiService) {
         this.bookingService = bookingService;
+        this.pendingEmiService = pendingEmiService;
     }
 
     // Self-scoped by construction: associateId always comes from the verified JWT, never the
@@ -52,12 +55,7 @@ public class AssociateBookingController {
             @RequestParam(defaultValue = "20") int size
     ) {
         checkRange(from, to);
-        String position = switch (leg) {
-            case "ALL" -> null;
-            case "L", "R" -> leg;
-            default -> throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.BAD_REQUEST, "leg must be ALL, L or R");
-        };
+        String position = legToPosition(leg);
         return bookingService.getTeamBookings(associateId, position, from, to, Math.max(page, 0), Math.min(Math.max(size, 1), 100));
     }
 
@@ -72,14 +70,32 @@ public class AssociateBookingController {
         return bookingService.getMyBusiness(associateId, from, to);
     }
 
+    // Pending EMI of the caller's downline; leg = ALL | L | R, associateId = login id, cycleId = booking-date period.
     @GetMapping("/api/associates/me/reports/emi")
-    public List<EmiReportRow> getEmiReport(
-            @AuthenticationPrincipal UUID associateId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    public AssociateBookingPageResponse getPendingEmi(
+            @AuthenticationPrincipal UUID me,
+            @RequestParam(defaultValue = "ALL") String leg,
+            @RequestParam(required = false) String associateId,
+            @RequestParam(required = false) UUID cycleId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
     ) {
-        checkRange(from, to);
-        return bookingService.getEmiReport(associateId, from, to);
+        return pendingEmiService.list(me, legToPosition(leg), associateId, cycleId,
+            Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+    }
+
+    @GetMapping("/api/associates/me/cycles")
+    public List<CycleSummaryResponse> getCycles() {
+        return pendingEmiService.cycles();
+    }
+
+    private static String legToPosition(String leg) {
+        return switch (leg) {
+            case "ALL" -> null;
+            case "L", "R" -> leg;
+            default -> throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "leg must be ALL, L or R");
+        };
     }
 
     private static void checkRange(LocalDate from, LocalDate to) {

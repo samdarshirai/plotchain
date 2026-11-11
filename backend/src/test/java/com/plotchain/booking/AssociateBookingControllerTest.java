@@ -161,10 +161,10 @@ class AssociateBookingControllerTest {
     }
 
     @Test
-    void reportsRejectFromAfterTo() throws Exception {
+    void pendingEmiRejectsUnknownLeg() throws Exception {
         UUID associateId = UUID.randomUUID();
         mockMvc.perform(get("/api/associates/me/reports/emi")
-                .param("from", "2026-07-01").param("to", "2026-06-01")
+                .param("leg", "X")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE, associateId)))
             .andExpect(status().isBadRequest());
     }

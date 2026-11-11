@@ -20,18 +20,6 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
     // Ordered by number so each booking's group is already in schedule order.
     List<EmiInstallment> findByBookingIdInOrderByInstallmentNumberAsc(Collection<UUID> bookingIds);
 
-    // Associate EMI report: PAID installments on the caller's own bookings, paid_at in [from, to).
-    @Query("""
-        SELECT new com.plotchain.booking.EmiReportRow(a.userId, a.name, i.paidAt, i.amount, i.paymentMode)
-        FROM EmiInstallment i
-        JOIN PlotBooking b ON b.id = i.bookingId
-        JOIN Associate a ON a.id = b.associateId
-        WHERE b.associateId = :associateId AND i.status = com.plotchain.booking.InstallmentStatus.PAID
-        AND i.paidAt >= :from AND i.paidAt < :to
-        ORDER BY i.paidAt, i.id
-        """)
-    List<EmiReportRow> findEmiReport(@Param("associateId") UUID associateId, @Param("from") Instant from, @Param("to") Instant to);
-
     // Admin payments list (U3). ENTERED = unconfirmed queue, PAID = confirmed ledger; date filter is on
     // paid_at (payment date) for both. LEFT JOINs keep rows whose entry-by/confirm-by is NULL (token
     // installments, legacy rows). Pageable must be UNSORTED: order is fixed here.

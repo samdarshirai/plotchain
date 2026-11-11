@@ -172,7 +172,7 @@
     "loadError": "रिपोर्ट लोड नहीं हो सकी।",
     "empty": "इस अवधि के लिए कोई रिकॉर्ड नहीं।",
     "myBusiness": { "title": "मेरा व्यवसाय (तिथि अनुसार)", "left": "बायाँ व्यवसाय", "right": "दायाँ व्यवसाय" },
-    "emi": { "title": "EMI रिपोर्ट" },
+    "emi": { "title": "बकाया ईएमआई", "subtitle": "आपकी टीम में सभी का बकाया ईएमआई।", "cycle": "साइकिल", "allCycles": "सभी साइकिल", "open": "चालू", "side": "ट्री साइड", "sideAll": "सभी", "sideLeft": "बायाँ", "sideRight": "दायाँ" },
     "column": {
       "number": "क्रम", "paymentDate": "भुगतान तिथि", "confirmDate": "पुष्टि तिथि", "associateId": "एसोसिएट आईडी",
       "name": "नाम", "project": "प्रोजेक्ट", "plotNumber": "प्लॉट नंबर", "business": "व्यवसाय", "amount": "राशि", "mode": "माध्यम"
@@ -667,7 +667,7 @@
     },
     "reports": "रिपोर्ट",
     "myBusinessDatewise": "मेरा व्यवसाय (तिथि अनुसार)",
-    "emiReport": "EMI रिपोर्ट",
+    "emiReport": "बकाया ईएमआई",
     "dashboard": "डैशबोर्ड",
     "myTree": "वंशावली",
     "myTreeView": "ट्री",

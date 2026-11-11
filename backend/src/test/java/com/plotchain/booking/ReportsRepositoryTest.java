@@ -11,7 +11,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,30 +54,40 @@ class ReportsRepositoryTest {
     }
 
     @Test
-    void emiReportIsOwnPaidInstallmentsInRange() {
+    void pendingEmiIsDownlineOnlyActiveWithPendingInstallmentFilteredByLegAndCode() {
         BookingRegisterTestData d = new BookingRegisterTestData(associates, projects, plots, repo, installments);
         UUID project = d.project("Emi P");
-        UUID me = d.associate(), other = d.associate();
-        PlotBooking mine = d.booking(me, project, BookingStatus.ACTIVE, 1);
-        PlotBooking theirs = d.booking(other, project, BookingStatus.ACTIVE, 1);
-        paid(d, mine, 1, "2026-06-05T10:00:00Z", PaymentMode.BANK_TRANSFER);
-        paid(d, mine, 2, "2026-07-05T10:00:00Z", PaymentMode.CASH);   // out of range
-        d.inst(mine, 3, InstallmentStatus.PENDING, "2026-06-20");
-        paid(d, theirs, 1, "2026-06-05T10:00:00Z", PaymentMode.BANK_TRANSFER);
+        UUID root = d.associate();
+        UUID left = child(d, root, "L");
+        UUID right = child(d, root, "R");
+        UUID outsider = d.associate();
+        PlotBooking pendL = d.booking(left, project, BookingStatus.ACTIVE, 1);
+        d.inst(pendL, 1, InstallmentStatus.PAID, "2026-06-01");
+        d.inst(pendL, 2, InstallmentStatus.PENDING, "2026-07-01");
+        PlotBooking pendR = d.booking(right, project, BookingStatus.ACTIVE, 2);
+        d.inst(pendR, 1, InstallmentStatus.PENDING, "2026-07-01");
+        PlotBooking fullyPaid = d.booking(left, project, BookingStatus.ACTIVE, 3);
+        d.inst(fullyPaid, 1, InstallmentStatus.PAID, "2026-06-01");
+        PlotBooking cancelled = d.booking(left, project, BookingStatus.CANCELLED, 4);
+        d.inst(cancelled, 1, InstallmentStatus.PENDING, "2026-07-01");
+        PlotBooking own = d.booking(root, project, BookingStatus.ACTIVE, 5);      // caller's own: not downline
+        d.inst(own, 1, InstallmentStatus.PENDING, "2026-07-01");
+        PlotBooking out = d.booking(outsider, project, BookingStatus.ACTIVE, 6);
+        d.inst(out, 1, InstallmentStatus.PENDING, "2026-07-01");
 
-        List<EmiReportRow> rows = installments.findEmiReport(me,
-            Instant.parse("2026-06-01T00:00:00Z"), Instant.parse("2026-07-01T00:00:00Z"));
-        assertThat(rows).hasSize(1);
-        assertThat(rows.get(0).mode()).isEqualTo(PaymentMode.BANK_TRANSFER);
-        assertThat(rows.get(0).associateId()).isEqualTo("u-" + me);
-    }
-
-    private void paid(BookingRegisterTestData d, PlotBooking b, int n, String paidAt, PaymentMode mode) {
-        d.inst(b, n, InstallmentStatus.PAID, "2026-06-01");
-        EmiInstallment i = installments.findByBookingIdOrderByInstallmentNumberAsc(b.getId()).stream()
-            .filter(x -> x.getInstallmentNumber() == n).findFirst().orElseThrow();
-        i.setPaidAt(Instant.parse(paidAt));
-        i.setPaymentMode(mode);
-        installments.saveAndFlush(i);
+        Instant from = Instant.EPOCH, to = Instant.parse("9999-01-01T00:00:00Z");
+        org.springframework.data.domain.Pageable pg = org.springframework.data.domain.PageRequest.of(0, 50);
+        assertThat(repo.findPendingByDownline(root, null, "", from, to, pg).getContent())
+            .extracting(PlotBooking::getId).containsExactly(pendR.getId(), pendL.getId());   // newest first
+        assertThat(repo.findPendingByDownline(root, "L", "", from, to, pg).getContent())
+            .extracting(PlotBooking::getId).containsExactly(pendL.getId());
+        assertThat(repo.findPendingByDownline(root, null, ("u-" + right).toLowerCase(), from, to, pg).getContent())
+            .extracting(PlotBooking::getId).containsExactly(pendR.getId());
+        // code of someone outside the downline never matches
+        assertThat(repo.findPendingByDownline(root, null, ("u-" + outsider).toLowerCase(), from, to, pg).getContent()).isEmpty();
+        // booked_at bounds (cycle period): booked_at = 2026-06-01 + offset days: pendL 06-02, pendR 06-03
+        assertThat(repo.findPendingByDownline(root, null, "", Instant.parse("2026-06-03T00:00:00Z"),
+            Instant.parse("2026-06-04T00:00:00Z"), pg).getContent()).extracting(PlotBooking::getId).containsExactly(pendR.getId());
+        assertThat(repo.findPendingByDownline(left, null, "", from, to, pg).getContent()).isEmpty();
     }
 }
