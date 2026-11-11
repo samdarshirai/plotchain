@@ -249,26 +249,25 @@ describe('AssociateDirectoryComponent', () => {
       });
       fixture.detectChanges();
     }
-    const button = (): HTMLButtonElement => fixture.nativeElement.querySelector('.associate-directory__recalculate');
-
-    it('posts recalculate for that row without opening the side panel, then shows done', () => {
+    it('has no Recalculate button in the row actions', () => {
       loadRows();
-      button().click();
-      fixture.detectChanges();
-      expect(button().disabled).toBeTrue();
+      const labels = Array.from(fixture.nativeElement.querySelectorAll('.associate-directory__row-actions button'))
+        .map((b: any) => b.textContent.trim());
+      expect(labels.length).toBeGreaterThan(0);
+      expect(labels).not.toContain('Recalculate');
+    });
 
+    it('still posts recalculate via the handler/API', () => {
+      loadRows();
+      fixture.componentInstance.recalculate('a1');
       httpMock.expectOne({ method: 'POST', url: '/api/admin/associates/a1/recalculate' }).flush({});
-      fixture.detectChanges();
       expect(fixture.componentInstance.recalculatedId).toBe('a1');
-      expect(button().disabled).toBeFalse();
     });
 
     it('shows the action error when recalculate fails', () => {
       loadRows();
-      button().click();
+      fixture.componentInstance.recalculate('a1');
       httpMock.expectOne('/api/admin/associates/a1/recalculate').flush({}, { status: 500, statusText: 'boom' });
-      fixture.detectChanges();
-
       expect(fixture.componentInstance.actionError).toBeTrue();
       expect(fixture.componentInstance.recalculatingId).toBeNull();
     });

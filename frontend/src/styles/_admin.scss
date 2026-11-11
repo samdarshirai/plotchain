@@ -427,17 +427,18 @@
     table-layout: fixed;
   }
 
-  // 10 columns: ID, Name, Phone, Sponsor, Position, Status, Registration, Login pw, Txn pw, Actions.
-  th:nth-child(1) { width: 9%; }
+  // 11 columns: S No, ID, Name, Phone, Sponsor, Position, Status, Registration, Login pw, Txn pw, Actions. Sum 100%.
+  th:nth-child(1) { width: 5%; }
   th:nth-child(2) { width: 9%; }
-  th:nth-child(3) { width: 11%; }
-  th:nth-child(4) { width: 8%; }
-  th:nth-child(5) { width: 7%; }
-  th:nth-child(6) { width: 8%; }
-  th:nth-child(7) { width: 11%; }
-  th:nth-child(8) { width: 8%; }
-  th:nth-child(9) { width: 9%; }
-  th:nth-child(10) { width: 20%; }
+  th:nth-child(3) { width: 10%; }
+  th:nth-child(4) { width: 10%; }
+  th:nth-child(5) { width: 8%; }
+  th:nth-child(6) { width: 7%; }
+  th:nth-child(7) { width: 8%; }
+  th:nth-child(8) { width: 12%; }
+  th:nth-child(9) { width: 8%; }
+  th:nth-child(10) { width: 8%; }
+  th:nth-child(11) { width: 15%; }
 
   thead th {
     padding: 8px 6px;
@@ -484,7 +485,7 @@
     text-overflow: ellipsis;
   }
 
-  tbody td:nth-child(2) > span {
+  tbody td:nth-child(3) > span {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -493,27 +494,27 @@
   }
 
   // Associate ID (1st column) -- mono, muted, smaller than the rest of the row.
-  td:nth-child(1) {
+  td:nth-child(2) {
     font-family: var(--font-mono);
     font-size: 12.5px;
     color: var(--text-muted);
   }
 
   // Name (2nd column).
-  td:nth-child(2) {
+  td:nth-child(3) {
     font-weight: 600;
   }
 
   // Registration (7th column).
-  td:nth-child(7),
-  th:nth-child(7) {
+  td:nth-child(8),
+  th:nth-child(8) {
     text-align: right;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
   }
 
   // Date + time is longer than the column: wrap between words instead of clipping.
-  tbody td:nth-child(7) > span {
+  tbody td:nth-child(8) > span {
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
@@ -528,11 +529,11 @@
 // for date + time with seconds on one line. Points come from Name and Action; total stays 100%.
 @media (min-width: 1024px) {
   .app-content--sidebar-rail:not(.app-content--sidebar-expanded) .associate-directory__table-wrap {
-    th:nth-child(2) { width: 8%; }
-    th:nth-child(7) { width: 15%; }
-    th:nth-child(10) { width: 17%; }
+    th:nth-child(3) { width: 8%; }
+    th:nth-child(8) { width: 14%; }
+    th:nth-child(11) { width: 15%; }
 
-    tbody td:nth-child(7) > span {
+    tbody td:nth-child(8) > span {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -766,20 +767,20 @@
 // Buyer Name column (2nd) -- mockup's `s.buyer` is set weight 600 with no font-family override
 // (Viraj_Acres_Settings.dc.html isSales section); Project Name (1st) stays unstyled/default,
 // matching how the mockup's own leading column carries no override either.
-.sales-register .editable-table td:nth-child(2) {
+.sales-register .editable-table td:nth-child(3) {
   font-weight: 600;
 }
 
 // Buyer Phone column (3rd) -- ledger typography (mockup: color #6B6153/--text-muted, IBM Plex
 // Mono, 12.5px -- Viraj_Acres_Settings.dc.html isSales section, `s.phone`)
-.sales-register .editable-table td:nth-child(3) {
+.sales-register .editable-table td:nth-child(4) {
   font-family: var(--font-mono);
   font-size: 12.5px;
   color: var(--text-muted);
 }
 
 // Amount column (4th) -- ledger typography (mockup: weight 600, IBM Plex Mono)
-.sales-register .editable-table td:nth-child(4) {
+.sales-register .editable-table td:nth-child(5) {
   font-family: var(--font-mono);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -788,7 +789,7 @@
 
 // Leg Credited column (5th) -- directional glyphs baked into the row's string value. Renders in
 // the normal body font per the mockup (`s.leg` carries no font-family override), not mono.
-.sales-register .editable-table td:nth-child(5) {
+.sales-register .editable-table td:nth-child(6) {
   font-size: 0.8125rem;
   letter-spacing: 0.02em;
   color: var(--text-muted);
@@ -797,7 +798,7 @@
 
 // Note column (6th) -- free-text, not part of the mockup's original 7-column set. Muted and
 // clipped so a long note can't blow out the row height or push the ledger columns around.
-.sales-register .editable-table td:nth-child(6) {
+.sales-register .editable-table td:nth-child(7) {
   max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -809,12 +810,12 @@
 // Status column (7th) -- colored per value via EditableTableComponent's `type: 'badge'` (see
 // SalesRegisterComponent.statusBadgeTone); renders in the normal body font per the mockup
 // (`s.status` carries no font-family override, only `color`/`font-weight`), not mono.
-.sales-register .editable-table td:nth-child(7) {
+.sales-register .editable-table td:nth-child(8) {
   font-size: 0.8125rem;
 }
 
 // Recorded At column (8th)
-.sales-register .editable-table td:nth-child(8) {
+.sales-register .editable-table td:nth-child(9) {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
   font-size: 0.8125rem;
@@ -866,15 +867,17 @@
 
     thead th, tbody td { padding: 0.5rem; }
     th { white-space: nowrap; }
-    th:nth-child(1) { width: 16%; }
-    th:nth-child(2) { width: 12%; }
+    // 10 columns: S No, Project, Buyer, Phone, Amount, Leg, Note, Status, Recorded, Actions. Sum 100%.
+    th:nth-child(1) { width: 4%; }
+    th:nth-child(2) { width: 15%; }
     th:nth-child(3) { width: 11%; }
-    th:nth-child(4) { width: 12%; text-align: right; }
-    th:nth-child(5) { width: 4%; text-align: center; }
-    th:nth-child(6) { width: 7%; }
-    th:nth-child(7) { width: 8%; }
-    th:nth-child(8) { width: 12%; }
-    th:nth-child(9) { width: 18%; }
+    th:nth-child(4) { width: 10%; }
+    th:nth-child(5) { width: 11%; text-align: right; }
+    th:nth-child(6) { width: 4%; text-align: center; }
+    th:nth-child(7) { width: 7%; }
+    th:nth-child(8) { width: 8%; }
+    th:nth-child(9) { width: 11%; }
+    th:nth-child(10) { width: 19%; }
 
     td > span {
       display: block;
@@ -883,7 +886,7 @@
       text-overflow: ellipsis;
     }
 
-    td:nth-child(1) > span, td:nth-child(2) > span, td:nth-child(8) > span {
+    td:nth-child(2) > span, td:nth-child(3) > span, td:nth-child(9) > span {
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -3765,10 +3768,12 @@ button.tree-explorer__vacant-card {
   table-layout: fixed;
   border-collapse: collapse;
 
-  th:nth-child(1) { width: 18%; }
-  th:nth-child(2) { width: 30%; }
-  th:nth-child(3) { width: 26%; }
-  th:nth-child(4) { width: 26%; }
+  // Pending: S No, Associate ID, Name, Joined, Actions. Sum 100%.
+  th:nth-child(1) { width: 6%; }
+  th:nth-child(2) { width: 16%; }
+  th:nth-child(3) { width: 28%; }
+  th:nth-child(4) { width: 22%; }
+  th:nth-child(5) { width: 28%; }
 
   thead th {
     padding: 0.75rem 1rem;
@@ -3804,14 +3809,14 @@ button.tree-explorer__vacant-card {
 
   // Associate ID + Joined -- mono, muted, per DESIGN.md SS3 / settings-parity spec (ledger
   // ID and date columns are IBM Plex Mono).
-  td:not(.editable-table__empty):nth-child(1),
-  td:nth-child(3) {
+  td:not(.editable-table__empty):nth-child(2),
+  td:nth-child(4) {
     font-family: var(--font-mono);
     font-size: 0.8125rem;
     color: var(--text-muted);
   }
 
-  td:nth-child(2) {
+  td:nth-child(3) {
     font-weight: 600;
     color: var(--text-primary);
   }
@@ -3819,8 +3824,8 @@ button.tree-explorer__vacant-card {
   // Trailing Actions column (PENDING only) sits right. Positional, not :last-child --
   // Verified/Rejected's 3-column row has no 4th column, and its actual last column
   // (Joined) must stay left-aligned like every other data column.
-  th:nth-child(4),
-  td:nth-child(4) {
+  th:nth-child(5),
+  td:nth-child(5) {
     text-align: right;
   }
 
@@ -3857,9 +3862,10 @@ button.tree-explorer__vacant-card {
 
 // Reviewed rows leave more room for the name and inline status pill.
 .kyc-queue--compact-table .editable-table {
-  th:nth-child(1) { width: 24%; }
-  th:nth-child(2) { width: 44%; }
-  th:nth-child(3) { width: 32%; }
+  th:nth-child(1) { width: 6%; }
+  th:nth-child(2) { width: 22%; }
+  th:nth-child(3) { width: 42%; }
+  th:nth-child(4) { width: 30%; }
 }
 
 // Per-row action stack (KYC Review Queue.dc.html -- View/Reject/Approve, right-aligned).

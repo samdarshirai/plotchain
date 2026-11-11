@@ -117,17 +117,6 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
             <button
               *ngIf="page?.associates?.[i] as a"
               type="button"
-              class="associate-directory__recalculate"
-              [disabled]="recalculatingId !== null"
-              (click)="recalculate(a.id)"
-            >
-              {{ (recalculatingId === a.id ? 'admin.associateDirectory.recalculatingAction'
-                  : recalculatedId === a.id ? 'admin.associateDirectory.recalculatedAction'
-                  : 'admin.associateDirectory.recalculateAction') | translate }}
-            </button>
-            <button
-              *ngIf="page?.associates?.[i] as a"
-              type="button"
               class="associate-directory__recalculate associate-directory__edit"
               (click)="openEdit(a.id)"
             >
