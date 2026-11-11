@@ -85,6 +85,7 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'admin.addPlotEmi.col.plotType' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">square_foot</span>{{ 'admin.addPlotEmi.col.area' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.col.price' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.col.extraPrice' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">percent</span>{{ 'admin.addPlotEmi.col.discount' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.col.total' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.addPlotEmi.col.paid' | translate }}</th>
@@ -104,6 +105,7 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
                 <td [attr.data-label]="'admin.addPlotEmi.col.plotType' | translate">{{ b.plotType ? ('admin.projectsPlots.type.' + b.plotType | translate) : '—' }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.area' | translate">{{ b.areaSqft != null ? b.areaSqft : '—' }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.price' | translate">{{ b.listPrice != null ? money(b.listPrice) : '—' }}</td>
+                <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.extraPrice' | translate">{{ b.extraPrice != null ? money(b.extraPrice) : '—' }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.discount' | translate">{{ b.discount != null ? money(b.discount) : '—' }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.total' | translate">{{ money(b.totalAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.paid' | translate">{{ money(b.paidAmount) }}</td>
@@ -115,7 +117,7 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
                 </td>
               </tr>
               <tr *ngIf="!page?.bookings?.length">
-                <td class="add-plot-emi__empty-cell" [attr.colspan]="15">{{ (projectId ? 'admin.addPlotEmi.empty' : 'admin.addPlotEmi.pickProject') | translate }}</td>
+                <td class="add-plot-emi__empty-cell" [attr.colspan]="16">{{ (projectId ? 'admin.addPlotEmi.empty' : 'admin.addPlotEmi.pickProject') | translate }}</td>
               </tr>
             </tbody>
           <tfoot *ngIf="page?.bookings?.length">
@@ -130,6 +132,7 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
               <td></td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.area' | translate">{{ areaFmt(sumOf('areaSqft')) }}</td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.price' | translate">{{ money(sumOf('listPrice')) }}</td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.extraPrice' | translate">{{ money(sumOf('extraPrice')) }}</td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.discount' | translate">{{ money(sumOf('discount')) }}</td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.total' | translate">{{ money(sumOf('totalAmount')) }}</td>
               <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.paid' | translate">{{ money(sumOf('paidAmount')) }}</td>
@@ -416,6 +419,7 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
       { header: t('plotType'), value: b => b.plotType },
       { header: t('area'), value: b => b.areaSqft },
       { header: t('price'), value: b => b.listPrice },
+      { header: t('extraPrice'), value: b => b.extraPrice },
       { header: t('discount'), value: b => b.discount },
       { header: t('total'), value: b => b.totalAmount },
       { header: t('paid'), value: b => b.paidAmount },

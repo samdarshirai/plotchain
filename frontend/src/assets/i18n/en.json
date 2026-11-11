@@ -1489,6 +1489,7 @@
         "plotType": "Plot Type",
         "area": "Area",
         "price": "Price",
+        "extraPrice": "Extra Price",
         "total": "Total Price",
         "discount": "Discount",
         "paid": "Paid Amount",
