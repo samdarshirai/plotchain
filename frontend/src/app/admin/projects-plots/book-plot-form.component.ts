@@ -232,7 +232,7 @@ export class BookPlotFormComponent implements OnInit {
   get block(): string { return this.plot.plotNo.includes('-') ? this.plot.plotNo.slice(0, this.plot.plotNo.indexOf('-')) : ''; }
   get areaText(): string { return formatArea(this.plot.area); }
 
-  // Mirrors the server: whole-rupee HALF_UP, 0 <= discount < price; token in (0, price - discount).
+  // Mirrors the server: whole-rupee HALF_UP, 0 <= discount < price; token in (0, price - discount].
   get discount(): number { return round2(this.discountRaw ?? 0); }
   // Validity is independent of `tried` so the live summary never shows a bogus total.
   get discountInvalid(): boolean { return this.discount < 0 || this.discount >= this.plot.price + this.extra; }
@@ -248,22 +248,23 @@ export class BookPlotFormComponent implements OnInit {
   get discountText(): string { return formatInr(this.discount); }
   get netText(): string { return formatInr(this.net); }
 
-  // Required, above zero and below the net total; the server enforces the same range.
+  // Required, above zero and at most the net total; the server enforces the same range.
   get tokenError(): 'required' | 'tooHigh' | null {
     if (!this.tried) { return null; }
     const t = this.tokenAmount;
     if (t == null || !(t > 0)) { return 'required'; }
-    return t >= this.net ? 'tooHigh' : null;
+    return t > this.net ? 'tooHigh' : null;
   }
   private get tokenValid(): boolean {
     const t = this.tokenAmount;
-    return t != null && t > 0 && t < this.net;
+    return t != null && t > 0 && t <= this.net;
   }
 
   // Preview is an equal-split estimate only; the real schedule is server-side. The token is
   // installment 1; the balance splits across the other installments (at least one).
   get previewKey(): string | null {
     if (!this.emiConfig || !this.tokenValid) { return null; }
+    if ((this.tokenAmount ?? 0) >= this.net) { return 'admin.projectsPlots.scheduleFull'; }
     return this.balanceCount > 1 ? 'admin.projectsPlots.schedulePreview' : 'admin.projectsPlots.scheduleSingle';
   }
   private get balanceCount(): number {

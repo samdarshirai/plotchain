@@ -234,13 +234,11 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBookingRejectsATokenEqualToOrAboveThePlotPriceAndDoesNotBookThePlot() {
+    void createBookingRejectsATokenAboveThePlotPriceAndDoesNotBookThePlot() {
         when(plotRepository.findByIdForUpdate(PLOT_ID))
             .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
 
-        assertThatThrownBy(() -> bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "600000.00")))
-            .isInstanceOf(InvalidTokenAmountException.class);
         assertThatThrownBy(() -> bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "700000")))
             .isInstanceOf(InvalidTokenAmountException.class);
 
@@ -266,6 +264,16 @@ class BookingServiceTest {
 
     @Test
     void createBookingStoresTheTrimmedReceiptNoOnTheTokenInstallment() {
+    @Test
+    void createBookingWithATokenEqualToTheTotalIsASingleInstallmentPaidInFull() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        BookingResponse r = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "600000.00"));
+
+        assertThat(r.installments()).hasSize(1);
+        assertThat(r.installments().get(0).amount()).isEqualByComparingTo("600000.00");
+    }
+
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 
         bookingService.createBooking(tokenRequestWithReceipt("  RCP-77 "));
@@ -354,7 +362,7 @@ class BookingServiceTest {
             .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
 
-        assertThatThrownBy(() -> bookingService.createBooking(requestWithDiscount("100000", "500000")))
+        assertThatThrownBy(() -> bookingService.createBooking(requestWithDiscount("100001", "500000")))
             .isInstanceOf(InvalidTokenAmountException.class);
         verify(plotBookingRepository, never()).save(any());
     }

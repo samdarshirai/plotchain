@@ -134,14 +134,14 @@ describe('BookPlotFormComponent', () => {
     expect(document.activeElement).toBe(field);
   });
 
-  it('rejects a token equal to or above the plot price, and zero', async () => {
+  it('rejects a token above the plot price, and zero', async () => {
     setup();
     const out: BookingFormValue[] = [];
     fixture.componentInstance.submitted.subscribe(v => out.push(v));
     fixture.componentInstance.associateId = 'a1';
     await fixture.whenStable();
     typeInto('buyerUserId', 'VP00001');
-    typeInto('tokenAmount', String(plot.price));
+    typeInto('tokenAmount', String(plot.price + 1));
     submitForm();
     fixture.detectChanges();
     expect(el().textContent).toContain('admin.projectsPlots.token.tooHigh');
@@ -261,13 +261,13 @@ describe('BookPlotFormComponent', () => {
       expect(out[0].discount).toBe(1001);
     });
 
-    it('token must be below the discounted total', async () => {
+    it('token may equal but not exceed the discounted total', async () => {
       const out = await ready();
-      typeInto('discount', '130000'); typeInto('tokenAmount', '5000000');
+      typeInto('discount', '130000'); typeInto('tokenAmount', '5000001');
       submitForm(); await settle();
       expect(el().textContent).toContain(K + 'token.tooHigh');
       expect(out.length).toBe(0);
-      typeInto('tokenAmount', '4999999.99');
+      typeInto('tokenAmount', '5000000');
       submitForm(); await settle();
       expect(out.length).toBe(1);
     });

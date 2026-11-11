@@ -95,7 +95,7 @@ public class BookingService {
             .setScale(0, RoundingMode.HALF_UP);
         BigDecimal total = listPrice.add(extraPrice).subtract(discount);
         BigDecimal token = Money.round(request.tokenAmount());
-        if (token.compareTo(total) >= 0) {
+        if (token.compareTo(total) > 0) {
             throw new InvalidTokenAmountException(token, total);
         }
 
@@ -692,6 +692,8 @@ public class BookingService {
             BigDecimal amount;
             if (i == 1 && first != null) { amount = first; }
             else if (i == balanceCount) { amount = balance.subtract(running); }
+        // Token covers the whole total: paid in full, no balance installments.
+        if (balance.signum() == 0) { return schedule; }
             else { amount = base; }
             running = running.add(amount);
             EmiInstallment installment = new EmiInstallment();
