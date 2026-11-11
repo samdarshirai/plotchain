@@ -27,9 +27,11 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -605,7 +607,12 @@ public class BookingService {
             .findByBookingIdInOrderByInstallmentNumberAsc(
                 result.getContent().stream().map(PlotBooking::getId).toList()).stream()
             .collect(java.util.stream.Collectors.groupingBy(EmiInstallment::getBookingId)))
-            .stream().map(BookingResponse::withoutBuyerPhone).toList();
+            ;
+        // Associate phone is shown only for associates the caller sponsored (at any depth in the tree).
+        Set<UUID> sponsored = new HashSet<>();
+        associateRepository.findAllById(bookings.stream().map(BookingResponse::associateId).distinct().toList())
+            .forEach(a -> { if (associateId.equals(a.getSponsorId())) sponsored.add(a.getId()); });
+        bookings = bookings.stream().map(b -> b.withoutBuyerPhone(sponsored.contains(b.associateId()))).toList();
         return new AssociateBookingPageResponse(bookings, page, size, result.getTotalElements());
     }
 
@@ -685,6 +692,8 @@ public class BookingService {
         tokenInstallment.setRecordedAt(bookedAt);
         tokenInstallment.setRecordedBy(tokenConfirmedBy);
         schedule.add(tokenInstallment);
+        // Token covers the whole total: paid in full, no balance installments.
+        if (balance.signum() == 0) { return schedule; }
 
         // Amounts for installments 2..balanceCount+1; the last absorbs rounding so the total is exact.
         BigDecimal running = BigDecimal.ZERO;
@@ -692,8 +701,6 @@ public class BookingService {
             BigDecimal amount;
             if (i == 1 && first != null) { amount = first; }
             else if (i == balanceCount) { amount = balance.subtract(running); }
-        // Token covers the whole total: paid in full, no balance installments.
-        if (balance.signum() == 0) { return schedule; }
             else { amount = base; }
             running = running.add(amount);
             EmiInstallment installment = new EmiInstallment();
@@ -749,7 +756,8 @@ public class BookingService {
                 plot == null ? null : plot.getPlotType(),
                 booking.getExtraPrice(),
                 associate == null ? null : associate.getPhone(),
-                booking.getCancelReason());
+                booking.getCancelReason(),
+                plot == null ? null : plot.getRoadSizeFt());
         }).toList();
     }
 

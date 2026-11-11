@@ -32,8 +32,23 @@ public record BookingResponse(
     PlotType plotType,
     BigDecimal extraPrice,
     String associatePhone,
-    String cancelReason
+    String cancelReason,
+    BigDecimal roadSizeFt
 ) {
+    // Pre-roadSizeFt shape, kept so existing callers need no change.
+    public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
+                           BigDecimal totalAmount, int installmentCount, Instant bookedAt,
+                           BigDecimal paidAmount, BigDecimal dueAmount, List<EmiInstallmentResponse> installments,
+                           String plotNo, String projectName, String associateName,
+                           String buyerPhone, BigDecimal listPrice, BigDecimal discount, BigDecimal areaSqft,
+                           BigDecimal rate, Instant cancelledAt, String associateCode, PlotType plotType,
+                           BigDecimal extraPrice, String associatePhone, String cancelReason) {
+        this(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
+            paidAmount, dueAmount, installments, plotNo, projectName, associateName, buyerPhone, listPrice,
+            discount, areaSqft, rate, cancelledAt, associateCode, plotType, extraPrice, associatePhone,
+            cancelReason, null);
+    }
+
     public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
                            BigDecimal totalAmount, int installmentCount, Instant bookedAt,
                            BigDecimal paidAmount, BigDecimal dueAmount, List<EmiInstallmentResponse> installments,
@@ -91,11 +106,11 @@ public record BookingResponse(
             null, null, null, null, null, null, null, null);
     }
 
-    // Team (upline) view must not carry the buyer's phone; rate and prices are shown.
-    public BookingResponse withoutBuyerPhone() {
+    // Team (upline) view must not carry the buyer's phone; associate phone only for the caller's own sponsorees; rate and prices are shown.
+    public BookingResponse withoutBuyerPhone(boolean keepAssociatePhone) {
         return new BookingResponse(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
             paidAmount, dueAmount, installments, plotNo, projectName, associateName,
-            null, listPrice, discount, areaSqft, rate, cancelledAt, associateCode, plotType, extraPrice, null, cancelReason);
+            null, listPrice, discount, areaSqft, rate, cancelledAt, associateCode, plotType, extraPrice, keepAssociatePhone ? associatePhone : null, cancelReason, roadSizeFt);
     }
 
     // Labels are additive (unit 14b); null when the referent is gone or the caller has no lookup.

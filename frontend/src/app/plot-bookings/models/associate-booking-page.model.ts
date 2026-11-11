@@ -47,6 +47,7 @@ export interface Booking {
   extraPrice?: number | null;
   associatePhone?: string | null;
   cancelReason?: string | null;
+  roadSizeFt?: number | null;
 }
 
 export interface AssociateBookingPage {

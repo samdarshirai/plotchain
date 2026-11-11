@@ -193,6 +193,24 @@ class BookingServiceTest {
     }
 
     @Test
+    void getTeamBookingsShowsAssociatePhoneOnlyWhenCallerSponsoredThem() {
+        PlotBooking booking = richBooking();
+        Associate a = associateWithId(ASSOCIATE_ID);
+        a.setUserId("VP00042");
+        a.setPhone("8888888888");
+        when(associateRepository.findAllById(any())).thenReturn(List.of(a));
+        when(plotBookingRepository.findByDownline(eq(ASSOCIATE_ID), eq(null), any(), any(), any()))
+            .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
+        when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any()))
+            .thenReturn(forBooking(booking, List.of()));
+
+        assertThat(bookingService.getTeamBookings(ASSOCIATE_ID, null, null, null, 0, 20).bookings().get(0).associatePhone()).isNull();
+
+        a.setSponsorId(ASSOCIATE_ID);
+        assertThat(bookingService.getTeamBookings(ASSOCIATE_ID, null, null, null, 0, 20).bookings().get(0).associatePhone()).isEqualTo("8888888888");
+    }
+
+    @Test
     void adminGetBookingStillExposesBuyerPhoneAndRate() {
         PlotBooking booking = richBooking();
         when(plotBookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
@@ -247,6 +265,16 @@ class BookingServiceTest {
     }
 
     @Test
+    void createBookingWithATokenEqualToTheTotalIsASingleInstallmentPaidInFull() {
+        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
+
+        BookingResponse r = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "600000.00"));
+
+        assertThat(r.installments()).hasSize(1);
+        assertThat(r.installments().get(0).amount()).isEqualByComparingTo("600000.00");
+    }
+
+    @Test
     void createBookingRecordsTheTokenAsInstallmentOneEnteredAtBookingTimeWithRefToken() {
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 
@@ -264,16 +292,6 @@ class BookingServiceTest {
 
     @Test
     void createBookingStoresTheTrimmedReceiptNoOnTheTokenInstallment() {
-    @Test
-    void createBookingWithATokenEqualToTheTotalIsASingleInstallmentPaidInFull() {
-        stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
-
-        BookingResponse r = bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "600000.00"));
-
-        assertThat(r.installments()).hasSize(1);
-        assertThat(r.installments().get(0).amount()).isEqualByComparingTo("600000.00");
-    }
-
         stubHappyPathGuardsAndDependencies("600000.00", emiConfig(true, 4));
 
         bookingService.createBooking(tokenRequestWithReceipt("  RCP-77 "));
