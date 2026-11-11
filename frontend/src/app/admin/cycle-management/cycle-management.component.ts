@@ -271,7 +271,6 @@ export class CycleManagementComponent implements OnInit {
         type: 'text' as const,
         sum: true
       })),
-      { key: 'tripExpense', label: this.translate.instant('admin.cycleManagement.columnTripExpense'), type: 'text', sum: true },
       { key: 'commissionExpense', label: this.translate.instant('admin.cycleManagement.columnCommissionExpense'), type: 'text', sum: true },
       { key: 'commissionPct', label: this.translate.instant('admin.cycleManagement.columnCommissionPct'), type: 'text', total: () => this.lifetimeCommissionPct },
       { key: 'actions', label: this.translate.instant('admin.cycleManagement.columnActions'), type: 'action' }
@@ -323,7 +322,7 @@ export class CycleManagementComponent implements OnInit {
       if (!this.status && !this.periodFrom && !this.periodTo) {
         const ok = details.filter((d): d is CycleDetail => !!d);
         const business = ok.reduce((a, d) => a + d.totalBusiness, 0);
-        const commission = ok.reduce((a, d) => a + d.totalGross + d.tripExpense, 0);
+        const commission = ok.reduce((a, d) => a + d.totalGross, 0);
         this.lifetimeCommissionPct = business > 0 ? ((commission / business) * 100).toFixed(2) + '%' : '—';
       }
       this.historyRows = cycles.map((c, i) => this.toRow(c, details[i], i));
@@ -340,9 +339,8 @@ export class CycleManagementComponent implements OnInit {
     }
     row['totalGross'] = detail ? formatInr(detail.totalGross) : '';
     row['business'] = detail ? formatInr(detail.totalBusiness) : '';
-    row['tripExpense'] = detail ? formatInr(detail.tripExpense) : '';
-    // Commission = gross ledger income (before TDS/admin deductions) + trip expense.
-    const commissionExpense = detail ? detail.totalGross + detail.tripExpense : 0;
+    // Commission = gross ledger income (before TDS/admin deductions).
+    const commissionExpense = detail ? detail.totalGross : 0;
     row['commissionExpense'] = detail ? formatInr(commissionExpense) : '';
     row['commissionPct'] =
       detail && detail.totalBusiness > 0 ? ((commissionExpense / detail.totalBusiness) * 100).toFixed(2) + '%' : '—';

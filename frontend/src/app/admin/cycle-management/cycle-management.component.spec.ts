@@ -79,8 +79,8 @@ describe('CycleManagementComponent', () => {
     expect(row['ROYALTY']).toBe('₹15');
     expect(row['totalGross']).toBe('₹800');
     expect(row['business']).toBe('₹1,000');
-    expect(row['commissionExpense']).toBe('₹900');
-    expect(row['commissionPct']).toBe('90.00%');
+    expect(row['commissionExpense']).toBe('₹800');
+    expect(row['commissionPct']).toBe('80.00%');
   });
 
   it('sums gross income in the footer', () => {
