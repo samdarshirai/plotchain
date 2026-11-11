@@ -4581,32 +4581,40 @@ button.tree-explorer__vacant-card {
 
 
 .epin-register {
-  display: flex; flex-direction: column; gap: 1.5rem;
-  max-width: var(--page-max, 1180px); margin: 0 auto; padding: 1.5rem 2rem;
+  display: flex; flex-direction: column; gap: 0.875rem;
+  max-width: var(--page-max, 1180px); margin: 0 auto; padding: 1rem 1.5rem;
   font-family: 'Inter', var(--font-sans);
 
-  &__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1.5rem; }
-  &__intro { display: flex; flex-direction: column; gap: 0.375rem; }
-  &__eyebrow { @extend %admin-screen-eyebrow; }
-  &__title { @extend %admin-screen-title; }
-  &__subtitle { @extend %admin-screen-subtitle; max-width: 46rem; }
-  &__count { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-  &__header-actions { display: flex; gap: 0.75rem; }
-  &__stats { display: flex; flex-direction: column; gap: 1.25rem; }
-  &__stats-title { margin: 0 0 0.5rem; font-size: 0.875rem; font-weight: 600; color: var(--text-muted); }
-  &__stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
+  &__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem 1.5rem; }
+  &__intro { display: flex; flex-direction: column; gap: 0.125rem; min-width: 0; }
+  &__title { @extend %admin-screen-title; margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.75rem; }
+  &__subtitle { @extend %admin-screen-subtitle; margin: 0; max-width: 46rem; font-size: 0.8125rem; }
+  &__count { font-family: var(--font-sans); font-size: 0.875rem; font-weight: 400; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  &__header-actions { display: flex; gap: 0.5rem; .brand-button { padding-block: 0.5rem; } }
+
+  // Two groups side by side; each tile is a figure over its label.
+  &__stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem 1rem; }
+  &__stats-title { margin: 0 0 0.25rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-muted); }
+  &__stats-grid {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem;
+    .stat-tile { padding: 0.5rem 0.75rem; flex-direction: column-reverse; }
+    .stat-tile__body { flex-direction: column-reverse; gap: 0; }
+    .stat-tile__value { font-size: 1.25rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .stat-tile__label { font-size: 0.75rem; text-transform: none; letter-spacing: 0; }
+  }
 
   &__filters {
-    display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1.25rem;
-    padding: 1.25rem 1.5rem; background: var(--surface-raised); border-radius: var(--radius-sm);
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); align-items: end; gap: 0.5rem 0.75rem;
+    padding: 0.625rem 0.75rem; background: var(--surface-raised); border-radius: var(--radius-sm);
+    input, select { width: 100%; box-sizing: border-box; min-height: 2.25rem; padding-block: 0.375rem; }
   }
-  &__search { min-width: 200px; flex: 1 1 200px; }
+  &__search { min-width: 0; align-self: end; }
   &__filter {
-    display: flex; flex-direction: column; gap: 0.375rem; min-width: 200px; flex: 1 1 200px; margin: 0;
-    font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted);
+    display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; margin: 0;
+    font-size: 0.75rem; font-weight: 500; color: var(--text-muted);
   }
   &__toggle {
-    padding: 0.6875rem 1.5rem; border: 1px dashed var(--status-warning); color: var(--status-warning-text); background: transparent;
+    min-height: 2.25rem; padding: 0.375rem 1rem; border: 1px dashed var(--status-warning); color: var(--status-warning-text); background: transparent;
     font-size: 0.875rem; font-weight: 600;
     &--on { background: var(--status-warning); color: var(--surface-card); border-style: solid; }
   }
@@ -4624,13 +4632,13 @@ button.tree-explorer__vacant-card {
   &__form-actions { display: flex; gap: 0.75rem; }
   &__modal &__form-actions > * { flex: 1; padding-inline: 1rem; }
   &__code-list { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; padding: 0; list-style: none; }
-  &__code { font-family: var(--font-mono, monospace); }
+  &__code { font-family: var(--font-mono, monospace); white-space: nowrap; }
 
   &__table-wrap { @extend %admin-screen-card; background: var(--surface-card); }
   &__table {
     width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;
-    th { @extend %admin-screen-table-head; text-align: left; white-space: nowrap; }
-    td { @extend %admin-screen-table-cell; border-bottom: 1px solid var(--border-subtle); }
+    th { @extend %admin-screen-table-head; padding: 0.5rem 0.75rem; text-align: left; text-transform: none; letter-spacing: 0; font-size: 0.75rem; }
+    td { @extend %admin-screen-table-cell; padding: 0.4375rem 0.75rem; border-bottom: 1px solid var(--border-subtle); }
     tbody tr:last-child td { border-bottom: none; }
   }
   &__row { cursor: pointer; &:hover { background: var(--surface-page); } &--selected, &--selected:hover { background: var(--brand-primary-soft); box-shadow: inset 3px 0 0 var(--brand-secondary); } }
@@ -4688,7 +4696,10 @@ button.tree-explorer__vacant-card {
 }
 
 @media (max-width: 960px) {
-  .epin-register { padding-inline: 1rem; &__stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .epin-register { padding-inline: 1rem; &__stats { grid-template-columns: minmax(0, 1fr); } }
+}
+@media (max-width: 480px) {
+  .epin-register__stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 // ---- Projects & Plots (plot-booking unit 11) -------------------------------------------------

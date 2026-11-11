@@ -35,10 +35,10 @@ type Panel =
     <div class="epin-register">
       <div class="epin-register__head">
         <div class="epin-register__intro">
-          <span class="epin-register__eyebrow">{{ 'admin.epinRegister.eyebrow' | translate }}</span>
-          <h1 class="epin-register__title">{{ 'admin.epinRegister.title' | translate }}</h1>
+          <h1 class="epin-register__title">{{ 'admin.epinRegister.title' | translate }}
+            <span class="epin-register__count" *ngIf="page">{{ 'admin.epinRegister.pinsCount' | translate: { count: page.totalElements } }}</span>
+          </h1>
           <p class="epin-register__subtitle">{{ 'admin.epinRegister.subtitle' | translate }}</p>
-          <span class="epin-register__count" *ngIf="page">{{ 'admin.epinRegister.pinsCount' | translate: { count: page.totalElements } }}</span>
         </div>
         <div class="epin-register__header-actions">
           <button type="button" class="brand-button brand-button--secondary" (click)="openPanel({ kind: 'allocate' })">
