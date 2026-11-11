@@ -77,7 +77,7 @@ describe('SalesHistoryComponent', () => {
 
     it('gives every cell a translated data-label for the stacked mobile layout', () => {
       const cells = fixture.nativeElement.querySelectorAll('.booking-table tbody td');
-      expect(cells.length).toBe(15);
+      expect(cells.length).toBe(17);
       cells.forEach((td: HTMLElement) => expect(td.getAttribute('data-label')).toBeTruthy());
     });
 
@@ -98,7 +98,7 @@ describe('SalesHistoryComponent', () => {
   it('shows the empty state when there are no sales', () => {
     flushFirst([]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.booking-table thead th').length).toBe(15);
+    expect(fixture.nativeElement.querySelectorAll('.booking-table thead th').length).toBe(17);
     expect(q('.booking-table__empty')).toBeTruthy();
   });
 });

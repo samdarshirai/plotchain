@@ -45,7 +45,7 @@ describe('MyBookingsComponent', () => {
     boot();
     const rows = el().querySelectorAll('.booking-table tbody tr');
     expect(rows.length).toBe(2);
-    expect(el().querySelector('thead')!.querySelectorAll('th').length).toBe(15);
+    expect(el().querySelector('thead')!.querySelectorAll('th').length).toBe(17);
   });
 
   it('shows rate, area, price, extra price, total, paid and rest in the row', () => {
@@ -66,7 +66,7 @@ describe('MyBookingsComponent', () => {
 
   it('shows an empty table (headers, no rows) when there are no bookings', () => {
     boot([]);
-    expect(el().querySelectorAll('.booking-table thead th').length).toBe(15);
+    expect(el().querySelectorAll('.booking-table thead th').length).toBe(17);
     expect(el().querySelector('.booking-table__empty')).toBeTruthy();
     expect(el().querySelectorAll('.booking-table tbody tr[data-booking-id]').length).toBe(0);
   });

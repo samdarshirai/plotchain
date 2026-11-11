@@ -23,7 +23,7 @@ describe('BookingTableComponent', () => {
     fixture.detectChanges();
     const cell = (fixture.nativeElement as HTMLElement).querySelector('tfoot [data-label="plotBookings.table.area"]')!;
     expect(cell.textContent!.trim()).toBe('2,200.5');
-    expect(cell.parentElement!.children.length).toBe(15);
+    expect(cell.parentElement!.children.length).toBe(17);
   });
 
   it('View popup lists only payments, with receipt no and a dash for an unconfirmed payment date', () => {

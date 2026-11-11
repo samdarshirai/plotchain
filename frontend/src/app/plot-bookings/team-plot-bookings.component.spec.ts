@@ -59,7 +59,7 @@ describe('TeamPlotBookingsComponent', () => {
     const fixture = boot();
     const table = fixture.nativeElement.querySelector('table.booking-table');
     expect(table).toBeTruthy();
-    expect(table.querySelectorAll('thead th[scope="col"]').length).toBe(15);
+    expect(table.querySelectorAll('thead th[scope="col"]').length).toBe(17);
     table.querySelectorAll('tbody td').forEach((td: HTMLElement) => expect(td.getAttribute('data-label')).toBeTruthy());
   });
 
@@ -71,13 +71,13 @@ describe('TeamPlotBookingsComponent', () => {
     expect(fixture.nativeElement.textContent).not.toMatch(/undefined|null/);
   });
 
-  it('exposes the 14 booking columns including rate and extra price, but no buyer phone', () => {
+  it('exposes the 16 booking columns including rate and extra price, but no buyer phone', () => {
     const fixture = boot();
     const text = fixture.nativeElement.querySelector('thead').textContent;
     expect(text).toContain('plotBookings.table.rate');
     expect(text).toContain('plotBookings.table.extraPrice');
     expect(text).not.toContain('phone');
-    expect(fixture.nativeElement.querySelectorAll('thead th').length).toBe(15);
+    expect(fixture.nativeElement.querySelectorAll('thead th').length).toBe(17);
   });
 
   it('ignores a stale response after the leg changed', () => {
