@@ -9,7 +9,7 @@ import { MyTreeService } from './my-tree.service';
 import { TreeNode } from '../admin/models/tree-node.model';
 import { TreeNodeDetails } from '../admin/models/tree-node-details.model';
 import { FilledEntry, LAYOUT, LayoutEntry, LayoutLink, TreeLayout, buildTreeLayout, depthForScale, linkPathD, px, py, treeDepth, INITIAL_DEPTH, ZOOM_STEP_PER_LEVEL } from '../admin/tree-explorer/tree-explorer-layout';
-import { PanZoomState, computeFitTransform, panBy, pinchZoom, zoomAround } from '../admin/tree-explorer/tree-explorer-pan-zoom';
+import { PanZoomState, computeFitTransform, panBy, zoomAround } from '../admin/tree-explorer/tree-explorer-pan-zoom';
 
 const HINT_TIMEOUT_MS = 3500;
 const FIT_ANIMATE_MS = 460;
@@ -279,7 +279,6 @@ export class MyTreeComponent implements OnInit, OnDestroy {
   private wrapCleanupFns: Array<() => void> = [];
   private activePointers = new Map<number, { x: number; y: number }>();
   private panFrom: { px: number; py: number; sx: number; sy: number } | null = null;
-  private pinch: { dist: number; scale: number; mid: { x: number; y: number } } | null = null;
   private hintTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private resizeListener = () => this.fitToScreen(false);
   // wrap.setPointerCapture() (below) retargets the synthetic `click` event to `wrap` itself, so
@@ -548,9 +547,8 @@ export class MyTreeComponent implements OnInit, OnDestroy {
     inner.style.transform = `translate(${next.x}px, ${next.y}px) scale(${next.scale})`;
   }
 
-  // Duplicated verbatim from TreeExplorerComponent (not extracted -- see this plan's
-  // "Decisions & Rationale" #3). If you're fixing a pointer/wheel bug here, check whether
-  // TreeExplorerComponent has the same bug.
+  // Same gestures as TreeExplorerComponent (drag-pan, tap, +/- buttons; no wheel/pinch zoom).
+  // If you're fixing a pointer bug here, check whether TreeExplorerComponent has the same bug.
   private attachCanvasListeners(wrap: HTMLDivElement | null): void {
     if (this.attachedWrap === wrap) return;
     this.detachCanvasListeners();
@@ -569,17 +567,6 @@ export class MyTreeComponent implements OnInit, OnDestroy {
           this.panFrom = { px: e.clientX, py: e.clientY, sx: this.panZoom.x, sy: this.panZoom.y };
           this.tapStart = { x: e.clientX, y: e.clientY, target: e.target as HTMLElement };
           this.ngZone.run(() => (this.isPanning = true));
-        } else if (this.activePointers.size === 2) {
-          this.panFrom = null;
-          this.tapStart = null;
-          const pts = Array.from(this.activePointers.values());
-          const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-          const rect = wrap.getBoundingClientRect();
-          this.pinch = {
-            dist,
-            scale: this.panZoom.scale,
-            mid: { x: (pts[0].x + pts[1].x) / 2 - rect.left, y: (pts[0].y + pts[1].y) / 2 - rect.top }
-          };
         }
       };
 
@@ -594,23 +581,11 @@ export class MyTreeComponent implements OnInit, OnDestroy {
             e.clientY - this.panFrom.py
           );
           this.applyTransform(next, false);
-        } else if (this.activePointers.size === 2 && this.pinch) {
-          const pts = Array.from(this.activePointers.values());
-          const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-          const next = pinchZoom(
-            { x: this.panZoom.x, y: this.panZoom.y, scale: this.pinch.scale },
-            this.pinch.dist,
-            dist,
-            this.pinch.mid.x,
-            this.pinch.mid.y
-          );
-          this.applyTransform(next, false);
         }
       };
 
       const releasePointer = (e: PointerEvent) => {
         this.activePointers.delete(e.pointerId);
-        if (this.activePointers.size < 2) this.pinch = null;
         if (this.activePointers.size === 1) {
           const p = Array.from(this.activePointers.values())[0];
           this.panFrom = { px: p.x, py: p.y, sx: this.panZoom.x, sy: this.panZoom.y };
@@ -626,7 +601,7 @@ export class MyTreeComponent implements OnInit, OnDestroy {
         const tap = this.tapStart;
         // this.activePointers still holds the pointer being released here (deleted inside
         // releasePointer below) -- size === 1 means this is the last finger lifting, i.e. a
-        // genuine tap candidate rather than the first finger of a still-active pinch.
+        // genuine tap candidate rather than a second finger.
         if (tap && this.activePointers.size === 1) {
           const distance = Math.hypot(e.clientX - tap.x, e.clientY - tap.y);
           if (distance <= TAP_MOVE_THRESHOLD_PX) {
@@ -651,33 +626,18 @@ export class MyTreeComponent implements OnInit, OnDestroy {
         if (this.activePointers.size <= 1) releasePointer(e);
       };
 
-      const onWheel = (e: WheelEvent) => {
-        e.preventDefault();
-        if (e.ctrlKey) return; // trackpad pinch arrives as ctrl+wheel
-        const rect = wrap.getBoundingClientRect();
-        const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-        this.applyTransform(zoomAround(this.panZoom, e.clientX - rect.left, e.clientY - rect.top, factor), false);
-      };
-
       wrap.addEventListener('pointerdown', onPointerDown, { passive: false });
       wrap.addEventListener('pointermove', onPointerMove, { passive: true });
       wrap.addEventListener('pointerup', onPointerUp, { passive: true });
       wrap.addEventListener('pointercancel', onPointerCancel, { passive: true });
       wrap.addEventListener('pointerleave', onPointerLeave, { passive: true });
-      wrap.addEventListener('wheel', onWheel, { passive: false });
-      const onGesture = (e: Event) => e.preventDefault(); // iOS Safari pinch
-      wrap.addEventListener('gesturestart', onGesture);
-      wrap.addEventListener('gesturechange', onGesture);
 
       this.wrapCleanupFns = [
         () => wrap.removeEventListener('pointerdown', onPointerDown),
         () => wrap.removeEventListener('pointermove', onPointerMove),
         () => wrap.removeEventListener('pointerup', onPointerUp),
         () => wrap.removeEventListener('pointercancel', onPointerCancel),
-        () => wrap.removeEventListener('pointerleave', onPointerLeave),
-        () => wrap.removeEventListener('wheel', onWheel),
-        () => wrap.removeEventListener('gesturestart', onGesture),
-        () => wrap.removeEventListener('gesturechange', onGesture)
+        () => wrap.removeEventListener('pointerleave', onPointerLeave)
       ];
     });
   }
@@ -688,6 +648,5 @@ export class MyTreeComponent implements OnInit, OnDestroy {
     this.attachedWrap = null;
     this.activePointers.clear();
     this.panFrom = null;
-    this.pinch = null;
   }
 }
