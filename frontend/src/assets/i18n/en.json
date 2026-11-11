@@ -1447,6 +1447,7 @@
       "col": { "actions": "Actions" }
     },
     "viewPlotEmi": {
+      "associate": "Associate Id", "anyAssociate": "Any associate", "cycle": "Cycle", "allCycles": "All cycles",
       "title": "Pending EMI", "subtitle": "Active bookings with pending EMI money, by date and project. Open Detail for the full booking and payment history."
     },
     "viewBookedPlot": {

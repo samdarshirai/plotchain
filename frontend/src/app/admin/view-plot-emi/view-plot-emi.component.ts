@@ -12,6 +12,13 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { formatArea } from '../../shared/utils/plot-grid.util';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
+import { AdminService } from '../admin.service';
+import { AssociateSummary } from '../models/associate-summary.model';
+import { CycleSummary } from '../models/cycle.model';
+import { CycleManagementService } from '../cycle-management/cycle-management.service';
+import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
+
+const CYCLE_LOOKUP_SIZE = 100;
 
 const round2 = (n: number): number => Math.round(n); // whole rupees
 const isoDate = (d: Date): string => {
@@ -24,7 +31,7 @@ const isoDate = (d: Date): string => {
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['../add-plot-emi/add-plot-emi.component.scss'],
-  imports: [CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
+  imports: [CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, AssociateLookupComponent],
   template: `
     <div class="add-plot-emi">
       <div class="add-plot-emi__intro">
@@ -43,6 +50,19 @@ const isoDate = (d: Date): string => {
         <label class="add-plot-emi__field">{{ 'admin.addPlotEmi.project' | translate }}
           <select name="project" (change)="onProject($any($event.target).value)">
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === projectId">{{ p.name }}</option>
+          </select>
+        </label>
+        <div class="add-plot-emi__field">{{ 'admin.viewPlotEmi.associate' | translate }}
+          <app-associate-lookup [associates]="directory" [value]="associateId"
+            [placeholder]="'admin.viewPlotEmi.anyAssociate' | translate"
+            (selected)="onAssociate($event)"></app-associate-lookup>
+        </div>
+        <label class="add-plot-emi__field">{{ 'admin.viewPlotEmi.cycle' | translate }}
+          <select name="cycle" (change)="onCycle($any($event.target).value)">
+            <option value="" [selected]="!cycleId">{{ 'admin.viewPlotEmi.allCycles' | translate }}</option>
+            <option *ngFor="let c of cycles" [value]="c.id" [selected]="c.id === cycleId">
+              {{ c.periodStart | date: 'mediumDate' }} – {{ c.periodEnd ? (c.periodEnd | date: 'mediumDate') : ('admin.cycleManagement.ongoing' | translate) }}
+            </option>
           </select>
         </label>
       </div>
@@ -197,6 +217,8 @@ const isoDate = (d: Date): string => {
 export class ViewPlotEmiComponent implements OnInit {
   private service = inject(BookingsEmiService);
   private projectsService = inject(ProjectsService);
+  private adminService = inject(AdminService);
+  private cycleService = inject(CycleManagementService);
 
   money = formatMoney;
   areaFmt = formatArea;
@@ -204,6 +226,10 @@ export class ViewPlotEmiComponent implements OnInit {
 
   projects: Project[] = [];
   projectId = '';
+  directory: AssociateSummary[] = [];
+  associateId = '';
+  cycles: CycleSummary[] = [];
+  cycleId = '';
   from = isoDate(new Date(Date.now() - 30 * 864e5));
   to = isoDate(new Date());
   page: BookingPage | null = null;
@@ -215,6 +241,9 @@ export class ViewPlotEmiComponent implements OnInit {
   private seq = 0;
 
   ngOnInit(): void {
+    // Lookups are optional filters: if they fail the list still works, just without them.
+    this.adminService.listAssociates().subscribe({ next: d => (this.directory = d), error: () => undefined });
+    this.cycleService.list('', 0, CYCLE_LOOKUP_SIZE).subscribe({ next: r => (this.cycles = r.cycles), error: () => undefined });
     this.projectsService.listProjects().subscribe({
       next: p => { this.projects = p; this.projectId = p[0]?.id ?? ''; this.load(); },
       error: () => (this.loadError = true)
@@ -223,15 +252,30 @@ export class ViewPlotEmiComponent implements OnInit {
 
   onProject(id: string): void { this.projectId = id; this.load(); }
 
+  onAssociate(a: AssociateSummary | null): void { this.associateId = a?.id ?? ''; this.load(); }
+
+  // Bookings carry no cycle, so a cycle is a shortcut for its date range (open cycle runs to today).
+  onCycle(id: string): void {
+    this.cycleId = id;
+    const c = this.cycles.find(x => x.id === id);
+    if (c) {
+      this.from = c.periodStart.slice(0, 10);
+      this.to = c.periodEnd ? c.periodEnd.slice(0, 10) : isoDate(new Date());
+      this.rangeError = false;
+      this.load();
+    }
+  }
+
   onDate(which: 'from' | 'to', v: string): void {
     this[which] = v;
+    this.cycleId = ''; // hand-edited dates no longer match a cycle
     this.rangeError = !!this.from && !!this.to && this.from > this.to;
     if (!this.rangeError) { this.load(); } // an inverted range keeps the last valid list
   }
 
   private filters(): RegisterFilters {
     // Pending money = ACTIVE bookings with at least one PENDING installment.
-    return { status: 'ACTIVE', associateId: '', plotId: '', projectId: this.projectId, overdue: false,
+    return { status: 'ACTIVE', associateId: this.associateId, plotId: '', projectId: this.projectId, overdue: false,
       bookedFrom: this.from, bookedTo: this.to, hasPending: true };
   }
 
