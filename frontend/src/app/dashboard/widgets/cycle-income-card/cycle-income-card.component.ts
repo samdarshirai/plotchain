@@ -54,14 +54,14 @@ import { CycleIncome, LegVolumeSummary, NetworkSummary } from '../../models/dash
           </div>
           <div class="seal-card__breakdown-row">
             <div class="self-business seal-card__breakdown-line">
-              <span>{{ 'dashboard.totalSelfBusinessLabel' | translate }}</span>
+              <span>{{ 'dashboard.selfTopUpBusinessLabel' | translate }}</span>
               <span>{{ legVolume.cycleSelfBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
             <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.cycleSelfBusiness)"></span></div>
           </div>
           <div class="seal-card__breakdown-row">
             <div class="self-topup-business seal-card__breakdown-line">
-              <span>{{ 'dashboard.selfTopUpBusinessLabel' | translate }}</span>
+              <span>{{ 'dashboard.totalSelfBusinessLabel' | translate }}</span>
               <span>{{ legVolume.cycleSelfTopUpBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
             <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.cycleSelfTopUpBusiness)"></span></div>
