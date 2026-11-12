@@ -27,7 +27,8 @@ type Aside =
   | { kind: 'book' }
   | { kind: 'editPlot' }
   | { kind: 'addPlot' }
-  | { kind: 'csv' };
+  | { kind: 'csv' }
+  | { kind: 'detail' };
 
 interface Banner {
   tone: 'success' | 'warning' | 'danger';
@@ -287,6 +288,21 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
       <div class="projects-plots__modal-overlay" *ngIf="modalOpen" (click)="closeAside()">
         <div class="projects-plots__modal" [class.projects-plots__modal--wide]="aside.kind === 'book'" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
           <ng-container *ngTemplateOutlet="bannerTpl"></ng-container>
+          <div class="plot-detail" *ngIf="aside.kind === 'detail' && selectedPlot as p">
+            <h2 class="plot-detail__title">{{ 'admin.projectsPlots.detailTitle' | translate }}</h2>
+            <dl class="book-form__facts">
+              <div><dt>{{ 'admin.projectsPlots.table.plot' | translate }}</dt><dd>{{ p.plotNo }}</dd></div>
+              <div><dt>{{ 'admin.projectsPlots.table.area' | translate }}</dt><dd>{{ areaText(p.area) }} {{ 'plotTile.sqft' | translate }}</dd></div>
+              <div><dt>{{ 'admin.projectsPlots.rateLabel' | translate }}</dt><dd>{{ p.area ? priceText(p.price / p.area) : '—' }}</dd></div>
+              <div><dt>{{ 'admin.projectsPlots.table.price' | translate }}</dt><dd>{{ priceText(p.price) }}</dd></div>
+              <div><dt>{{ 'admin.projectsPlots.table.type' | translate }}</dt><dd>{{ 'plotTile.type.' + p.type | translate }}</dd></div>
+              <div><dt>{{ 'admin.projectsPlots.table.roadSize' | translate }}</dt><dd>{{ p.roadSizeFt != null ? p.roadSizeFt + ' ft' : '—' }}</dd></div>
+              <div><dt>{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</dt><dd>{{ priceText(p.extraPrice ?? 0) }}</dd></div>
+              <div><dt>{{ 'admin.projectsPlots.table.totalPrice' | translate }}</dt><dd>{{ priceText(p.price + (p.extraPrice ?? 0)) }}</dd></div>
+              <div><dt>{{ 'admin.projectsPlots.table.status' | translate }}</dt><dd>{{ 'plotTile.status.' + p.status | translate }}</dd></div>
+            </dl>
+            <button type="button" class="brand-button brand-button--secondary plot-detail__close" (click)="closeAside()">{{ 'admin.projectsPlots.detailClose' | translate }}</button>
+          </div>
           <app-book-plot-form *ngIf="aside.kind === 'book' && selectedPlot" [plot]="selectedPlot" [associates]="associates"
             [projectName]="selectedProject?.name ?? ''" [location]="selectedProject?.location ?? ''" [rate]="plotDetail?.rate ?? null"
             [emiConfig]="emiConfig" [busy]="bookingBusy" (submitted)="submitBooking($event)" (cancelled)="closeAside()"></app-book-plot-form>
@@ -351,7 +367,7 @@ export class ProjectsPlotsComponent implements OnInit {
     return this.grid?.find(p => p.plotId === this.selectedPlotId) ?? null;
   }
 
-  get modalOpen(): boolean { return this.aside.kind === 'addPlot' || this.aside.kind === 'editPlot' || this.aside.kind === 'book'; }
+  get modalOpen(): boolean { return this.aside.kind === 'addPlot' || this.aside.kind === 'editPlot' || this.aside.kind === 'book' || this.aside.kind === 'detail'; }
   get asideOpen(): boolean { return this.aside.kind !== 'none' && !this.modalOpen; }
   get canManage(): boolean { return !this.readOnly && !this.bookMode; }
 
@@ -555,6 +571,7 @@ export class ProjectsPlotsComponent implements OnInit {
   onTileSelect(p: PlotGridItem): void {
     this.selectPlot(p);
     if (this.bookMode && !this.readOnly && p.status === 'AVAILABLE') { this.openAside({ kind: 'book' }); }
+    else if (this.readOnly && !this.bookMode) { this.openAside({ kind: 'detail' }); }
   }
 
   editRow(p: PlotGridItem): void {

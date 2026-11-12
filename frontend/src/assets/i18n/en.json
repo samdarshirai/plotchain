@@ -1173,6 +1173,7 @@
       "savePlotAction": "Save plot",
       "editLockedTitle": "This plot can't be edited.",
       "editLockedBody": "Booked and sold plots are locked so the booking's price and plot details stay accurate.",
+      "detailTitle": "Plot Details", "detailClose": "Close",
       "backToPlot": "Back to plot",
       "plotNoLabel": "Plot number",
       "plotTypeLabel": "Type",

@@ -6332,3 +6332,7 @@ button.tree-explorer__vacant-card {
   --filter-label-tracking: 0.04em;
   @extend %filter-bar-date-range;
 }
+
+.plot-detail__title { margin: 0 0 0.75rem; font: 600 1rem var(--font-sans); }
+.plot-detail__close { margin-top: 1rem; }
+@media (max-width: 639px) { .plot-detail__close { width: 100%; min-height: 44px; } }
