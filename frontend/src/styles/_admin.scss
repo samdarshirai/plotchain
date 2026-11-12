@@ -5744,7 +5744,6 @@ button.tree-explorer__vacant-card {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 28px;
-  padding-bottom: 24px;
 }
 
 .expense-types__modal-cancel {
@@ -5756,6 +5755,11 @@ button.tree-explorer__vacant-card {
   padding: 10px 18px;
   border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: var(--surface-raised);
+  }
 }
 
 .expense-types__modal-submit {
@@ -5767,6 +5771,19 @@ button.tree-explorer__vacant-card {
   padding: 10px 18px;
   border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.92;
+  }
+}
+
+.expense-types__modal-cancel:focus-visible,
+.expense-types__modal-submit:focus-visible,
+.expense-types__modal-field input:focus-visible,
+.expense-types__modal-field select:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
 }
 
 // Invoice > Add / View Expense. Classes are prefixed `invoice-expenses` -- component styles are global.

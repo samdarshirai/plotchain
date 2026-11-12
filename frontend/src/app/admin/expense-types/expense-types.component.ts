@@ -42,7 +42,7 @@ import { titleCase } from '../../shared/utils/title-case';
       </div>
       <ng-template #actionsTpl let-i="index">
         <div class="expense-types__actions">
-          <button type="button" class="expense-types__edit brand-button brand-button--secondary" (click)="openModal(items[i])">
+          <button type="button" class="expense-types__edit brand-button" (click)="openModal(items[i])">
             {{ 'admin.expenseTypes.editAction' | translate }}
           </button>
         </div>
