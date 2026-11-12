@@ -45,12 +45,13 @@ public class AssociateDownlineController {
         @RequestParam(defaultValue = "false") boolean newestFirst,
         @RequestParam(required = false) String leg,
         @RequestParam(defaultValue = "false") boolean sponsoredOnly,
+        @RequestParam(defaultValue = "false") boolean includeSelf,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size
     ) {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
         return adminAssociateService.listDownline(associateId, search, kycStatus, excludeKycStatus, status,
-            joinedFrom, joinedTo, newestFirst, leg, sponsoredOnly, page, size);
+            joinedFrom, joinedTo, newestFirst, leg, sponsoredOnly, includeSelf, page, size);
     }
 }

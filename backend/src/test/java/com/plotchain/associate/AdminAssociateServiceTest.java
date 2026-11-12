@@ -124,10 +124,25 @@ class AdminAssociateServiceTest {
         when(associateRepository.searchWithinIds(eq(List.of(sponsee)), any(), any(), any(), any(), any(), any(), eq(false), any()))
             .thenReturn(new PageImpl<>(List.of()));
 
-        service.listDownline(caller, null, null, null, null, null, null, false, null, true, 0, 20);
+        service.listDownline(caller, null, null, null, null, null, null, false, null, true, false, 0, 20);
 
         verify(associateRepository).searchWithinIds(eq(List.of(sponsee)), any(), any(), any(), any(), any(), any(), eq(false), any());
         verify(associateRepository, never()).findSelfAndDownline(any());
+    }
+
+    @Test
+    void listDownlineIncludeSelfPutsCallerFirstOnUnfilteredPage() {
+        UUID caller = UUID.randomUUID();
+        UUID child = UUID.randomUUID();
+        when(associateRepository.findSelfAndDownline(caller)).thenReturn(List.of(caller, child));
+        when(associateRepository.searchWithinIds(eq(List.of(child)), any(), any(), any(), any(), any(), any(), eq(false), any()))
+            .thenReturn(new PageImpl<>(List.of(newAssociate(child, "VP00002"))));
+        when(associateRepository.findByIdAndRole(caller, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(newAssociate(caller, "VP00001")));
+
+        var res = service.listDownline(caller, null, null, null, null, null, null, false, null, false, true, 0, 20);
+
+        assertThat(res.associates()).extracting("userId").containsExactly("VP00001", "VP00002");
+        assertThat(res.totalElements()).isEqualTo(2);
     }
 
     @Test

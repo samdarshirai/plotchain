@@ -106,11 +106,30 @@ public class AdminAssociateService {
             }
             rootId = root.getId();
         }
-        return listDownline(rootId, null, null, null, null, null, null, false, leg, false, page, size);
+        return listDownline(rootId, null, null, null, null, null, null, false, leg, false, false, page, size);
     }
 
     // My Team: same filters as list(), scoped to callerId's downline (self excluded, any depth).
     public AdminAssociatePageResponse listDownline(UUID callerId, String search, KycStatus kycStatus,
+                                                    KycStatus excludeKycStatus, AssociateStatus status,
+                                                    LocalDate joinedFrom, LocalDate joinedTo,
+                                                    boolean newestFirst, String leg, boolean sponsoredOnly,
+                                                    boolean includeSelf, int page, int size) {
+        AdminAssociatePageResponse downline = listDownlineExcludingSelf(callerId, search, kycStatus, excludeKycStatus,
+            status, joinedFrom, joinedTo, newestFirst, leg, sponsoredOnly, page, size);
+        // All Associates tab: the caller is row #1. ponytail: only on an unfiltered first page, so
+        // a search/status/date filter hides self; add self to the filtered query if that matters.
+        boolean unfiltered = (search == null || search.isBlank()) && kycStatus == null && excludeKycStatus == null
+            && status == null && joinedFrom == null && joinedTo == null;
+        if (!includeSelf || !unfiltered || leg != null || sponsoredOnly || page != 0) {
+            return downline;
+        }
+        List<AdminAssociateSummaryResponse> rows = new java.util.ArrayList<>(toSummaries(List.of(findOrThrow(callerId))));
+        rows.addAll(downline.associates());
+        return new AdminAssociatePageResponse(rows, page, size, downline.totalElements() + 1);
+    }
+
+    private AdminAssociatePageResponse listDownlineExcludingSelf(UUID callerId, String search, KycStatus kycStatus,
                                                     KycStatus excludeKycStatus, AssociateStatus status,
                                                     LocalDate joinedFrom, LocalDate joinedTo,
                                                     boolean newestFirst, String leg, boolean sponsoredOnly,

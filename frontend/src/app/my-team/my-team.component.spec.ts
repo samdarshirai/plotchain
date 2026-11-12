@@ -31,6 +31,14 @@ describe('MyTeamComponent', () => {
     expect(c.componentInstance.rows[1]['name']).toBe('Kid');
   });
 
+  it('all view asks for the caller as first row; other views do not', () => {
+    const c = TestBed.createComponent(MyTeamComponent);
+    c.detectChanges();
+    expect(list).toHaveBeenCalledWith({ includeSelf: 'true' }, 0, 100);
+    c.componentInstance.onViewChange('byDate');
+    expect(list).toHaveBeenCalledWith({ newestFirst: 'true' }, 0, 100);
+  });
+
   it('green view filters kycStatus VERIFIED', () => {
     const c = TestBed.createComponent(MyTeamComponent);
     c.detectChanges();

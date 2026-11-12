@@ -121,6 +121,7 @@ export class MyTeamComponent implements OnInit {
     if (this.view === 'red') filters.excludeKycStatus = 'VERIFIED';
     if (this.view === 'left') filters.leg = 'L';
     if (this.view === 'right') filters.leg = 'R';
+    if (this.view === 'all') filters.includeSelf = 'true';
     if (this.view === 'sponsored') filters.sponsoredOnly = 'true';
     if (this.view === 'byDate') filters.newestFirst = 'true';
     if (this.status) filters.status = this.status;

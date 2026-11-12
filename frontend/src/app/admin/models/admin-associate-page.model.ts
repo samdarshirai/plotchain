@@ -17,4 +17,5 @@ export interface AdminAssociateFilters {
   newestFirst?: string;
   leg?: string;
   sponsoredOnly?: string;
+  includeSelf?: string;
 }
