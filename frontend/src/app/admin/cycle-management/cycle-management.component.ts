@@ -337,10 +337,12 @@ export class CycleManagementComponent implements OnInit {
     for (const t of INCOME_TYPES) {
       row[t] = detail ? formatInr(detail.incomeTypeTotals.find(x => x.incomeType === t)?.totalGross ?? 0) : '';
     }
-    row['totalGross'] = detail ? formatInr(detail.totalGross) : '';
+    // Total Income excludes Reward; Commission = Total Income + Reward (gross, before TDS/admin deductions).
+    const reward = detail?.incomeTypeTotals.find(x => x.incomeType === 'REWARD')?.totalGross ?? 0;
+    const totalIncome = detail ? detail.totalGross - reward : 0;
+    row['totalGross'] = detail ? formatInr(totalIncome) : '';
     row['business'] = detail ? formatInr(detail.totalBusiness) : '';
-    // Commission = gross ledger income (before TDS/admin deductions).
-    const commissionExpense = detail ? detail.totalGross : 0;
+    const commissionExpense = totalIncome + reward;
     row['commissionExpense'] = detail ? formatInr(commissionExpense) : '';
     row['commissionPct'] =
       detail && detail.totalBusiness > 0 ? ((commissionExpense / detail.totalBusiness) * 100).toFixed(2) + '%' : '—';

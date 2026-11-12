@@ -77,7 +77,7 @@ describe('CycleManagementComponent', () => {
     expect(row['SPONSOR_MATCHING']).toBe('₹25');
     expect(row['REWARD']).toBe('₹10');
     expect(row['ROYALTY']).toBe('₹15');
-    expect(row['totalGross']).toBe('₹800');
+    expect(row['totalGross']).toBe('₹790');
     expect(row['business']).toBe('₹1,000');
     expect(row['commissionExpense']).toBe('₹800');
     expect(row['commissionPct']).toBe('80.00%');
@@ -87,7 +87,7 @@ describe('CycleManagementComponent', () => {
     flushDetails();
     fixture.detectChanges();
     const totals = Array.from(fixture.nativeElement.querySelectorAll('tfoot td') as NodeListOf<HTMLElement>).map(el => el.textContent?.trim());
-    expect(totals.slice(4, 10)).toEqual(['₹1,100', '₹400', '₹50', '₹30', '₹1,600', '₹20']);
+    expect(totals.slice(4, 10)).toEqual(['₹1,100', '₹400', '₹50', '₹30', '₹1,580', '₹20']);
     expect(totals[1]).toBe('common.total');
     expect(totals[totals.length - 2]).toMatch(/^\d+\.\d{2}%$/);
   });
@@ -107,7 +107,7 @@ describe('CycleManagementComponent', () => {
     httpMock.expectOne('/api/admin/cycles/c1').flush({}, { status: 500, statusText: 'Error' });
     flushDetails();
     expect(fixture.componentInstance.historyRows[0]['totalGross']).toBe('');
-    expect(fixture.componentInstance.historyRows[1]['totalGross']).toBe('₹800');
+    expect(fixture.componentInstance.historyRows[1]['totalGross']).toBe('₹790');
   });
 
   it('omits comparisons without previous income and supports zero current income', () => {
