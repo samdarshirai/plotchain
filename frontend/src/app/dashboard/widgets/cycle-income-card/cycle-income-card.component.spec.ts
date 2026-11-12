@@ -22,9 +22,9 @@ describe('CycleIncomeCardComponent (business summary)', () => {
   };
   const legs: LegVolumeSummary = {
     leftLegVolume: 0, rightLegVolume: 0,
-    totalLeftBusiness: 9, totalRightBusiness: 9, totalSelfBusiness: 9,
+    totalLeftBusiness: 9, totalRightBusiness: 9, totalSelfBusiness: 9, totalTopUpBusiness: 0,
     newBookedAreaSqft: 0, newLeftBusiness: 3000000, newRightBusiness: 1500000, newMatchingBusiness: 0,
-    cycleSelfBusiness: 400000, cycleSelfTopUpBusiness: 100000
+    cycleSelfBusiness: 400000, cycleTopUpBusiness: 100000
   };
   const network: NetworkSummary = { totalDownline: 42, directCount: 8, leftAssociateCount: 30, rightAssociateCount: 12 };
 
@@ -68,7 +68,7 @@ describe('CycleIncomeCardComponent (business summary)', () => {
     expect(el('.left-business').textContent).toContain('3,000,000');
     expect(el('.right-business').textContent).toContain('1,500,000');
     expect(el('.self-business').textContent).toContain('400,000');
-    expect(el('.self-topup-business').textContent).toContain('100,000');
+    expect(el('.topup-business').textContent).toContain('100,000');
   });
 
   it('sizes bars against the largest of the three', () => {
@@ -78,7 +78,7 @@ describe('CycleIncomeCardComponent (business summary)', () => {
   });
 
   it('returns a zero bar without dividing by zero when there is no business', () => {
-    createComponent({ legs: { ...legs, newLeftBusiness: 0, newRightBusiness: 0, cycleSelfBusiness: 0, cycleSelfTopUpBusiness: 0 } });
+    createComponent({ legs: { ...legs, newLeftBusiness: 0, newRightBusiness: 0, cycleSelfBusiness: 0, cycleTopUpBusiness: 0 } });
     expect(fixture.componentInstance.barPct(0)).toBe(0);
     expect(fixture.componentInstance.totalBusiness).toBe(0);
   });

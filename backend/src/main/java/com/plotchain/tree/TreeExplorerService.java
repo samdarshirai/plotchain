@@ -79,11 +79,12 @@ public class TreeExplorerService {
         LegVolumeRepository.LegBusinessTotals business = legVolumeRepository.totalBusiness(associateId)
             .plus(saleRepository.sumOpenCycleLegBusiness(associateId, "L"),
                 saleRepository.sumOpenCycleLegBusiness(associateId, "R"));
-        BigDecimal totalSelfBusiness = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
+        BigDecimal totalSelfBusiness = saleRepository.sumSelfBusiness(associateId, null);
+        BigDecimal totalTopUpBusiness = saleRepository.sumTopUpBusiness(associateId, null);
 
         return new TreeNodeDetailsResponse(a.getName(), a.getUserId(), a.getJoinedAt(), leftMemberId, rightMemberId,
             totalLeftMembers, totalRightMembers, activeLeftMembers, activeRightMembers,
-            business.left(), business.right(), totalSelfBusiness);
+            business.left(), business.right(), totalSelfBusiness, totalTopUpBusiness);
     }
 
     /**

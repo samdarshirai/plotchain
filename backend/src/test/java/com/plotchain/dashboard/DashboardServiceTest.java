@@ -92,9 +92,9 @@ class DashboardServiceTest {
         // covered by LegVolumeRepositoryTest, not here.
         lenient().when(legVolumeRepository.totalBusiness(associateId))
             .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
-        lenient().when(saleRepository.sumAmountByAssociateIdAndStatus(any(), any())).thenReturn(BigDecimal.ZERO);
+        lenient().when(saleRepository.sumSelfBusiness(any(), any())).thenReturn(BigDecimal.ZERO);
         lenient().when(saleRepository.sumOpenCycleLegBusiness(any(), any())).thenReturn(BigDecimal.ZERO);
-        lenient().when(saleRepository.sumCycleSelfBusiness(any(), any(), anyBoolean())).thenReturn(BigDecimal.ZERO);
+        lenient().when(saleRepository.sumTopUpBusiness(any(), any())).thenReturn(BigDecimal.ZERO);
         lenient().when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         lenient().when(ledgerEntryRepository.sumNetAmountByAssociateAndType(any(), any())).thenReturn(BigDecimal.ZERO);
     }
@@ -179,9 +179,10 @@ class DashboardServiceTest {
         when(saleRepository.countByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED)).thenReturn(6L);
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("3850000"));
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(associateId, closedCycleId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("3260000"));
-        when(saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("500000"));
-        when(saleRepository.sumCycleSelfBusiness(associateId, cycleId, false)).thenReturn(new BigDecimal("300000"));
-        when(saleRepository.sumCycleSelfBusiness(associateId, cycleId, true)).thenReturn(new BigDecimal("200000"));
+        when(saleRepository.sumSelfBusiness(associateId, null)).thenReturn(new BigDecimal("500000"));
+        when(saleRepository.sumSelfBusiness(associateId, cycleId)).thenReturn(new BigDecimal("300000"));
+        when(saleRepository.sumTopUpBusiness(associateId, null)).thenReturn(new BigDecimal("700000"));
+        when(saleRepository.sumTopUpBusiness(associateId, cycleId)).thenReturn(new BigDecimal("200000"));
         when(saleRepository.sumOpenCycleLegBusiness(associateId, "L")).thenReturn(new BigDecimal("40000"));
         when(saleRepository.sumOpenCycleLegBusiness(associateId, "R")).thenReturn(new BigDecimal("10000"));
         when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("1200"));
@@ -234,7 +235,8 @@ class DashboardServiceTest {
         assertThat(response.legVolumeSummary().totalRightBusiness()).isEqualByComparingTo("210000");
         assertThat(response.legVolumeSummary().totalSelfBusiness()).isEqualByComparingTo("500000");
         assertThat(response.legVolumeSummary().cycleSelfBusiness()).isEqualByComparingTo("300000");
-        assertThat(response.legVolumeSummary().cycleSelfTopUpBusiness()).isEqualByComparingTo("200000");
+        assertThat(response.legVolumeSummary().cycleTopUpBusiness()).isEqualByComparingTo("200000");
+        assertThat(response.legVolumeSummary().totalTopUpBusiness()).isEqualByComparingTo("700000");
         assertThat(response.legVolumeSummary().newBookedAreaSqft()).isEqualByComparingTo("1200");
     }
 

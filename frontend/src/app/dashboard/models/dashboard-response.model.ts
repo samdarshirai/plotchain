@@ -60,13 +60,14 @@ export interface LegVolumeSummary {
   totalLeftBusiness: number;
   totalRightBusiness: number;
   totalSelfBusiness: number;
+  totalTopUpBusiness: number;
   newBookedAreaSqft: number;
   newLeftBusiness: number;
   newRightBusiness: number;
   newMatchingBusiness: number;
   // This-cycle own business, Add Plot EMI top-ups split out of self.
   cycleSelfBusiness: number;
-  cycleSelfTopUpBusiness: number;
+  cycleTopUpBusiness: number;
 }
 
 export interface DashboardResponse {

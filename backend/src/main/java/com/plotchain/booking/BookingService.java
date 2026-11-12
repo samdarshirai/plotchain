@@ -247,7 +247,6 @@ public class BookingService {
         payment.setDueDate(paidAt.atZone(java.time.ZoneOffset.UTC).toLocalDate());
         payment.setAmount(amount);
         payment.setStatus(InstallmentStatus.ENTERED);
-        payment.setTopUp(true);
         payment.setPaymentMode(request.paymentMode());
         payment.setBankName(bankName.isEmpty() ? null : bankName);
         payment.setPaymentRef(paymentRef);

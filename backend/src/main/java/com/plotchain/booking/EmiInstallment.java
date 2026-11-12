@@ -63,13 +63,6 @@ public class EmiInstallment {
     @Column(name = "receipt_no")
     private String receiptNo;
 
-    // True for an Add Plot EMI top-up payment row (BookingService#topUp); feeds the dashboard's Self Top-up Business.
-    @Column(name = "top_up", nullable = false)
-    private boolean topUp;
-
-    public boolean isTopUp() { return topUp; }
-    public void setTopUp(boolean topUp) { this.topUp = topUp; }
-
     public String getReceiptNo() { return receiptNo; }
     public void setReceiptNo(String receiptNo) { this.receiptNo = receiptNo; }
 

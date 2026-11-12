@@ -47,12 +47,6 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
         @Param("cycleId") UUID cycleId,
         @Param("status") SaleStatus status);
 
-    // Dashboard's "Total Self Business" Business Volume tile: lifetime (all-cycle) sum of the
-    // associate's own RECORDED sales -- same COALESCE shape as sumAmountByAssociateIdAndCycleIdAndStatus
-    // above, just without the cycle filter.
-    @Query("SELECT COALESCE(SUM(s.amount), 0) FROM Sale s WHERE s.associateId = :associateId AND s.status = :status")
-    BigDecimal sumAmountByAssociateIdAndStatus(@Param("associateId") UUID associateId, @Param("status") SaleStatus status);
-
     // Dashboard's "New Booked Area" Network & Income tile: SUM of plot.area_sqft for the
     // associate's RECORDED sales in one cycle. Sale has no JPA relationship to Plot (plot_id is a
     // bare UUID column), so this is an ad-hoc JPQL join on the FK equality -- Hibernate 6 supports
@@ -102,16 +96,25 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
         @Param("recordedToExclusive") Instant recordedToExclusive,
         Pageable pageable);
 
-    // Dashboard Business Summary: the associate's own RECORDED sales in one cycle, split by whether the
-    // paying installment is an Add Plot EMI top-up. A sale with no installment counts as non-top-up.
+    // Top-up business of plot associate B = RECORDED sales of bookings B bought (buyer_associate_id).
+    // Self business of sponsor S = the same for buyers whose direct sponsor_id is S (one hop).
+    // :cycleId NULL = lifetime, otherwise that cycle only.
     @Query(value = """
         SELECT COALESCE(SUM(s.amount), 0) FROM sale s
-        LEFT JOIN emi_installment e ON e.id = s.emi_installment_id
-        WHERE s.associate_id = :associateId AND s.cycle_id = :cycleId AND s.status = 'RECORDED'
-          AND COALESCE(e.top_up, FALSE) = :topUp
+        JOIN plot_booking b ON b.id = s.booking_id
+        WHERE b.buyer_associate_id = :associateId AND s.status = 'RECORDED'
+          AND (CAST(:cycleId AS uuid) IS NULL OR s.cycle_id = :cycleId)
         """, nativeQuery = true)
-    BigDecimal sumCycleSelfBusiness(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId,
-                                    @Param("topUp") boolean topUp);
+    BigDecimal sumTopUpBusiness(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId);
+
+    @Query(value = """
+        SELECT COALESCE(SUM(s.amount), 0) FROM sale s
+        JOIN plot_booking b ON b.id = s.booking_id
+        JOIN associate buyer ON buyer.id = b.buyer_associate_id
+        WHERE buyer.sponsor_id = :associateId AND s.status = 'RECORDED'
+          AND (CAST(:cycleId AS uuid) IS NULL OR s.cycle_id = :cycleId)
+        """, nativeQuery = true)
+    BigDecimal sumSelfBusiness(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId);
 
     // Live Left/Right Business for the still-OPEN cycle: leg_volume rows only exist once a cycle
     // closes, so without this a fresh sale never shows in its uplines' totals until the next close.

@@ -164,12 +164,13 @@ public class DashboardService {
         LegVolumeRepository.LegBusinessTotals legBusinessTotals = legVolumeRepository.totalBusiness(associateId);
         BigDecimal totalLeftBusiness = legBusinessTotals.left().add(newLeftBusiness);
         BigDecimal totalRightBusiness = legBusinessTotals.right().add(newRightBusiness);
-        BigDecimal totalSelfBusiness = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
-        // This-cycle own business for the Business Summary card, top-up payments split out of self.
+        // Self = sales by buyers this associate sponsored directly; Top-up = sales on bookings this associate bought.
+        BigDecimal totalSelfBusiness = saleRepository.sumSelfBusiness(associateId, null);
+        BigDecimal totalTopUpBusiness = saleRepository.sumTopUpBusiness(associateId, null);
         BigDecimal cycleSelfBusiness = openCycle
-            .map(c -> saleRepository.sumCycleSelfBusiness(associateId, c.getId(), false)).orElse(BigDecimal.ZERO);
-        BigDecimal cycleSelfTopUpBusiness = openCycle
-            .map(c -> saleRepository.sumCycleSelfBusiness(associateId, c.getId(), true)).orElse(BigDecimal.ZERO);
+            .map(c -> saleRepository.sumSelfBusiness(associateId, c.getId())).orElse(BigDecimal.ZERO);
+        BigDecimal cycleTopUpBusiness = openCycle
+            .map(c -> saleRepository.sumTopUpBusiness(associateId, c.getId())).orElse(BigDecimal.ZERO);
         BigDecimal newBookedAreaSqft = openCycle
             .map(c -> saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, c.getId(), SaleStatus.RECORDED))
             .orElse(BigDecimal.ZERO);
@@ -195,8 +196,8 @@ public class DashboardService {
             new DashboardResponse.SalesSummary(salesThisCycle, revenueBookedThisCycle, revenueBookedChangePct),
             new DashboardResponse.NetworkSummary(totalDownline, directCount, leftAssociateCount, rightAssociateCount),
             new DashboardResponse.LegVolumeSummary(
-                leftLegVolume, rightLegVolume, totalLeftBusiness, totalRightBusiness, totalSelfBusiness, newBookedAreaSqft,
-                newLeftBusiness, newRightBusiness, matchedVolume, cycleSelfBusiness, cycleSelfTopUpBusiness)
+                leftLegVolume, rightLegVolume, totalLeftBusiness, totalRightBusiness, totalSelfBusiness, totalTopUpBusiness, newBookedAreaSqft,
+                newLeftBusiness, newRightBusiness, matchedVolume, cycleSelfBusiness, cycleTopUpBusiness)
         );
     }
 

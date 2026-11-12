@@ -269,7 +269,7 @@ describe('MyTreeComponent', () => {
         name: 'Child', userId: 'VP00002', joinedAt: '2025-01-01T00:00:00Z',
         leftMemberId: null, rightMemberId: null,
         totalLeftMembers: 0, totalRightMembers: 0, activeLeftMembers: 0, activeRightMembers: 0,
-        totalLeftBusiness: 0, totalRightBusiness: 0, totalSelfBusiness: 0
+        totalLeftBusiness: 0, totalRightBusiness: 0, totalSelfBusiness: 0, totalTopUpBusiness: 0
       });
       fixture.detectChanges();
 

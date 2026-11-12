@@ -81,6 +81,7 @@ class BookingTransferPlotServiceTest {
         b.setPlotId(onPlot.getId());
         b.setAssociateId(UUID.randomUUID());
         b.setBuyerName("Jane Buyer");
+        b.setBuyerAssociateId(b.getAssociateId());
         b.setTotalAmount(new BigDecimal("100000.00"));
         b.setDiscount(BigDecimal.ZERO);
         b.setBookedAt(NOW);

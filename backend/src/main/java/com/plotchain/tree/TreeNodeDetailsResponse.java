@@ -12,4 +12,4 @@ public record TreeNodeDetailsResponse(
     long totalLeftMembers, long totalRightMembers,
     long activeLeftMembers, long activeRightMembers,
     BigDecimal totalLeftBusiness, BigDecimal totalRightBusiness,
-    BigDecimal totalSelfBusiness) {}
+    BigDecimal totalSelfBusiness, BigDecimal totalTopUpBusiness) {}

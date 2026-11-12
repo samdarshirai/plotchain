@@ -167,7 +167,7 @@ class TreeExplorerControllerTest {
         when(associateRepository.countDownlineByPositionAndStatus(eq(ROOT_ID), eq("R"), any())).thenReturn(0L);
         when(legVolumeRepository.totalBusiness(ROOT_ID))
             .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
-        when(saleRepository.sumAmountByAssociateIdAndStatus(ROOT_ID, SaleStatus.RECORDED)).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumSelfBusiness(ROOT_ID, null)).thenReturn(BigDecimal.ZERO);
         when(saleRepository.sumOpenCycleLegBusiness(ROOT_ID, "L")).thenReturn(BigDecimal.ZERO);
         when(saleRepository.sumOpenCycleLegBusiness(ROOT_ID, "R")).thenReturn(BigDecimal.ZERO);
 

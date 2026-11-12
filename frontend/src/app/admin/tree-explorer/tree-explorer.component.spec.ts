@@ -266,7 +266,7 @@ describe('TreeExplorerComponent', () => {
         name: 'Root', userId: 'VP00001', joinedAt: '2025-01-01T00:00:00Z',
         leftMemberId: 'VP00002', rightMemberId: null,
         totalLeftMembers: 4, totalRightMembers: 0, activeLeftMembers: 3, activeRightMembers: 0,
-        totalLeftBusiness: 50000, totalRightBusiness: 0, totalSelfBusiness: 12000
+        totalLeftBusiness: 50000, totalRightBusiness: 0, totalSelfBusiness: 12000, totalTopUpBusiness: 0
       });
       fixture.detectChanges();
 

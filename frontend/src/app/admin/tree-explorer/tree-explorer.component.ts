@@ -212,6 +212,7 @@ const CLICK_MOVE_PX = 5;
             <div>{{ 'admin.treeExplorer.hoverTotalLeftBusinessLabel' | translate }}: {{ d.totalLeftBusiness | currency:'INR':'symbol':'1.0-0' }}</div>
             <div>{{ 'admin.treeExplorer.hoverTotalRightBusinessLabel' | translate }}: {{ d.totalRightBusiness | currency:'INR':'symbol':'1.0-0' }}</div>
             <div>{{ 'admin.treeExplorer.hoverTotalSelfBusinessLabel' | translate }}: {{ d.totalSelfBusiness | currency:'INR':'symbol':'1.0-0' }}</div>
+            <div>{{ 'admin.treeExplorer.hoverTotalTopUpBusinessLabel' | translate }}: {{ d.totalTopUpBusiness | currency:'INR':'symbol':'1.0-0' }}</div>
           </ng-container>
         </div>
 

@@ -82,6 +82,7 @@ class PlotBookingSchemaTest {
         b.setPlotId(plotId);
         b.setAssociateId(persistAssociate());
         b.setBuyerName("Jane Buyer");
+        b.setBuyerAssociateId(b.getAssociateId());
         b.setTotalAmount(new BigDecimal("600000.00"));
         b.setInstallmentCount(1);
         b.setBookedAt(Instant.now());
@@ -126,8 +127,8 @@ class PlotBookingSchemaTest {
         UUID associateId = persistAssociate();
         entityManager.flush();
         UUID bookingId = UUID.randomUUID();
-        jdbc.update("INSERT INTO plot_booking (id, plot_id, associate_id, buyer_name, total_amount, installment_count, booked_at) "
-            + "VALUES (?, ?, ?, 'Jane Buyer', 600000, 1, CURRENT_TIMESTAMP)", bookingId, plotId, associateId);
+        jdbc.update("INSERT INTO plot_booking (id, plot_id, associate_id, buyer_associate_id, buyer_name, total_amount, installment_count, booked_at) "
+            + "VALUES (?, ?, ?, ?, 'Jane Buyer', 600000, 1, CURRENT_TIMESTAMP)", bookingId, plotId, associateId, associateId);
         UUID installmentId = UUID.randomUUID();
         jdbc.update("INSERT INTO emi_installment (id, booking_id, installment_number, amount, due_date) "
             + "VALUES (?, ?, 1, 600000, DATE '2026-01-01')", installmentId, bookingId);
@@ -222,8 +223,8 @@ class PlotBookingSchemaTest {
         UUID associateId = persistAssociate();
         entityManager.flush();
         UUID bookingId = UUID.randomUUID();
-        jdbc.update("INSERT INTO plot_booking (id, plot_id, associate_id, buyer_name, total_amount, installment_count, booked_at) "
-            + "VALUES (?, ?, ?, 'Jane Buyer', 600000, 1, CURRENT_TIMESTAMP)", bookingId, plotId, associateId);
+        jdbc.update("INSERT INTO plot_booking (id, plot_id, associate_id, buyer_associate_id, buyer_name, total_amount, installment_count, booked_at) "
+            + "VALUES (?, ?, ?, ?, 'Jane Buyer', 600000, 1, CURRENT_TIMESTAMP)", bookingId, plotId, associateId, associateId);
         assertThat(jdbc.queryForObject("SELECT discount FROM plot_booking WHERE id = ?", BigDecimal.class, bookingId))
             .isEqualByComparingTo("0");
     }

@@ -106,7 +106,7 @@ class DashboardControllerTest {
         when(cycleRepository.countByPeriodStartLessThanEqual(any())).thenReturn(1L);
         when(saleRepository.countByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(0L);
         when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
-        when(saleRepository.sumAmountByAssociateIdAndStatus(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumSelfBusiness(any(), any())).thenReturn(BigDecimal.ZERO);
         when(saleRepository.sumOpenCycleLegBusiness(any(), any())).thenReturn(BigDecimal.ZERO);
         when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
         when(associateRepository.countDownlineByPosition(any(), any())).thenReturn(0L);
@@ -174,7 +174,7 @@ class DashboardControllerTest {
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
         when(rankTierRepository.findAllByOrderByRankOrder())
             .thenReturn(List.of(new RankTier(rankId, "Sales Associate", 1, BigDecimal.valueOf(5000))));
-        when(saleRepository.sumAmountByAssociateIdAndStatus(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(saleRepository.sumSelfBusiness(any(), any())).thenReturn(BigDecimal.ZERO);
         when(saleRepository.sumOpenCycleLegBusiness(any(), any())).thenReturn(BigDecimal.ZERO);
         when(legVolumeRepository.totalBusiness(any()))
             .thenReturn(new LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));

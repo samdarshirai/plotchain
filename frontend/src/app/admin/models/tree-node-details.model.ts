@@ -11,4 +11,5 @@ export interface TreeNodeDetails {
   totalLeftBusiness: number;
   totalRightBusiness: number;
   totalSelfBusiness: number;
+  totalTopUpBusiness: number;
 }

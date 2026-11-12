@@ -80,6 +80,7 @@ class BookingServiceTest {
         booking.setPlotId(PLOT_ID);
         booking.setAssociateId(ASSOCIATE_ID);
         booking.setBuyerName("Jane Buyer");
+        booking.setBuyerAssociateId(booking.getAssociateId());
         booking.setTotalAmount(new BigDecimal("600000.00"));
         booking.setInstallmentCount(1);
         booking.setBookedAt(NOW);

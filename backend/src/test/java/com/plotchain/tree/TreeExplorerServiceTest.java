@@ -294,7 +294,8 @@ class TreeExplorerServiceTest {
         when(associateRepository.countDownlineByPositionAndStatus(id, "R", AssociateStatus.ACTIVE.name())).thenReturn(0L);
         when(legVolumeRepository.totalBusiness(id))
             .thenReturn(new LegVolumeRepository.LegBusinessTotals(new BigDecimal("50000"), new BigDecimal("0")));
-        when(saleRepository.sumAmountByAssociateIdAndStatus(id, SaleStatus.RECORDED)).thenReturn(new BigDecimal("12000"));
+        when(saleRepository.sumSelfBusiness(id, null)).thenReturn(new BigDecimal("12000"));
+        when(saleRepository.sumTopUpBusiness(id, null)).thenReturn(new BigDecimal("8000"));
         // live business from the still-open cycle is added on top of closed-cycle totals
         when(saleRepository.sumOpenCycleLegBusiness(id, "L")).thenReturn(new BigDecimal("7000"));
         when(saleRepository.sumOpenCycleLegBusiness(id, "R")).thenReturn(new BigDecimal("3000"));
@@ -313,6 +314,7 @@ class TreeExplorerServiceTest {
         assertThat(response.totalLeftBusiness()).isEqualByComparingTo("57000");
         assertThat(response.totalRightBusiness()).isEqualByComparingTo("3000");
         assertThat(response.totalSelfBusiness()).isEqualByComparingTo("12000");
+        assertThat(response.totalTopUpBusiness()).isEqualByComparingTo("8000");
     }
 
     @Test

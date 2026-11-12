@@ -6,8 +6,8 @@ import { LegVolumeSummary } from '../../models/dashboard-response.model';
 function legVolume(overrides: Partial<LegVolumeSummary>): LegVolumeSummary {
   return {
     leftLegVolume: 0, rightLegVolume: 0,
-    totalLeftBusiness: 0, totalRightBusiness: 0, totalSelfBusiness: 0, newBookedAreaSqft: 0, newLeftBusiness: 0, newRightBusiness: 0, newMatchingBusiness: 0,
-    cycleSelfBusiness: 0, cycleSelfTopUpBusiness: 0,
+    totalLeftBusiness: 0, totalRightBusiness: 0, totalSelfBusiness: 0, totalTopUpBusiness: 0, newBookedAreaSqft: 0, newLeftBusiness: 0, newRightBusiness: 0, newMatchingBusiness: 0,
+    cycleSelfBusiness: 0, cycleTopUpBusiness: 0,
     ...overrides
   };
 }

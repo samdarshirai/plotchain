@@ -202,6 +202,7 @@ const HOVER_DEBOUNCE_MS = 150;
             <div>{{ 'myTree.hoverActiveLeftRightMembersLabel' | translate }}: {{ d.activeLeftMembers }}/{{ d.activeRightMembers }}</div>
             <div>{{ 'myTree.hoverTotalLeftRightBusinessLabel' | translate }}: &#8377;{{ d.totalLeftBusiness | number }}/&#8377;{{ d.totalRightBusiness | number }}</div>
             <div>{{ 'myTree.hoverTotalSelfBusinessLabel' | translate }}: &#8377;{{ d.totalSelfBusiness | number }}</div>
+            <div>{{ 'myTree.hoverTotalTopUpBusinessLabel' | translate }}: &#8377;{{ d.totalTopUpBusiness | number }}</div>
           </ng-container>
         </div>
 

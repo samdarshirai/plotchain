@@ -28,9 +28,9 @@ describe('DashboardComponent', () => {
     networkSummary: { totalDownline: 42, directCount: 8, leftAssociateCount: 184, rightAssociateCount: 134 },
     legVolumeSummary: {
       leftLegVolume: 300000, rightLegVolume: 200000,
-      totalLeftBusiness: 3100000, totalRightBusiness: 1800000, totalSelfBusiness: 0, newBookedAreaSqft: 1200,
+      totalLeftBusiness: 3100000, totalRightBusiness: 1800000, totalSelfBusiness: 0, totalTopUpBusiness: 0, newBookedAreaSqft: 1200,
       newLeftBusiness: 400000, newRightBusiness: 150000, newMatchingBusiness: 150000,
-      cycleSelfBusiness: 0, cycleSelfTopUpBusiness: 0
+      cycleSelfBusiness: 0, cycleTopUpBusiness: 0
     }
   };
 

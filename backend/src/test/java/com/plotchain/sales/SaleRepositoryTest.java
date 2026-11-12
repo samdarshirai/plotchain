@@ -3,6 +3,7 @@ package com.plotchain.sales;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateRole;
 import com.plotchain.associate.KycStatus;
+import com.plotchain.booking.PlotBooking;
 import com.plotchain.cycle.Cycle;
 import com.plotchain.cycle.CycleStatus;
 import com.plotchain.projects.Plot;
@@ -291,22 +292,47 @@ class SaleRepositoryTest {
         assertThat(sum).isEqualByComparingTo("0");
     }
 
+    private void persistBookingSale(UUID projectId, UUID plotId, UUID cycleId, UUID sellerId, UUID buyerId) {
+        PlotBooking b = new PlotBooking();
+        b.setId(UUID.randomUUID());
+        b.setPlotId(plotId);
+        b.setAssociateId(sellerId);
+        b.setBuyerAssociateId(buyerId);
+        b.setBuyerName("Buyer");
+        b.setTotalAmount(new BigDecimal("600000.00"));
+        b.setInstallmentCount(1);
+        b.setBookedAt(Instant.now());
+        entityManager.persist(b);
+        Sale sale = persistSale(projectId, sellerId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        sale.setBookingId(b.getId());
+    }
+
     @Test
-    void sumAmountByAssociateIdAndStatusSumsAcrossAllCyclesNotJustOne() {
-        UUID projectId = persistProject();
-        UUID plotId = persistPlot(projectId);
-        UUID cycleId = persistCycle();
-        UUID otherCycleId = persistCycle();
-        UUID associateId = persistAssociate();
-        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
-        persistSale(projectId, associateId, plotId, otherCycleId, SaleStatus.RECORDED, Instant.now());
-        persistSale(projectId, associateId, plotId, cycleId, SaleStatus.VOIDED, Instant.now());
+    void topUpIsBuyersOwnBookingsAndSelfIsDirectSponsorsOnly() {
+        UUID project = persistProject();
+        UUID plot = persistPlot(project);
+        UUID cycle = persistCycle();
+        UUID otherCycle = persistCycle();
+        UUID grandSponsor = persistAssociate();
+        UUID sponsor = persistAssociate();
+        UUID buyer = persistAssociate();
+        UUID seller = persistAssociate();
+        entityManager.find(Associate.class, sponsor).setSponsorId(grandSponsor);
+        entityManager.find(Associate.class, buyer).setSponsorId(sponsor);
+        persistBookingSale(project, plot, cycle, seller, buyer);
+        persistBookingSale(project, plot, otherCycle, seller, buyer);
         entityManager.flush();
 
-        BigDecimal sum = saleRepository.sumAmountByAssociateIdAndStatus(associateId, SaleStatus.RECORDED);
-
-        // Two RECORDED sales across two different cycles at persistSale's fixed amount, 600000.00 each.
-        assertThat(sum).isEqualByComparingTo("1200000.00");
+        assertThat(saleRepository.sumTopUpBusiness(buyer, null)).isEqualByComparingTo("1200000");
+        assertThat(saleRepository.sumTopUpBusiness(buyer, cycle)).isEqualByComparingTo("600000");
+        assertThat(saleRepository.sumSelfBusiness(sponsor, null)).isEqualByComparingTo("1200000");
+        assertThat(saleRepository.sumSelfBusiness(sponsor, cycle)).isEqualByComparingTo("600000");
+        // buyer has no self, sponsor has no top-up, two-hop upline gets neither, seller gets neither
+        assertThat(saleRepository.sumSelfBusiness(buyer, null)).isEqualByComparingTo("0");
+        assertThat(saleRepository.sumTopUpBusiness(sponsor, null)).isEqualByComparingTo("0");
+        assertThat(saleRepository.sumSelfBusiness(grandSponsor, null)).isEqualByComparingTo("0");
+        assertThat(saleRepository.sumTopUpBusiness(seller, null)).isEqualByComparingTo("0");
+        assertThat(saleRepository.sumSelfBusiness(seller, null)).isEqualByComparingTo("0");
     }
 
     @Test
