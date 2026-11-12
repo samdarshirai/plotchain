@@ -130,7 +130,8 @@ export class MyTeamComponent implements OnInit {
         this.page = res;
         this.rows = res.associates.map(a => ({
           userId: a.userId,
-          name: a.name,
+          // Short glyph, not a column: an extra column would push the table into stacked cards.
+          name: a.plotBuyer ? `${a.name} 🏞️` : a.name,
           sponsorUserId: a.sponsorUserId ?? '—',
           position: a.position ?? '—',
           status: titleCase(a.status),

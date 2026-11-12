@@ -23,6 +23,14 @@ describe('MyTeamComponent', () => {
     expect(c.componentInstance.viewTabs[0].count).toBe(1);
   });
 
+  it('marks plot buyers with an icon after the name', () => {
+    list.and.returnValue(of({ associates: [{ ...row, plotBuyer: true }, { ...row, userId: 'VP3', plotBuyer: false }], page: 0, size: 20, totalElements: 2 }));
+    const c = TestBed.createComponent(MyTeamComponent);
+    c.detectChanges();
+    expect(c.componentInstance.rows[0]['name']).toBe('Kid 🏞️');
+    expect(c.componentInstance.rows[1]['name']).toBe('Kid');
+  });
+
   it('green view filters kycStatus VERIFIED', () => {
     const c = TestBed.createComponent(MyTeamComponent);
     c.detectChanges();
