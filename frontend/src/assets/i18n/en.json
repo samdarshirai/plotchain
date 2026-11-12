@@ -1008,7 +1008,7 @@
       "columnRoyalty": "Royalty Bonus",
       "columnTotalIncome": "Total Income",
       "columnReward": "Total Reward",
-      "columnCommissionExpense": "Total Commission + Expense",
+      "columnCommissionExpense": "Total Commission",
       "columnCommissionPct": "Commission %",
       "currentCycleTitle": "Current Cycle",
       "currentCyclePeriodLabel": "Period",
@@ -1430,7 +1430,7 @@
       "outstandingHint": "Outstanding balance", "paymentDate": "Payment Date", "txnNo": "TXN No", "saveAction": "Save", "cancelAction": "Cancel",
       "columnSNo": "S No", "repaid": "Repaid", "outstanding": "Outstanding", "columnAction": "Action",
       "emptyState": "No advance loans yet.", "loadError": "Could not load advance loans.", "saveError": "Could not save.", "requiredError": "Please fill all required fields.", "duesError": "Could not load previous dues.", "pickAssociateError": "Pick an associate from the list.",
-      "detailLoanDate": "Loan Date", "detailAction": "Detail", "detailTitle": "Loan Details", "mobileNo": "Mobile No", "repaymentsHeading": "Repayments", "receiptNo": "Receipt No", "noRepayments": "No repayments yet.", "detailLoading": "Loading…", "detailError": "Could not load loan details.", "closeAction": "Close", 
+      "detailLoanDate": "Loan Date", "detailAction": "Detail", "detailTitle": "Loan Details", "mobileNo": "Mobile No", "repaymentsHeading": "Repayments", "receiptNo": "Receipt No", "noRepayments": "No repayments yet.", "detailLoading": "Loading…", "detailError": "Could not load loan details.", "closeAction": "Close",
       "payModes": { "CASH": "Cash", "CHEQUE": "Cheque", "DD": "Demand Draft", "UPI": "UPI", "BANK_TRANSFER": "Bank Transfer" }
     },
     "viewCancelledPlot": {
@@ -1565,7 +1565,7 @@
         "notActive": "This booking is no longer active."
       },
       "success": "Payment of {{amount}} added for plot {{plot}}. Confirm it from the payments queue.",
-      "hist": { "receiptNo": "Receipt No", "sNo": "S No", "paymentDate": "Payment Date", "txnDate": "TXN Date", "confirmedDate": "Confirmed Date", 
+      "hist": { "receiptNo": "Receipt No", "sNo": "S No", "paymentDate": "Payment Date", "txnDate": "TXN Date", "confirmedDate": "Confirmed Date",
         "empty": "No payments yet.",
         "date": "Date",
         "amount": "Amount",
