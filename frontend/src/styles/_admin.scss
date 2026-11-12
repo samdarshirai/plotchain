@@ -269,8 +269,10 @@
 // Underline tabs with count pills, scoped so other tab-bar users keep the pill-group look.
 .associate-directory__list .tab-bar {
   display: flex;
-  gap: 28px;
-  padding: 0 20px;
+  flex-wrap: wrap; // never scroll: tabs wrap onto a second row on narrow screens
+  overflow: visible;
+  gap: 0 18px; // tight enough that 7 tabs fit one row at laptop width
+  padding: 0 16px;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-bottom: none;
