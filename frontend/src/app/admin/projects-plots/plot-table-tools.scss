@@ -1,6 +1,6 @@
 .projects-plots__toolbar {
   .projects-plots__project-select select, .plot-table-tools__search, .plot-table-tools__export {
-    box-sizing: border-box; height: 40px; min-height: 40px; padding-block: 0; font-size: 0.875rem; line-height: 1.25;
+    box-sizing: border-box; height: 44px; min-height: 44px; padding-block: 0; font-size: 0.875rem; line-height: 1.25;
   }
   .projects-plots__project-select select, .plot-table-tools__search { padding-inline: 0.75rem; }
   .plot-table-tools__export { padding-inline: 1rem; }
@@ -8,7 +8,7 @@
 
 .projects-plots__toolbar .plot-table-tools {
   margin: 0; flex: 1 1 auto; flex-wrap: nowrap; min-width: 0; align-items: flex-start;
-  .plot-table-tools__count { line-height: 40px; }
+  .plot-table-tools__count { line-height: 44px; }
   .plot-table-tools__export { margin-inline-start: auto; }
   .plot-table-tools__label { display: flex; flex: 1 1 10rem; max-width: 18rem; min-width: 8rem; }
   .plot-table-tools__count, .plot-table-tools__export { white-space: nowrap; flex: none; }
@@ -88,4 +88,13 @@
     }
     tr:has(.projects-plots__pill--sold) td:not(:last-child) { color: var(--text-muted); }
   }
+}
+
+.projects-plots__status-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.25rem; min-height: 44px; font-size: 0.8125rem; color: var(--text-muted); }
+
+// Read-only plot list: project, search and status toggles are three equal-height controls in one row.
+.projects-plots__toolbar {
+  .projects-plots__project-select select { width: 14rem; min-width: 14rem; max-width: 14rem; }
+  .plot-table-tools:has(+ .projects-plots__status-filter) { flex: 0 1 auto;
+    .plot-table-tools__label { flex: 0 0 14rem; max-width: none; } }
 }

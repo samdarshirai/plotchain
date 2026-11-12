@@ -85,6 +85,13 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
             </span>
           </ng-container>
         </div>
+        <div class="projects-plots__status-filter" role="group" *ngIf="readOnly && grid?.length" [attr.aria-label]="'admin.projectsPlots.legendLabel' | translate">
+          <button type="button" *ngFor="let s of statuses" class="projects-plots__key"
+            [class.projects-plots__key--on]="filter.has(s)" [attr.aria-pressed]="filter.has(s)" (click)="toggleFilter(s)">
+            <span class="projects-plots__swatch projects-plots__swatch--{{ s.toLowerCase() }}" aria-hidden="true"></span>
+            {{ 'admin.projectsPlots.status.' + s | translate }} <span class="projects-plots__key-count">{{ counts[s] }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Shared by the aside and the page level; only one is rendered at a time. -->
@@ -160,7 +167,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           <ng-container *ngIf="grid">
             <ng-template #legendTpl>
               <div class="projects-plots__legend" role="group" [attr.aria-label]="'admin.projectsPlots.legendLabel' | translate">
-                <button type="button" *ngFor="let s of statuses" class="projects-plots__key"
+                <button type="button" *ngFor="let s of (readOnly ? [] : statuses)" class="projects-plots__key"
                   [class.projects-plots__key--on]="filter.has(s)" [attr.aria-pressed]="filter.has(s)" (click)="toggleFilter(s)">
                   <span class="projects-plots__swatch projects-plots__swatch--{{ s.toLowerCase() }}" aria-hidden="true"></span>
                   {{ 'admin.projectsPlots.status.' + s | translate }} <span class="projects-plots__key-count">{{ counts[s] }}</span>

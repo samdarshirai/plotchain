@@ -20,7 +20,7 @@ import { BookingTableComponent, saleRow } from '../plot-bookings/booking-table.c
       <p class="my-sales__subtitle">{{ 'salesHistory.subtitle' | translate }}</p>
       <app-date-range [from]="from" [to]="to" (rangeChange)="onRange($event)"></app-date-range>
       <p *ngIf="loadError" class="my-sales__load-error" role="alert">{{ 'salesHistory.loadError' | translate }}</p>
-      <app-booking-table *ngIf="page" [rows]="rows" [label]="'salesHistory.title' | translate"></app-booking-table>
+      <app-booking-table *ngIf="page" [rows]="rows" [filterAssociate]="true" [label]="'salesHistory.title' | translate"></app-booking-table>
     </div>
   `
 })

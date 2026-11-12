@@ -166,6 +166,7 @@
     }
   },
   "plotBookings": {
+    "filter": {"plotId": "Plot ID", "plotIdPlaceholder": "Search plot no.", "associateId": "Associate ID", "associateIdPlaceholder": "Search associate ID"},
     "table": {"empty": "No data to show.", "bookingDate": "Booking Date", "associateId": "Associate ID", "name": "Name", "project": "Project", "plotType": "Plot Type", "plotNo": "Plot No.", "rate": "Rate", "area": "Area", "price": "Price", "mobile": "Mobile No", "roadSize": "Road Size", "extraPrice": "Extra Price", "totalPrice": "Total Price", "paid": "Paid Amount", "rest": "Rest Amount", "details": "Details", "detailsAction": "View", "close": "Close"},
     "payments": {"paymentDate": "Payment Date", "amount": "Amount", "receiptNo": "Receipt No", "mode": "Payment Mode", "instrumentNo": "Cheque/DD/NEFT/RTGS No", "date": "Date", "empty": "No payments yet."},
     "myBookings": { "title": "My Bookings" },

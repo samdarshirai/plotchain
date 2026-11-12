@@ -75,4 +75,37 @@ describe('BookingTableComponent', () => {
   it('shows a dash when the plot type is missing', () => {
     expect(render(null)).toBe('—');
   });
+
+  describe('filters', () => {
+    function setup(filterAssociate: boolean) {
+      TestBed.configureTestingModule({ imports: [BookingTableComponent, TranslateModule.forRoot()] });
+      const fixture = TestBed.createComponent(BookingTableComponent);
+      const row = (key: string, plotNo: string, associateCode: string, total: number) => ({ key, bookedAt: '2026-10-01', plotNo, associateCode, total, paid: 0, rest: 0 });
+      fixture.componentRef.setInput('filterAssociate', filterAssociate);
+      fixture.componentRef.setInput('rows', [row('a', 'A-12', 'PC100', 10), row('b', 'B-7', 'PC200', 20)]);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const type = (i: number, v: string) => { const inp = el.querySelectorAll('input')[i] as HTMLInputElement; inp.value = v; inp.dispatchEvent(new Event('input')); fixture.detectChanges(); };
+      return { el, type, dataRows: () => el.querySelectorAll('tbody tr[data-booking-id]').length };
+    }
+
+    it('plot filter narrows rows and totals', () => {
+      const t = setup(false);
+      t.type(0, 'b-');
+      expect(t.dataRows()).toBe(1);
+      expect(t.el.querySelector('tfoot [data-label="plotBookings.table.totalPrice"]')!.textContent).toContain('20');
+    });
+
+    it('associate filter only appears when enabled and filters by associate code', () => {
+      expect(setup(false).el.querySelectorAll('input').length).toBe(1);
+      TestBed.resetTestingModule();
+      const t = setup(true);
+      expect(t.el.querySelectorAll('input').length).toBe(2);
+      t.type(1, 'pc200');
+      expect(t.dataRows()).toBe(1);
+      t.type(1, 'zzz');
+      expect(t.dataRows()).toBe(0);
+      expect(t.el.querySelector('.booking-table__empty')).toBeTruthy();
+    });
+  });
 });

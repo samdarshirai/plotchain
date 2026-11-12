@@ -1,6 +1,13 @@
+// Filters share one row with the date range: the table host and its filter wrapper drop out of layout so every
+// field is a direct item of the .booking-page flex row.
+app-booking-table { display: contents; }
+.booking-table__filters { display: contents; }
+.booking-table__filter { display: flex; flex-direction: column; gap: 0.25rem; flex: 0 1 14rem; font: 600 0.8125rem/1.25rem var(--font-sans); color: var(--text-muted);
+  input { box-sizing: border-box; height: 44px; padding: 0 0.75rem; font: inherit; font-size: 0.875rem; font-weight: 400; color: var(--text-primary); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 5px; } }
+@media (max-width: 767px) { .booking-table__filter { flex-basis: 100%; } }
 .booking-table {
   width: 100%; border-collapse: collapse; font-size: 0.8125rem;
-  &__scroll { background: var(--surface-card); border: 1px solid var(--border-subtle); }
+  &__scroll { flex: 1 1 100%; min-width: 0; background: var(--surface-card); border: 1px solid var(--border-subtle); }
   th { text-align: left; padding: 0.75rem 0.875rem; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); background: var(--surface-raised); white-space: nowrap; }
   td { padding: 0.75rem 0.875rem; white-space: nowrap; border-bottom: 1px solid var(--border-subtle); vertical-align: top; color: var(--text-primary); font-variant-numeric: tabular-nums; }
   tbody tr:hover td { background: var(--surface-raised); }
@@ -33,13 +40,22 @@
 
 // Shared page chrome for Team / Left / Right / My Bookings / My Sales -- same header rhythm as Income Statement.
 .booking-page {
-  display: flex; flex-direction: column; gap: 1.5rem;
+  display: flex; flex-flow: row wrap; align-items: flex-start; gap: 1.5rem 1rem;
+  // Row order: heading, notes and banners, then the filter row, then the table.
+  > * { flex: 1 1 100%; min-width: 0; order: 1; }
+  > h1, > h1 + p { order: 0; }
+  > app-date-range { flex: 0 0 auto; width: max-content; max-width: 100%; order: 2; }
+  .booking-table__filter { order: 2; }
+  .booking-table__scroll { order: 3; }
+  app-date-range .date-range { padding: 0; background: none; flex-wrap: nowrap; }
+  app-date-range .date-range__field { flex: none; width: 14rem; min-width: 0; margin: 0; gap: 0.25rem; font: 600 0.8125rem/1.25rem var(--font-sans); letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+  app-date-range .date-range__field input { box-sizing: border-box; height: 40px; min-height: 40px; border-radius: 5px; font-size: 0.875rem; }
   max-width: 1480px; margin: 0 auto; padding: 1.5rem 2rem;
   h1 { margin: 0; font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--text-primary); }
-  > h1 + p, .my-bookings__note, .my-sales__subtitle { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); max-width: 46rem; }
+  > h1 + p, .my-bookings__note, .my-sales__subtitle { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); max-width: none; padding-right: max(0px, calc(100% - 46rem)); }
 }
 @media (max-width: 767px) {
-  .booking-page { padding-inline: 1rem; }
+  .booking-page { padding-inline: 1rem; > app-date-range { flex-basis: 100%; width: auto; } app-date-range .date-range { flex-wrap: wrap; } app-date-range .date-range__field { flex-basis: 100%; } }
   // Same phone behaviour as Income Statement: the table scrolls sideways inside its panel.
   .booking-table__scroll { max-width: 100%; }
 }

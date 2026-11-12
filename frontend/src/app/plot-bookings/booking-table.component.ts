@@ -47,6 +47,16 @@ export const saleRow = (s: Sale): BookingRow => ({
   encapsulation: ViewEncapsulation.None,
   styleUrl: './booking-table.component.scss',
   template: `
+    <div class="booking-table__filters">
+      <label class="booking-table__filter">
+        <span>{{ 'plotBookings.filter.plotId' | translate }}</span>
+        <input type="search" [value]="plotFilter" (input)="plotFilter = $any($event.target).value" [placeholder]="'plotBookings.filter.plotIdPlaceholder' | translate" autocomplete="off">
+      </label>
+      <label class="booking-table__filter" *ngIf="filterAssociate">
+        <span>{{ 'plotBookings.filter.associateId' | translate }}</span>
+        <input type="search" [value]="associateFilter" (input)="associateFilter = $any($event.target).value" [placeholder]="'plotBookings.filter.associateIdPlaceholder' | translate" autocomplete="off">
+      </label>
+    </div>
     <div class="booking-table__scroll">
       <table class="booking-table" [attr.aria-label]="label">
         <thead>
@@ -71,10 +81,10 @@ export const saleRow = (s: Sale): BookingRow => ({
           </tr>
         </thead>
         <tbody>
-          <tr class="booking-table__empty" *ngIf="!rows.length">
+          <tr class="booking-table__empty" *ngIf="!visibleRows.length">
             <td colspan="17">{{ 'plotBookings.table.empty' | translate }}</td>
           </tr>
-          <ng-container *ngFor="let r of rows; let idx = index; trackBy: trackKey">
+          <ng-container *ngFor="let r of visibleRows; let idx = index; trackBy: trackKey">
             <tr [class.booking-table__row--selected]="r.key === selectedKey" [attr.data-booking-id]="r.key">
               <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ idx + 1 }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.bookingDate' | translate">{{ r.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
@@ -101,7 +111,7 @@ export const saleRow = (s: Sale): BookingRow => ({
             </tr>
           </ng-container>
         </tbody>
-        <tfoot *ngIf="rows.length">
+        <tfoot *ngIf="visibleRows.length">
           <tr class="editable-table__total">
             <td class="table__sno"></td>
             <td>{{ 'common.total' | translate }}</td>
@@ -158,6 +168,10 @@ export class BookingTableComponent {
   @Input() label = '';
   // inline: Details opens the installment schedule in a popup; otherwise it just emits.
   @Input() inline = false;
+  // Associate Id filter only where rows belong to different associates (team, sales).
+  @Input() filterAssociate = false;
+  plotFilter = '';
+  associateFilter = '';
   @Input() selectedKey: string | null = null;
   @Output() details = new EventEmitter<string>();
 
@@ -166,8 +180,15 @@ export class BookingTableComponent {
   money = (n: number | null | undefined): string => (n == null ? '—' : formatInr(n));
   area = formatArea;
 
+  get visibleRows(): BookingRow[] {
+    const plot = this.plotFilter.trim().toLowerCase();
+    const assoc = this.filterAssociate ? this.associateFilter.trim().toLowerCase() : '';
+    if (!plot && !assoc) { return this.rows; }
+    return this.rows.filter(r => (r.plotNo ?? '').toLowerCase().includes(plot) && (r.associateCode ?? '').toLowerCase().includes(assoc));
+  }
+
   sum(field: 'areaSqft' | 'price' | 'extraPrice' | 'total' | 'paid' | 'rest'): number {
-    return this.rows.reduce((acc, r) => acc + (r[field] ?? 0), 0);
+    return this.visibleRows.reduce((acc, r) => acc + (r[field] ?? 0), 0);
   }
 
   trackKey = (_: number, r: BookingRow): string => r.key;

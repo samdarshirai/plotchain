@@ -104,6 +104,6 @@ describe('MyBookingsComponent', () => {
 
   it('exposes no write controls', () => {
     boot();
-    expect(el().querySelectorAll('form, textarea, select, input:not([type="date"])').length).toBe(0);
+    expect(el().querySelectorAll('form, textarea, select, input:not([type="date"]):not([type="search"])').length).toBe(0);
   });
 });

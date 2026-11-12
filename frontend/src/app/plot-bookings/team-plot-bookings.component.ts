@@ -32,7 +32,7 @@ const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: '
       <p role="status" *ngIf="!page && !error">{{ 'plotBookings.loading' | translate }}</p>
 
       <ng-container *ngIf="page">
-        <app-booking-table [rows]="rows" [inline]="true" [label]="'plotBookings.team.title.' + scope | translate"></app-booking-table>
+        <app-booking-table [rows]="rows" [filterAssociate]="true" [inline]="true" [label]="'plotBookings.team.title.' + scope | translate"></app-booking-table>
       </ng-container>
     </div>
   `,
