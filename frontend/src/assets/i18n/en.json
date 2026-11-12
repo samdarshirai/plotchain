@@ -796,7 +796,8 @@
         "red": "Red Associates",
         "left": "Left Associates",
         "right": "Right Associates",
-        "byDate": "Associates By Date"
+        "byDate": "Associates By Date",
+        "sponsored": "Sponsored Associates"
       },
       "title": "Associate Directory",
       "subtitle": "Manage and provision associates in one place.",

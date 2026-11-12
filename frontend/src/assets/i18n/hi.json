@@ -766,7 +766,8 @@
         "red": "रेड एसोसिएट्स",
         "left": "लेफ्ट एसोसिएट्स",
         "right": "राइट एसोसिएट्स",
-        "byDate": "तारीख अनुसार एसोसिएट्स"
+        "byDate": "तारीख अनुसार एसोसिएट्स",
+        "sponsored": "प्रायोजित एसोसिएट्स"
       },
       "title": "Associate Directory",
       "subtitle": "Manage and provision associates in one place.",

@@ -12,8 +12,8 @@ import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../share
 import { titleCase } from '../shared/utils/title-case';
 
 // Same views as the admin directory: Green = KYC VERIFIED, Red = anything else, By Date = newest first.
-type TeamView = 'all' | 'green' | 'red' | 'left' | 'right' | 'byDate';
-const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'];
+type TeamView = 'all' | 'green' | 'red' | 'left' | 'right' | 'byDate' | 'sponsored';
+const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate', 'sponsored'];
 
 // Reuses the admin directory's .associate-directory__* global styles (styles/_admin.scss).
 @Component({
@@ -121,6 +121,7 @@ export class MyTeamComponent implements OnInit {
     if (this.view === 'red') filters.excludeKycStatus = 'VERIFIED';
     if (this.view === 'left') filters.leg = 'L';
     if (this.view === 'right') filters.leg = 'R';
+    if (this.view === 'sponsored') filters.sponsoredOnly = 'true';
     if (this.view === 'byDate') filters.newestFirst = 'true';
     if (this.status) filters.status = this.status;
     if (this.joinedFrom) filters.joinedFrom = this.joinedFrom;
@@ -144,11 +145,11 @@ export class MyTeamComponent implements OnInit {
 
   private loadCounts(): void {
     const n = (f: AdminAssociateFilters) => this.myTeamService.list(f, 0, 1);
-    forkJoin([n({}), n({ kycStatus: 'VERIFIED' }), n({ excludeKycStatus: 'VERIFIED' }), n({ leg: 'L' }), n({ leg: 'R' })]).subscribe(([t, g, r, l, rt]) => {
+    forkJoin([n({}), n({ kycStatus: 'VERIFIED' }), n({ excludeKycStatus: 'VERIFIED' }), n({ leg: 'L' }), n({ leg: 'R' }), n({ sponsoredOnly: 'true' })]).subscribe(([t, g, r, l, rt, sp]) => {
       this.viewTabs = VIEWS.map(id => ({
         id,
         label: this.translate.instant('admin.associateDirectory.views.' + id),
-        count: ({ all: t, green: g, red: r, left: l, right: rt, byDate: t } as Record<string, { totalElements: number }>)[id]?.totalElements
+        count: ({ all: t, green: g, red: r, left: l, right: rt, byDate: t, sponsored: sp } as Record<string, { totalElements: number }>)[id]?.totalElements
       }));
     });
   }

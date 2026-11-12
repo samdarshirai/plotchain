@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -112,6 +113,21 @@ class AdminAssociateServiceTest {
         assertThat(fromCaptor.getValue()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
         // Exclusive upper bound: the day AFTER joinedTo, so Jan 31 itself is included.
         assertThat(toCaptor.getValue()).isEqualTo(Instant.parse("2026-02-01T00:00:00Z"));
+    }
+
+    @Test
+    void listDownlineSponsoredOnlySearchesWithinDirectSponseesOnly() {
+        UUID caller = UUID.randomUUID();
+        UUID sponsee = UUID.randomUUID();
+        Associate a = newAssociate(sponsee, "VP00009");
+        when(associateRepository.findBySponsorId(caller)).thenReturn(List.of(a));
+        when(associateRepository.searchWithinIds(eq(List.of(sponsee)), any(), any(), any(), any(), any(), any(), eq(false), any()))
+            .thenReturn(new PageImpl<>(List.of()));
+
+        service.listDownline(caller, null, null, null, null, null, null, false, null, true, 0, 20);
+
+        verify(associateRepository).searchWithinIds(eq(List.of(sponsee)), any(), any(), any(), any(), any(), any(), eq(false), any());
+        verify(associateRepository, never()).findSelfAndDownline(any());
     }
 
     @Test

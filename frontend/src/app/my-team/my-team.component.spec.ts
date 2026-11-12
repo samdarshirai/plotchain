@@ -46,4 +46,11 @@ describe('MyTeamComponent', () => {
     c.componentInstance.onViewChange('right');
     expect(list).toHaveBeenCalledWith({ leg: 'R' }, 0, 100);
   });
+
+  it('sponsored view filters to directly sponsored associates', () => {
+    const c = TestBed.createComponent(MyTeamComponent);
+    c.detectChanges();
+    c.componentInstance.onViewChange('sponsored');
+    expect(list).toHaveBeenCalledWith({ sponsoredOnly: 'true' }, 0, 100);
+  });
 });

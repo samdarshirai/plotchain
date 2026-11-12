@@ -106,16 +106,20 @@ public class AdminAssociateService {
             }
             rootId = root.getId();
         }
-        return listDownline(rootId, null, null, null, null, null, null, false, leg, page, size);
+        return listDownline(rootId, null, null, null, null, null, null, false, leg, false, page, size);
     }
 
     // My Team: same filters as list(), scoped to callerId's downline (self excluded, any depth).
     public AdminAssociatePageResponse listDownline(UUID callerId, String search, KycStatus kycStatus,
                                                     KycStatus excludeKycStatus, AssociateStatus status,
                                                     LocalDate joinedFrom, LocalDate joinedTo,
-                                                    boolean newestFirst, String leg, int page, int size) {
+                                                    boolean newestFirst, String leg, boolean sponsoredOnly,
+                                                    int page, int size) {
+        // sponsoredOnly: only associates the caller sponsored directly (sponsor_id = caller).
         // leg L/R: only the caller's child on that side and everything beneath it.
-        List<UUID> ids = leg == null
+        List<UUID> ids = sponsoredOnly
+            ? associateRepository.findBySponsorId(callerId).stream().map(Associate::getId).toList()
+            : leg == null
             ? associateRepository.findSelfAndDownline(callerId).stream().filter(id -> !id.equals(callerId)).toList()
             : associateRepository.findByParentId(callerId).stream()
                 .filter(c -> leg.equals(c.getPosition()))
