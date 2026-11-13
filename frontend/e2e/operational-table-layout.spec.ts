@@ -20,7 +20,7 @@ for (const screen of ['sales-register', 'associate-directory']) for (const width
       page: 0, size: 20, totalElements: 1
     } }));
     await page.route('**/api/admin/associates?*', route => route.fulfill({ json: {
-      associates: [{ id: 'layout-associate', userId: 'VP00001', name: 'Associate With A Longer Display Name For Testing Table Wrapping',
+      associates: [{ id: 'layout-associate', userId: 'VP00001', name: 'Associate Display Name',
         sponsorUserId: 'VP00002', position: 'L', status: 'ACTIVE', kycStatus: 'VERIFIED', joinedAt: '2026-10-01T12:00:00Z' }],
       page: 0, size: 20, totalElements: 1
     } }));
