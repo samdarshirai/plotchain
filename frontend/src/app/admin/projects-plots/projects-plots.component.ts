@@ -9,6 +9,7 @@ import { AssociateSummary } from '../models/associate-summary.model';
 import { ProjectsService } from '../../setup/steps/projects/projects.service';
 import { Plot, PlotRequest, PlotStatus, Project } from '../../setup/models/project.model';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
+import { TreeHoverPositionDirective } from '../../shared/directives/tree-hover-position.directive';
 import { PlotTileComponent } from '../../shared/components/plot-tile/plot-tile.component';
 import {
   PlotBlock, PlotGridItem, StatusCounts, countByStatus, ExtraDefaults, formatArea, formatInr, groupIntoBlocks
@@ -46,7 +47,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 @Component({
   selector: 'app-projects-plots',
   standalone: true,
-  imports: [TableToolsComponent, CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent, PlotFormComponent, CsvImportPanelComponent, BookPlotFormComponent],
+  imports: [TableToolsComponent, CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent, PlotFormComponent, CsvImportPanelComponent, BookPlotFormComponent, TreeHoverPositionDirective],
   template: `
     <div class="projects-plots">
       <div class="projects-plots__head">
@@ -300,7 +301,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
           <div><dt>{{ 'admin.projectsPlots.table.status' | translate }}</dt><dd>{{ 'plotTile.status.' + p.status | translate }}</dd></div>
         </dl>
       </ng-template>
-      <div class="plot-hover" role="tooltip" *ngIf="hover as h" [style.left.px]="h.left" [style.top.px]="h.top">
+      <div class="plot-hover" role="tooltip" *ngIf="hover as h" [appTreeHoverPosition]="h.anchor" (hoverPositionDismiss)="hover = null">
         <ng-container *ngTemplateOutlet="factsTpl; context: { $implicit: h.plot }"></ng-container>
       </div>
 
@@ -577,17 +578,13 @@ export class ProjectsPlotsComponent implements OnInit {
   }
 
   // Tile view has no Book column: in book mode a tile click on an available plot opens the booking popup.
-  hover: { plot: PlotGridItem; left: number; top: number } | null = null;
+  hover: { plot: PlotGridItem; anchor: HTMLElement } | null = null;
 
   // Read-only screen: hovering/focusing a tile shows its facts in a fixed card, clamped to the viewport.
   // Touch devices have no hover, so a tap opens the detail modal instead (onTileSelect).
   showHover(p: PlotGridItem, e: Event): void {
     if (!this.readOnly || this.bookMode) { return; }
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const w = Math.min(320, window.innerWidth - 16);
-    const left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
-    const top = r.bottom + 230 > window.innerHeight ? Math.max(8, r.top - 230) : r.bottom + 6;
-    this.hover = { plot: p, left, top };
+    this.hover = { plot: p, anchor: e.currentTarget as HTMLElement };
   }
 
   onTileSelect(p: PlotGridItem): void {

@@ -954,6 +954,20 @@ describe('ProjectsPlotsComponent read-only plot details', () => {
     expect(dl.querySelectorAll('dt').length).toBe(9);
     expect(dl.textContent).toContain('A-1');
     expect(dl.textContent).toContain('30 ft');
+    // Edge tiles: card must stay inside the viewport (bottom-right, then bottom-left).
+    const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    for (const left of [vw - 60, 0]) {
+      li.getBoundingClientRect = () => ({ left, right: left + 60, top: vh - 60, bottom: vh, width: 60, height: 60, x: left, y: vh - 60, toJSON: () => ({}) });
+      li.dispatchEvent(new MouseEvent('mouseleave'));
+      fixture.detectChanges();
+      li.dispatchEvent(new MouseEvent('mouseenter'));
+      fixture.detectChanges();
+      const r = el.querySelector('.plot-hover')!.getBoundingClientRect();
+      expect(r.left).toBeGreaterThanOrEqual(8);
+      expect(r.top).toBeGreaterThanOrEqual(8);
+      expect(r.right).toBeLessThanOrEqual(vw - 8 + 0.5);
+      expect(r.bottom).toBeLessThanOrEqual(vh - 8 + 0.5);
+    }
     li.dispatchEvent(new MouseEvent('mouseleave'));
     fixture.detectChanges();
     expect(el.querySelector('.plot-hover')).toBeNull();
