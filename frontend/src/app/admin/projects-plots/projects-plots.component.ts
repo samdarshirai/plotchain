@@ -13,6 +13,7 @@ import { PlotTileComponent } from '../../shared/components/plot-tile/plot-tile.c
 import {
   PlotBlock, PlotGridItem, StatusCounts, countByStatus, ExtraDefaults, formatArea, formatInr, groupIntoBlocks
 } from '../../shared/utils/plot-grid.util';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 import { ExportColumn, exportCsv } from '../../shared/utils/table-export.util';
 import { filterPlotRows } from './projects-plots.util';
 import { CsvImportPanelComponent } from './csv-import-panel.component';
@@ -45,7 +46,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 @Component({
   selector: 'app-projects-plots',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent, PlotFormComponent, CsvImportPanelComponent, BookPlotFormComponent],
+  imports: [TableToolsComponent, CommonModule, RouterLink, TranslateModule, InlineBannerComponent, PlotTileComponent, PlotFormComponent, CsvImportPanelComponent, BookPlotFormComponent],
   template: `
     <div class="projects-plots">
       <div class="projects-plots__head">
@@ -197,6 +198,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
 
 
             <p class="projects-plots__empty" role="status" *ngIf="view === 'table' && !readOnly && grid.length && visibleBlocks.length && !tableRows.length">{{ 'admin.projectsPlots.table.noMatch' | translate }}</p>
+            <app-table-tools *ngIf="view === 'table' && tableRows.length" filename="plots"></app-table-tools>
             <div class="projects-plots__table-wrap" *ngIf="view === 'table' && tableRows.length">
               <table class="projects-plots__table" [class.projects-plots__table--book]="fullTable">
                 <thead><tr>

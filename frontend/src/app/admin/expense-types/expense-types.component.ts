@@ -11,11 +11,12 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
 import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
 import { FormIssue, collectIssues, errorMessage } from '../../shared/validation/validation';
 import { titleCase } from '../../shared/utils/title-case';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 @Component({
   selector: 'app-expense-types',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
+  imports: [TableToolsComponent, CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="expense-types">
       <div class="expense-types__intro">
@@ -32,6 +33,7 @@ import { titleCase } from '../../shared/utils/title-case';
       <app-inline-banner *ngIf="loadError" tone="danger" [dismissible]="true" (dismissed)="loadError = false">{{ 'admin.expenseTypes.loadError' | translate }}</app-inline-banner>
 
       <div class="card">
+        <app-table-tools filename="expense-types"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="columns"

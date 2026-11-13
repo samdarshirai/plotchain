@@ -18,6 +18,7 @@ import { FormIssue, collectIssues, errorMessage } from '../../shared/validation/
 import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.service';
 import { titleCase } from '../../shared/utils/title-case';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 
 // The shared titleCase() converts SHOUTED_CASE / SNAKE_CASE to Title Case:
@@ -26,7 +27,7 @@ import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 @Component({
   selector: 'app-payout-approval',
   standalone: true,
-  imports: [
+  imports: [TableToolsComponent, 
     CommonModule, FormsModule, ReactiveFormsModule, TranslateModule,
     EditableTableComponent, InlineBannerComponent, SealCardComponent, FieldErrorComponent, ErrorSummaryComponent
   ],
@@ -77,6 +78,7 @@ import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
       <app-inline-banner *ngIf="actionError" tone="danger" [dismissible]="true" class="payout-approval__action-error" (dismissed)="actionError = false">{{ 'admin.payoutApproval.actionError' | translate }}</app-inline-banner>
 
       <div class="card">
+        <app-table-tools filename="payout-approval"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="registerColumns"

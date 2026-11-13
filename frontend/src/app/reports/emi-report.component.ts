@@ -7,6 +7,7 @@ import { fetchAllPages } from '../shared/utils/fetch-all-pages';
 import { formatMoney, plotText } from '../admin/admin-bookings-emi/bookings-emi.util';
 import { AssociateBookingPage } from '../plot-bookings/models/associate-booking-page.model';
 import { CycleOption, Leg, ReportsService } from './reports.service';
+import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 // Pending EMI of everyone in my downline (same columns as the admin Pending EMI screen).
 // Reuses the admin screen's styles; table-fit.ts stacks the table into cards when it can't fit.
@@ -15,7 +16,7 @@ import { CycleOption, Leg, ReportsService } from './reports.service';
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['../admin/add-plot-emi/add-plot-emi.component.scss'],
-  imports: [CommonModule, TranslateModule, InlineBannerComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent],
   template: `
     <div class="add-plot-emi" [attr.aria-busy]="loading">
       <div class="add-plot-emi__intro">
@@ -48,6 +49,7 @@ import { CycleOption, Leg, ReportsService } from './reports.service';
       </app-inline-banner>
 
       <div class="add-plot-emi__list">
+        <app-table-tools filename="emi-report"></app-table-tools>
         <table class="add-plot-emi__table" [attr.aria-label]="'reports.emi.title' | translate">
           <thead>
             <tr>

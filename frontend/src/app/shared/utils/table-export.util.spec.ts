@@ -1,4 +1,4 @@
-import { ExportColumn, exportCsv, printTable, toCsv } from './table-export.util';
+import { ExportColumn, exportCsv, printTable, scrapeTable, tableToTsv, toCsv } from './table-export.util';
 
 interface Row { a: string | number | null | undefined; b?: string; }
 const cols: ExportColumn<Row>[] = [
@@ -79,5 +79,24 @@ describe('table-export.util', () => {
       expect(target.classList.contains('table-export-print')).toBeFalse();
       expect(document.head.querySelectorAll('style[data-table-export-print]').length).toBe(0);
     });
+  });
+});
+
+describe('scrapeTable', () => {
+  const make = (html: string) => { const d = document.createElement('div'); d.innerHTML = html; return d; };
+
+  it('reads headers and rows, dropping blank-headed and data-no-export columns and colspan rows', () => {
+    const d = make(`<table><thead><tr><th>Name</th><th data-no-export>Actions</th><th> </th><th>Amt</th></tr></thead>
+      <tbody><tr><td> Ann </td><td><button>x</button></td><td></td><td>₹ 5</td></tr>
+      <tr><td colspan="4">No data</td></tr></tbody></table>`);
+    expect(scrapeTable(d)).toEqual({ headers: ['Name', 'Amt'], rows: [['Ann', '₹ 5']] });
+  });
+
+  it('returns empty data when there is no table', () => {
+    expect(scrapeTable(make('<p>x</p>'))).toEqual({ headers: [], rows: [] });
+  });
+
+  it('tableToTsv joins with tabs and flattens whitespace', () => {
+    expect(tableToTsv({ headers: ['A', 'B'], rows: [['1', 'x\ty']] })).toBe('A\tB\n1\tx y');
   });
 });

@@ -7,11 +7,12 @@ import { SupportTicketService } from '../support-tickets/support-ticket.service'
 import { SUPPORT_TICKET_STATUSES, SupportTicket, SupportTicketPage, SupportTicketStatus } from '../support-tickets/support-ticket.model';
 import { fetchAllPages } from '../shared/utils/fetch-all-pages';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
+import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 @Component({
   selector: 'app-support-ticket-history',
   standalone: true,
-  imports: [CommonModule, TranslateModule, InlineBannerComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent],
   template: `
     <div class="ticket-history">
       <div class="ticket-history__intro">
@@ -48,6 +49,7 @@ import { InlineBannerComponent } from '../shared/components/inline-banner/inline
         <p class="ticket-history__empty" *ngIf="!page.entries.length">
           {{ (status ? 'supportTickets.emptyStateFiltered' : 'supportTickets.emptyState') | translate }}
         </p>
+        <app-table-tools filename="support-tickets"></app-table-tools>
         <table class="ticket-history__table" *ngIf="page.entries.length" [attr.aria-label]="'supportTickets.title' | translate">
           <thead>
             <tr>

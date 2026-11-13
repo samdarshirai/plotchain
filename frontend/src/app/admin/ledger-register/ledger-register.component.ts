@@ -17,6 +17,7 @@ import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/
 import { AdminLedgerEntry } from '../models/ledger-entry.model';
 import { AdminLedgerSummaryPage, AdminLedgerSummaryRow } from '../models/ledger-summary.model';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 const CYCLE_LOOKUP_SIZE = 100;
 const DATE_FORMAT = 'dd MMM yyyy';
@@ -62,7 +63,7 @@ const LEG_FIELD: Record<string, string> = {
 @Component({
   selector: 'app-ledger-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, TabBarComponent, FieldErrorComponent, DateRangeComponent],
+  imports: [TableToolsComponent, CommonModule, FormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, TabBarComponent, FieldErrorComponent, DateRangeComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="ledger-register">
@@ -129,6 +130,7 @@ const LEG_FIELD: Record<string, string> = {
       </dl>
 
       <div class="card">
+        <app-table-tools filename="ledger-register"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [selectable]="true"

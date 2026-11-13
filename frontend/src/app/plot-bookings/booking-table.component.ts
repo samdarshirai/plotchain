@@ -4,6 +4,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { formatArea, formatInr } from '../shared/utils/plot-grid.util';
 import { Booking, EmiInstallment } from './models/associate-booking-page.model';
 import { Sale } from '../admin/models/sale.model';
+import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 // One row shape for every Associate /plot-bookings table (team, left, right, mine, my-sales).
 export interface BookingRow {
@@ -43,7 +44,7 @@ export const saleRow = (s: Sale): BookingRow => ({
 @Component({
   selector: 'app-booking-table',
   standalone: true,
-  imports: [CommonModule, TranslateModule],
+  imports: [TableToolsComponent, CommonModule, TranslateModule],
   encapsulation: ViewEncapsulation.None,
   styleUrl: './booking-table.component.scss',
   template: `
@@ -58,6 +59,7 @@ export const saleRow = (s: Sale): BookingRow => ({
       </label>
     </div>
     <div class="booking-table__scroll">
+      <app-table-tools filename="plot-bookings"></app-table-tools>
       <table class="booking-table" [attr.aria-label]="label">
         <thead>
           <tr>

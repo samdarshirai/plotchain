@@ -11,6 +11,7 @@ import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../sh
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { titleCase } from '../../shared/utils/title-case';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 
 // The backend's SaleStatus enum is shouty-uppercase (RECORDED/VOIDED); the mockup renders
@@ -23,7 +24,7 @@ import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 @Component({
   selector: 'app-sales-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, RouterLink, EditableTableComponent, InlineBannerComponent],
+  imports: [TableToolsComponent, CommonModule, FormsModule, TranslateModule, RouterLink, EditableTableComponent, InlineBannerComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="sales-register">
@@ -63,6 +64,7 @@ import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
       <app-inline-banner *ngIf="actionError" tone="danger" [dismissible]="true" class="sales-register__action-error" (dismissed)="actionError = false">{{ 'admin.salesRegister.actionError' | translate }}</app-inline-banner>
 
       <div class="card">
+        <app-table-tools filename="sales-register"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="registerColumns"

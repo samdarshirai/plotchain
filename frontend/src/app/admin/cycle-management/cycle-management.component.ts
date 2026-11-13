@@ -16,6 +16,7 @@ import { AdminDashboardService } from '../../admin-dashboard/admin-dashboard.ser
 import { CurrentCycleStats } from '../../admin-dashboard/admin-dashboard.model';
 import { formatInr } from '../../shared/utils/plot-grid.util';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 const INCOME_TYPES: CycleIncomeType[] = ['DIRECT', 'MATCHING', 'SPONSOR_MATCHING', 'ROYALTY', 'REWARD'];
 // Key order = table order; 'totalGross' sits between ROYALTY and REWARD, so the loop below can't be a single map.
@@ -30,7 +31,7 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
 @Component({
   selector: 'app-cycle-management',
   standalone: true,
-  imports: [
+  imports: [TableToolsComponent, 
     CommonModule,
     FormsModule,
     TranslateModule,
@@ -172,6 +173,7 @@ const COLUMN_LABEL_KEYS: Record<string, string> = {
       </div>
 
       <div class="card">
+        <app-table-tools filename="cycles"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="historyColumns"

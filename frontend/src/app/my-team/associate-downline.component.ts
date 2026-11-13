@@ -7,6 +7,7 @@ import { MyTeamService } from './my-team.service';
 import { AdminAssociatePage } from '../admin/models/admin-associate-page.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { titleCase } from '../shared/utils/title-case';
+import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 const PAGE_SIZE = 100000; // show all rows; backend caps at this
 const dateTime = (iso: string | null) => formatIst(iso);
@@ -17,7 +18,7 @@ const dateTime = (iso: string | null) => formatIst(iso);
 @Component({
   selector: 'app-associate-downline',
   standalone: true,
-  imports: [CommonModule, TranslateModule, EditableTableComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, EditableTableComponent],
   template: `
     <div class="associate-directory">
       <div class="associate-directory__header">
@@ -59,6 +60,7 @@ const dateTime = (iso: string | null) => formatIst(iso);
         </div>
 
         <div class="associate-directory__table-wrap">
+          <app-table-tools filename="downline"></app-table-tools>
           <app-editable-table
             [readOnly]="true"
             [columns]="columns"

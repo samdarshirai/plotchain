@@ -8,12 +8,13 @@ import { AssociateWithdrawalPage, AssociateWithdrawalFilters } from './models/as
 import { EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { fetchAllPages } from '../shared/utils/fetch-all-pages';
+import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 
 @Component({
   selector: 'app-payout-history',
   standalone: true,
-  imports: [CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, EditableTableComponent, InlineBannerComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="payout-history">
@@ -50,6 +51,7 @@ import { fetchAllPages } from '../shared/utils/fetch-all-pages';
       </app-inline-banner>
 
       <div class="card">
+        <app-table-tools filename="payout-history"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="historyColumns"

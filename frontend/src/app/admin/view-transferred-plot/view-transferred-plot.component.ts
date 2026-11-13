@@ -9,6 +9,7 @@ import { formatMoney } from '../admin-bookings-emi/bookings-emi.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 const isoDate = (d: Date): string => {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -20,7 +21,7 @@ const isoDate = (d: Date): string => {
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['../add-plot-emi/add-plot-emi.component.scss'],
-  imports: [CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
   template: `
     <div class="add-plot-emi">
       <div class="add-plot-emi__intro">
@@ -51,6 +52,7 @@ const isoDate = (d: Date): string => {
 
       <div class="add-plot-emi__list" [attr.aria-busy]="loading">
         <div class="add-plot-emi__scroll">
+          <app-table-tools filename="transferred-plot"></app-table-tools>
           <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewTransferredPlot.title' | translate">
             <thead>
               <tr>

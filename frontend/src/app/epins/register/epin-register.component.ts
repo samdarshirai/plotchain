@@ -1,5 +1,5 @@
 import { PasswordToggleDirective } from '../../shared/directives/password-toggle.directive';
-import { Component, OnInit, ViewChild, ElementRef, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { headerIcon } from '../../shared/utils/header-icon';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +12,7 @@ import { ErrorSummaryComponent } from '../../shared/components/error-summary/err
 import { FormIssue } from '../../shared/validation/validation';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { collectPages } from '../../admin/admin-bookings-emi/bookings-emi.util';
-import { ExportColumn, exportCsv, printTable, toCsv } from '../../shared/utils/table-export.util';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 type Mode = 'new' | 'transfer' | 'used';
 type Row = EPinUnusedRow & EPinUsedRow;
@@ -23,7 +23,7 @@ interface Col { key: string; labelKey: string; value: (r: Row, i: number) => str
 @Component({
   selector: 'app-epin-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent, PasswordToggleDirective],
+  imports: [TableToolsComponent, CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent, PasswordToggleDirective],
   providers: [DatePipe],
   styleUrl: './epin-register.component.scss',
   template: `
@@ -80,9 +80,6 @@ interface Col { key: string; labelKey: string; value: (r: Row, i: number) => str
           </label>
           </div>
           <div class="epin-reg__tools">
-            <button type="button" class="brand-button brand-button--secondary epin-reg__tool" (click)="copy()">{{ 'epinRegister.copy' | translate }}</button>
-            <button type="button" class="brand-button brand-button--secondary epin-reg__tool" (click)="csv()">{{ 'epinRegister.excelCsv' | translate }}</button>
-            <button type="button" class="brand-button brand-button--secondary epin-reg__tool" (click)="print()">{{ 'epinRegister.printPdf' | translate }}</button>
             <details class="epin-reg__cols">
               <summary class="brand-button brand-button--secondary">{{ 'epinRegister.columns' | translate }}</summary>
               <div class="epin-reg__column-menu">
@@ -94,7 +91,8 @@ interface Col { key: string; labelKey: string; value: (r: Row, i: number) => str
 
         <app-inline-banner *ngIf="loadError" tone="danger">{{ 'epins.loadError' | translate }}</app-inline-banner>
 
-        <div class="epin-reg__scroll" #tbl>
+        <div class="epin-reg__scroll">
+          <app-table-tools filename="epin-register"></app-table-tools>
           <table class="epin-reg__table" [attr.aria-label]="'epinRegister.title.' + mode | translate">
             <thead>
               <tr>
@@ -130,7 +128,6 @@ export class EPinRegisterComponent implements OnInit {
   private date = inject(DatePipe);
   private translate = inject(TranslateService);
 
-  @ViewChild('tbl') tbl?: ElementRef<HTMLElement>;
 
   mode: Mode = 'new';
   cols: Col[] = [];
@@ -196,19 +193,6 @@ export class EPinRegisterComponent implements OnInit {
     }
     return false;
   }
-
-  private visibleExport(): ExportColumn<Row>[] {
-    return this.cols.filter(c => c.visible).map(c => ({ header: this.translate.instant(c.labelKey), value: (r: Row) => c.value(r, this.rows.indexOf(r)) }));
-  }
-
-  copy(): void {
-    const cols = this.visibleExport();
-    const text = [cols.map(c => c.header), ...this.rows.map(r => cols.map(c => String(c.value(r) ?? '')))].map(l => l.join('\t')).join('\n');
-    try { navigator.clipboard.writeText(text).catch(() => undefined); } catch { /* clipboard unavailable */ }
-  }
-  // ponytail: "Excel" is CSV (opens in Excel), "PDF" is the browser's print-to-PDF. Add xlsx/pdf libs only if asked.
-  csv(): void { exportCsv(this.rows, this.visibleExport(), `epin-${this.mode}`); }
-  print(): void { if (this.tbl) { printTable(this.tbl.nativeElement); } }
 
   startJoin(r: Row): void { this.router.navigate(['/e-pins/join', r.id]); }
 

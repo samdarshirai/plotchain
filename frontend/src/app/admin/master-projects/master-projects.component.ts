@@ -19,11 +19,12 @@ import { ErrorSummaryComponent } from '../../shared/components/error-summary/err
 import { FormIssue, collectIssues, errorMessage } from '../../shared/validation/validation';
 import { titleCase } from '../../shared/utils/title-case';
 import { formatInr } from '../../shared/utils/plot-grid.util';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 @Component({
   selector: 'app-master-projects',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
+  imports: [TableToolsComponent, CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="master-projects">
       <div class="master-projects__intro">
@@ -41,6 +42,7 @@ import { formatInr } from '../../shared/utils/plot-grid.util';
       <app-inline-banner *ngIf="actionError" tone="danger" [dismissible]="true" (dismissed)="actionError = null">{{ actionError }}</app-inline-banner>
 
       <div class="card">
+        <app-table-tools filename="projects"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="columns"

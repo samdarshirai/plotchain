@@ -10,11 +10,12 @@ import { RouterLink } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { InvoiceService, RepaymentRow } from '../invoice.service';
 import { InlineBannerComponent } from '../../../shared/components/inline-banner/inline-banner.component';
+import { TableToolsComponent } from '../../../shared/components/table-tools/table-tools.component';
 
 @Component({
   selector: 'app-invoice-payments',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslateModule, InlineBannerComponent],
+  imports: [TableToolsComponent, CommonModule, ReactiveFormsModule, RouterLink, TranslateModule, InlineBannerComponent],
   template: `
     <div class="invoice-payments">
       <div class="invoice-payments__intro">
@@ -47,6 +48,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
       </form>
 
       <div class="card invoice-payments__table-card">
+        <app-table-tools filename="payment-details"></app-table-tools>
         <table class="editable-table invoice-payments__table">
           <thead>
             <tr>

@@ -10,6 +10,7 @@ import { SupportTicketService } from '../../support-tickets/support-ticket.servi
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 import { FlashMessage, snippet } from './admin-support-tickets.util';
 import { TicketSealComponent } from './ticket-seal.component';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
 
@@ -18,7 +19,7 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./admin-support-tickets.component.scss', './admin-support-tickets-list.scss'],
-  imports: [CommonModule, TranslateModule, AssociateLookupComponent, InlineBannerComponent, TicketSealComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, AssociateLookupComponent, InlineBannerComponent, TicketSealComponent],
   template: `
     <div class="support-tickets">
       <div class="support-tickets__head">
@@ -76,6 +77,7 @@ const NO_FILTERS: TicketFilters = { status: '', associateId: '' };
             </ng-template>
           </div>
 
+          <app-table-tools filename="support-tickets"></app-table-tools>
           <table class="support-tickets__table" *ngIf="page?.entries?.length" [attr.aria-label]="'admin.supportTickets.title' | translate">
             <thead>
               <tr>

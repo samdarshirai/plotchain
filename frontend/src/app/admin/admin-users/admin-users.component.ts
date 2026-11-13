@@ -11,11 +11,12 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
 import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
 import { FormIssue, collectIssues, errorMessage, format } from '../../shared/validation/validation';
 import { titleCase } from '../../shared/utils/title-case';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
+  imports: [TableToolsComponent, CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   providers: [DatePipe],
   template: `
     <div class="admin-users">
@@ -37,6 +38,7 @@ import { titleCase } from '../../shared/utils/title-case';
       </app-inline-banner>
 
       <div class="card">
+        <app-table-tools filename="admin-users"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="columns"

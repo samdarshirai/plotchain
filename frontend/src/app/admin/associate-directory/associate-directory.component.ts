@@ -14,6 +14,7 @@ import { titleCase } from '../../shared/utils/title-case';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { TabBarComponent, TabDefinition } from '../../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 // Quick views over the directory. Green/Red are KYC-based: Green = VERIFIED, Red = anything else.
 // By Date lists newest joiners first.
@@ -27,7 +28,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
 @Component({
   selector: 'app-associate-directory',
   standalone: true,
-  imports: [CommonModule, TranslateModule, InlineBannerComponent, NewAssociatePanelComponent, EditableTableComponent, TabBarComponent, FieldErrorComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent, NewAssociatePanelComponent, EditableTableComponent, TabBarComponent, FieldErrorComponent],
   template: `
     <div class="associate-directory">
       <div class="associate-directory__header">
@@ -96,6 +97,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
       </div>
 
       <div class="associate-directory__table-wrap">
+        <app-table-tools filename="associates"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="directoryColumns"

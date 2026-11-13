@@ -12,13 +12,14 @@ import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../sh
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 import { titleCase } from '../../shared/utils/title-case';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 const MS_PER_DAY = 86_400_000;
 
 @Component({
   selector: 'app-kyc-queue',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, TabBarComponent, StatTileComponent, EditableTableComponent, FieldErrorComponent],
+  imports: [TableToolsComponent, CommonModule, FormsModule, TranslateModule, TabBarComponent, StatTileComponent, EditableTableComponent, FieldErrorComponent],
   providers: [DatePipe],
   template: `
     <div class="kyc-queue" [class.kyc-queue--compact-table]="activeStatus !== 'PENDING'">
@@ -72,6 +73,7 @@ const MS_PER_DAY = 86_400_000;
 
         <div class="kyc-queue__table-scroll" role="region" tabindex="0"
           [attr.aria-label]="'admin.kycQueue.title' | translate">
+          <app-table-tools filename="kyc-queue"></app-table-tools>
           <app-editable-table
             [readOnly]="true"
             [columns]="kycColumns"

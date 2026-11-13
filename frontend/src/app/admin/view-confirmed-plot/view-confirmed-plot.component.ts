@@ -10,6 +10,7 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { formatArea } from '../../shared/utils/plot-grid.util';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 type Status = 'ENTERED' | 'PAID';
 const isoDate = (d: Date): string => {
@@ -23,7 +24,7 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['../add-plot-emi/add-plot-emi.component.scss'],
-  imports: [CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
   template: `
     <div class="add-plot-emi">
       <div class="add-plot-emi__intro">
@@ -77,6 +78,7 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
 
       <div class="add-plot-emi__list" [attr.aria-busy]="loading">
         <div class="add-plot-emi__scroll">
+          <app-table-tools filename="confirmed-plot"></app-table-tools>
           <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewConfirmedPlot.title' | translate">
             <thead>
               <tr>

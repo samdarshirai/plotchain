@@ -1,5 +1,5 @@
 {
-  "common": { "total": "कुल", "serialNo": "क्र.सं." },
+  "common": { "tableTools": { "label": "तालिका निर्यात", "copy": "कॉपी", "copied": "कॉपी हुआ", "print": "प्रिंट", "pdf": "पीडीएफ", "excel": "एक्सेल", "failed": "निर्यात विफल" }, "total": "कुल", "serialNo": "क्र.सं." },
   "epins": {
     "errorUserIdRequired": "एसोसिएट आईडी दर्ज करें।",
     "errorNotFound": "ऐसा कोई पिन या एसोसिएट नहीं मिला।",

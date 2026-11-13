@@ -12,6 +12,7 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { formatArea } from '../../shared/utils/plot-grid.util';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 const round2 = (n: number): number => Math.round(n); // whole rupees
 const isoDate = (d: Date): string => {
@@ -24,7 +25,7 @@ const isoDate = (d: Date): string => {
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['../add-plot-emi/add-plot-emi.component.scss'],
-  imports: [CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
   template: `
     <div class="add-plot-emi">
       <div class="add-plot-emi__intro">
@@ -55,6 +56,7 @@ const isoDate = (d: Date): string => {
 
       <div class="add-plot-emi__list" [attr.aria-busy]="loading">
         <div class="add-plot-emi__scroll">
+          <app-table-tools filename="booked-plot"></app-table-tools>
           <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewBookedPlot.title' | translate">
             <thead>
               <tr>
@@ -153,6 +155,7 @@ const isoDate = (d: Date): string => {
         <h3 class="add-plot-emi__section">{{ 'admin.addPlotEmi.historyTitle' | translate }}</h3>
         <p class="add-plot-emi__hint" *ngIf="!history(b).length">{{ 'admin.addPlotEmi.hist.empty' | translate }}</p>
         <div class="add-plot-emi__scroll" *ngIf="history(b).length">
+          <app-table-tools filename="booked-plot"></app-table-tools>
           <table class="add-plot-emi__table add-plot-emi__table--history">
             <thead>
               <tr>

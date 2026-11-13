@@ -17,6 +17,7 @@ import { AssociateSummary } from '../models/associate-summary.model';
 import { CycleSummary } from '../models/cycle.model';
 import { CycleManagementService } from '../cycle-management/cycle-management.service';
 import { AssociateLookupComponent } from '../../shared/components/associate-lookup/associate-lookup.component';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 const CYCLE_LOOKUP_SIZE = 100;
 
@@ -31,7 +32,7 @@ const isoDate = (d: Date): string => {
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['../add-plot-emi/add-plot-emi.component.scss'],
-  imports: [CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, AssociateLookupComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, AssociateLookupComponent],
   template: `
     <div class="add-plot-emi">
       <div class="add-plot-emi__intro">
@@ -75,6 +76,7 @@ const isoDate = (d: Date): string => {
 
       <div class="add-plot-emi__list" [attr.aria-busy]="loading">
         <div class="add-plot-emi__scroll">
+          <app-table-tools filename="plot-emi"></app-table-tools>
           <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewPlotEmi.title' | translate">
             <thead>
               <tr>
@@ -173,6 +175,7 @@ const isoDate = (d: Date): string => {
         <h3 class="add-plot-emi__section">{{ 'admin.addPlotEmi.historyTitle' | translate }}</h3>
         <p class="add-plot-emi__hint" *ngIf="!history(b).length">{{ 'admin.addPlotEmi.hist.empty' | translate }}</p>
         <div class="add-plot-emi__scroll" *ngIf="history(b).length">
+          <app-table-tools filename="plot-emi"></app-table-tools>
           <table class="add-plot-emi__table add-plot-emi__table--history">
             <thead>
               <tr>

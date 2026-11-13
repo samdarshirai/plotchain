@@ -10,6 +10,7 @@ import { FieldErrorComponent } from '../shared/components/field-error/field-erro
 import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab-bar.component';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { titleCase } from '../shared/utils/title-case';
+import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 // Same views as the admin directory: Green = KYC VERIFIED, Red = anything else, By Date = newest first.
 type TeamView = 'all' | 'green' | 'red' | 'left' | 'right' | 'byDate' | 'sponsored';
@@ -19,7 +20,7 @@ const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate', 'sp
 @Component({
   selector: 'app-my-team',
   standalone: true,
-  imports: [CommonModule, TranslateModule, EditableTableComponent, TabBarComponent, FieldErrorComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, EditableTableComponent, TabBarComponent, FieldErrorComponent],
   template: `
     <div class="associate-directory">
       <div class="associate-directory__header">
@@ -62,6 +63,7 @@ const VIEWS: TeamView[] = ['all', 'green', 'red', 'left', 'right', 'byDate', 'sp
         </div>
 
         <div class="associate-directory__table-wrap">
+          <app-table-tools filename="my-team"></app-table-tools>
           <app-editable-table
             [readOnly]="true"
             [columns]="columns"

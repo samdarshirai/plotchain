@@ -10,11 +10,12 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
 import { FormIssue, collectIssues, errorMessage } from '../../shared/validation/validation';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 @Component({
   selector: 'app-news',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
+  imports: [TableToolsComponent, CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="news">
       <div class="news__intro">
@@ -31,6 +32,7 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
       <app-inline-banner *ngIf="loadError" tone="danger" [dismissible]="true" (dismissed)="loadError = false">{{ 'admin.news.loadError' | translate }}</app-inline-banner>
 
       <div class="card">
+        <app-table-tools filename="news"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="columns"

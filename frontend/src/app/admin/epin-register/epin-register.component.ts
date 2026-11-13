@@ -15,6 +15,7 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
 import { ErrorSummaryComponent } from '../../shared/components/error-summary/error-summary.component';
 import { FormIssue } from '../../shared/validation/validation';
 import { AllocateResult, EPin, EPinEvent, EPinFilters, EPinPage, EPinStats, EPinStatus, EPinType, RedemptionType } from './epin.model';
+import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 const PAGE_SIZE = 100000; // show all rows; backend caps at this
 const MAX_COUNT = 2000;
@@ -29,7 +30,7 @@ type Panel =
 @Component({
   selector: 'app-epin-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, StatTileComponent, InlineBannerComponent, AssociateLookupComponent, FieldErrorComponent, ErrorSummaryComponent],
+  imports: [TableToolsComponent, CommonModule, FormsModule, TranslateModule, StatTileComponent, InlineBannerComponent, AssociateLookupComponent, FieldErrorComponent, ErrorSummaryComponent],
   providers: [DatePipe],
   template: `
     <div class="epin-register">
@@ -239,6 +240,7 @@ type Panel =
 
       <div class="epin-register__list">
           <div class="epin-register__table-wrap">
+            <app-table-tools filename="epin-register"></app-table-tools>
             <table class="epin-register__table">
               <thead>
                 <tr>

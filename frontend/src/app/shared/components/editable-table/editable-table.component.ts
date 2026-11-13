@@ -68,12 +68,12 @@ export function sumColumn(values: (string | number | undefined)[]): string {
     <table class="editable-table">
       <thead>
         <tr>
-          <th scope="col" *ngIf="selectable" class="editable-table__select">
+          <th scope="col" *ngIf="selectable" class="editable-table__select" data-no-export>
             <input type="checkbox" aria-label="Select all" [checked]="allSelected" (change)="toggleAll($any($event.target).checked)" />
           </th>
           <th scope="col" *ngIf="serial" class="table__sno">{{ serialLabel }}</th>
-          <th scope="col" *ngFor="let column of columns"><span class="material-symbols-outlined th-icon" aria-hidden="true">{{ column.icon ?? headerIcon(column.key) }}</span>{{ column.label }}</th>
-          <th scope="col" *ngIf="!readOnly">{{ removeRowLabel }}</th>
+          <th scope="col" *ngFor="let column of columns" [attr.data-no-export]="column.type === 'action' ? '' : null"><span class="material-symbols-outlined th-icon" aria-hidden="true">{{ column.icon ?? headerIcon(column.key) }}</span>{{ column.label }}</th>
+          <th scope="col" *ngIf="!readOnly" data-no-export>{{ removeRowLabel }}</th>
         </tr>
       </thead>
       <tbody *ngIf="rows.length > 0; else emptyState">

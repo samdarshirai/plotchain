@@ -14,6 +14,7 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
 import { ErrorSummaryComponent } from '../../../shared/components/error-summary/error-summary.component';
 import { FormIssue, collectIssues, errorMessage } from '../../../shared/validation/validation';
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
+import { TableToolsComponent } from '../../../shared/components/table-tools/table-tools.component';
 
 // Local calendar dates (not toISOString, which is UTC and can land a day early in the morning for UTC+ zones).
 function localIsoDate(d: Date): string {
@@ -33,7 +34,7 @@ const requiredUnlessCash = (c: AbstractControl): ValidationErrors | null =>
 @Component({
   selector: 'app-invoice-expenses',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
+  imports: [TableToolsComponent, CommonModule, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="invoice-expenses">
       <div class="invoice-expenses__intro">
@@ -74,6 +75,7 @@ const requiredUnlessCash = (c: AbstractControl): ValidationErrors | null =>
       </form>
 
       <div class="card">
+        <app-table-tools filename="expenses"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="columns"

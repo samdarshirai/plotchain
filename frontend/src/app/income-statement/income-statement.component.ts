@@ -17,6 +17,7 @@ import { TabBarComponent, TabDefinition } from '../shared/components/tab-bar/tab
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../shared/components/editable-table/editable-table.component';
 import { DateRangeComponent } from '../shared/components/date-range/date-range.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
+import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 const PAGE_SIZE = 100; // backend max; all pages are fetched so the Total row covers every entry
 const CYCLE_LOOKUP_SIZE = 100;
@@ -51,7 +52,7 @@ const DATE_FORMAT = 'dd MMM yyyy';
 @Component({
   selector: 'app-income-statement',
   standalone: true,
-  imports: [CommonModule, TranslateModule, TabBarComponent, EditableTableComponent, InlineBannerComponent, DateRangeComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, TabBarComponent, EditableTableComponent, InlineBannerComponent, DateRangeComponent],
   providers: [DatePipe, CurrencyPipe],
   template: `
     <div class="income-statement" [attr.data-income-type]="activeIncomeType" [class.income-statement--matching]="activeIncomeType === 'MATCHING'" [class.income-statement--reward]="activeIncomeType === 'REWARD'" [class.income-statement--direct]="activeIncomeType === 'DIRECT'" [class.income-statement--all]="activeIncomeType === 'ALL'">
@@ -132,6 +133,7 @@ const DATE_FORMAT = 'dd MMM yyyy';
       </app-inline-banner>
 
       <div class="income-statement__table" *ngIf="activeIncomeType !== 'REWARD'">
+        <app-table-tools filename="income-statement"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="statementColumns"
@@ -153,12 +155,14 @@ const DATE_FORMAT = 'dd MMM yyyy';
         </div>
 
         <div class="income-statement__table">
+          <app-table-tools filename="income-statement"></app-table-tools>
           <app-editable-table [readOnly]="true" [serial]="false" [columns]="rewardTierColumns" [rows]="rewardTierRows"></app-editable-table>
         </div>
 
         <h2 class="income-statement__reward-heading">{{ 'incomeStatement.achievedRewardsTitle' | translate }}</h2>
         <app-date-range [from]="dateFrom" [to]="dateTo" (rangeChange)="onDateRangeChange($event)"></app-date-range>
         <div class="income-statement__table">
+          <app-table-tools filename="income-statement"></app-table-tools>
           <app-editable-table
             [readOnly]="true"
             [columns]="achievedColumns"

@@ -72,3 +72,62 @@ export function printTable(target: HTMLElement): void {
   target.classList.add(PRINT_CLASS);
   try { window.print(); } finally { target.classList.remove(PRINT_CLASS); style.remove(); }
 }
+
+export interface TableData { headers: string[]; rows: string[][]; }
+
+const SKIP_HEAD = /^\s*$/;
+
+// Reads headers + body text from a rendered table. Drops columns that are blank-headed or marked
+// data-no-export (select / serial / action / remove columns); keeps the total row.
+export function scrapeTable(root: HTMLElement | null): TableData {
+  const table = root?.tagName === 'TABLE' ? (root as HTMLTableElement) : root?.querySelector('table');
+  if (!table) { return { headers: [], rows: [] }; }
+  const txt = (el: Element) => (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+  const ths = Array.from(table.querySelectorAll('thead tr:last-child th'));
+  const keep = ths.map(th => !th.hasAttribute('data-no-export') && !SKIP_HEAD.test(txt(th)));
+  const headers = ths.filter((_, i) => keep[i]).map(txt);
+  const rows = Array.from(table.querySelectorAll('tbody tr'))
+    .filter(tr => !tr.querySelector('td[colspan]'))
+    .map(tr => Array.from(tr.children).filter((_, i) => keep[i] ?? true).map(txt));
+  return { headers, rows };
+}
+
+export const tableToTsv = (d: TableData): string => [d.headers, ...d.rows].map(l => l.map(flat).join('\t')).join('\n');
+
+export function copyData(d: TableData): Promise<void> { return navigator.clipboard.writeText(tableToTsv(d)); }
+
+export async function exportXlsx(d: TableData, filename: string): Promise<void> {
+  const { Workbook } = await import('exceljs');
+  const wb = new Workbook();
+  const ws = wb.addWorksheet('Sheet1');
+  // Strings starting with = + - @ are written as text by exceljs (no formula), so no escaping needed.
+  ws.addRow(d.headers).font = { bold: true };
+  d.rows.forEach(r => ws.addRow(r));
+  ws.columns.forEach((c, i) => { c.width = Math.min(50, Math.max(10, ...[d.headers[i], ...d.rows.map(r => r[i])].map(v => (v ?? '').length + 2))); });
+  const buf = await wb.xlsx.writeBuffer();
+  download(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+    /\.xlsx$/i.test(filename) ? filename : `${filename}.xlsx`);
+}
+
+export async function exportPdf(d: TableData, filename: string, title: string): Promise<void> {
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
+  const doc = new jsPDF({ orientation: d.headers.length > 6 ? 'landscape' : 'portrait', unit: 'pt', format: 'a4' });
+  doc.setFontSize(14);
+  doc.text(title, 40, 36);
+  autoTable(doc, { head: [d.headers], body: d.rows, startY: 48, styles: { fontSize: 8 }, headStyles: { fillColor: [40, 40, 40] } });
+  doc.save(/\.pdf$/i.test(filename) ? filename : `${filename}.pdf`);
+}
+
+// Prints just the given data (not the page) via a hidden iframe.
+export function printData(d: TableData, title: string): void {
+  const e = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const html = `<!doctype html><title>${e(title)}</title><style>body{font:12px sans-serif}table{border-collapse:collapse;width:100%}` +
+    `th,td{border:1px solid #999;padding:4px 6px;text-align:left}th{background:#eee}</style><h3>${e(title)}</h3>` +
+    `<table><thead><tr>${d.headers.map(h => `<th>${e(h)}</th>`).join('')}</tr></thead><tbody>` +
+    d.rows.map(r => `<tr>${r.map(c => `<td>${e(c)}</td>`).join('')}</tr>`).join('') + '</tbody></table>';
+  const f = document.createElement('iframe');
+  f.style.cssText = 'position:fixed;width:0;height:0;border:0';
+  document.body.appendChild(f);
+  f.srcdoc = html;
+  f.onload = () => { f.contentWindow!.focus(); f.contentWindow!.print(); setTimeout(() => f.remove(), 1000); };
+}

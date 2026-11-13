@@ -12,11 +12,12 @@ import { InlineBannerComponent } from '../../../shared/components/inline-banner/
 import { FieldErrorComponent } from '../../../shared/components/field-error/field-error.component';
 import { ErrorSummaryComponent } from '../../../shared/components/error-summary/error-summary.component';
 import { FormIssue, collectIssues, errorMessage } from '../../../shared/validation/validation';
+import { TableToolsComponent } from '../../../shared/components/table-tools/table-tools.component';
 
 @Component({
   selector: 'app-invoice-loans',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
+  imports: [TableToolsComponent, CommonModule, RouterLink, ReactiveFormsModule, TranslateModule, EditableTableComponent, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
   template: `
     <div class="invoice-loans">
       <div class="invoice-loans__intro">
@@ -32,6 +33,7 @@ import { FormIssue, collectIssues, errorMessage } from '../../../shared/validati
 
       <app-inline-banner *ngIf="loadError" tone="danger" [dismissible]="true" (dismissed)="loadError = false">{{ 'admin.invoiceLoans.loadError' | translate }}</app-inline-banner>
       <div class="card">
+        <app-table-tools filename="advance-loans"></app-table-tools>
         <app-editable-table
           [readOnly]="true"
           [columns]="columns"

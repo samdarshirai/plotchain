@@ -5,12 +5,13 @@ import { FieldErrorComponent } from '../shared/components/field-error/field-erro
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
 import { BusinessReport, BusinessReportRow, ReportsService } from './reports.service';
+import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 // Left and Right business tables for a booked-date range.
 @Component({
   selector: 'app-my-business-report',
   standalone: true,
-  imports: [CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
   template: `
     <div class="report" [attr.aria-busy]="loading">
       <h1>{{ 'reports.myBusiness.title' | translate }}</h1>
@@ -32,6 +33,7 @@ import { BusinessReport, BusinessReportRow, ReportsService } from './reports.ser
         <ng-container *ngFor="let leg of legs()">
           <h2>{{ 'reports.myBusiness.' + leg.key | translate }}</h2>
           <div class="report__scroll">
+            <app-table-tools filename="business-report"></app-table-tools>
             <table class="report__table">
               <thead>
                 <tr>
