@@ -82,7 +82,11 @@ const SKIP_HEAD = /^\s*$/;
 export function scrapeTable(root: HTMLElement | null): TableData {
   const table = root?.tagName === 'TABLE' ? (root as HTMLTableElement) : root?.querySelector('table');
   if (!table) { return { headers: [], rows: [] }; }
-  const txt = (el: Element) => (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+  const txt = (el: Element) => {
+    const c = el.cloneNode(true) as Element;
+    c.querySelectorAll('.material-symbols-outlined,[aria-hidden="true"]').forEach(i => i.remove());
+    return (c.textContent ?? '').replace(/\s+/g, ' ').trim();
+  };
   const ths = Array.from(table.querySelectorAll('thead tr:last-child th'));
   const keep = ths.map(th => !th.hasAttribute('data-no-export') && !SKIP_HEAD.test(txt(th)));
   const headers = ths.filter((_, i) => keep[i]).map(txt);

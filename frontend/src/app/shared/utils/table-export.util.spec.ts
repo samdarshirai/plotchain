@@ -92,6 +92,11 @@ describe('scrapeTable', () => {
     expect(scrapeTable(d)).toEqual({ headers: ['Name', 'Amt'], rows: [['Ann', '₹ 5']] });
   });
 
+  it('drops icon ligature text from headers', () => {
+    const d = make(`<table><thead><tr><th><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span> Associate ID</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table>`);
+    expect(scrapeTable(d).headers).toEqual(['Associate ID']);
+  });
+
   it('returns empty data when there is no table', () => {
     expect(scrapeTable(make('<p>x</p>'))).toEqual({ headers: [], rows: [] });
   });
