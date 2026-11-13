@@ -85,6 +85,9 @@ jobs:
           nohup npx ng serve --port 4200 > ../frontend.log 2>&1 &
           for i in $(seq 1 90); do curl -sf -o /dev/null localhost:4200 && exit 0; sleep 2; done
           cat ../frontend.log; exit 1
+      - name: Mark company launched
+        # Fresh DB is pre-launch, so every route redirects to the setup wizard; the specs need a live company.
+        run: PGPASSWORD=plotchain psql -h localhost -p 5434 -U plotchain plotchain -c "UPDATE setup_state SET launched_at = now(), terms_accepted_at = now()"
       - name: Playwright
         working-directory: frontend
         run: npx playwright test
