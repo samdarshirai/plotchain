@@ -432,16 +432,16 @@
   // 12 columns: S No, ID, Name, Phone, Sponsor, Parent, Position, Status, Registration, Login pw, Txn pw, Actions. Sum 100%.
   th:nth-child(1) { width: 4%; }
   th:nth-child(2) { width: 8%; }
-  th:nth-child(3) { width: 10%; }
-  th:nth-child(4) { width: 9%; }
-  th:nth-child(5) { width: 8%; }
-  th:nth-child(6) { width: 8%; }
+  th:nth-child(3) { width: 9%; }
+  th:nth-child(4) { width: 8%; }
+  th:nth-child(5) { width: 7%; }
+  th:nth-child(6) { width: 7%; }
   th:nth-child(7) { width: 5%; }
   th:nth-child(8) { width: 7%; }
-  th:nth-child(9) { width: 12%; }
+  th:nth-child(9) { width: 15%; }
   th:nth-child(10) { width: 7%; }
   th:nth-child(11) { width: 7%; }
-  th:nth-child(12) { width: 15%; }
+  th:nth-child(12) { width: 16%; }
 
   thead th {
     padding: 8px 6px;
@@ -1219,6 +1219,7 @@
 
 .cycle-management__filter {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
   padding: 1.25rem 1.5rem;
@@ -1244,6 +1245,25 @@
     min-width: 180px;
     background: var(--surface-card);
   }
+
+  // Status + From + To don't fit side by side on a phone: stack them, each field full width.
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+
+    label {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.375rem;
+    }
+
+    select,
+    input {
+      width: 100%;
+      min-width: 0;
+    }
+  }
 }
 
 .cycle-management .card {
@@ -1268,14 +1288,16 @@
       overflow: hidden;
     }
 
+    // 13 columns: S No, Period, Status, Business, Direct, Matching, Sponsor, Royalty, Total Income, Reward,
+    // Total Commission, Commission %, Actions. Sum 100%.
     th:nth-child(1) { width: 4%; }
-    th:nth-child(2) { width: 8%; }
+    th:nth-child(2) { width: 9%; }
     th:nth-child(3) { width: 6%; }
-    th:nth-child(4), th:nth-child(9), th:nth-child(12) { width: 8%; }
-    th:nth-child(5), th:nth-child(6), th:nth-child(7), th:nth-child(8),
-    th:nth-child(10), th:nth-child(11) { width: 7%; }
-    th:nth-child(13) { width: 6%; }
-    th:nth-child(14) { width: 10%; }
+    th:nth-child(4), th:nth-child(9), th:nth-child(11) { width: 9%; }
+    th:nth-child(5) { width: 8%; }
+    th:nth-child(6), th:nth-child(7), th:nth-child(8), th:nth-child(10) { width: 7%; }
+    th:nth-child(12) { width: 6%; }
+    th:nth-child(13) { width: 12%; }
 
     td {
       overflow-wrap: anywhere;

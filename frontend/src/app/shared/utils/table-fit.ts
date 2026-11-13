@@ -73,17 +73,20 @@ export function startTableFit(root: HTMLElement = document.body): () => void {
       }
     });
   };
-  const schedule = () => {
+  // DOM changes re-fit in a microtask, i.e. before the browser paints: a freshly rendered table that is
+  // too wide never shows at full width (not even for one frame, which would flash a sideways scrollbar).
+  // Resize notifications go through requestAnimationFrame so class changes don't re-enter ResizeObserver.
+  const schedule = (run: (cb: () => void) => void) => () => {
     if (!pending) {
       pending = true;
-      requestAnimationFrame(fitAll);
+      run(fitAll);
     }
   };
 
-  const resize = new ResizeObserver(schedule);
-  const mutations = new MutationObserver(schedule);
+  const resize = new ResizeObserver(schedule(requestAnimationFrame));
+  const mutations = new MutationObserver(schedule(queueMicrotask));
   mutations.observe(root, { childList: true, subtree: true, characterData: true });
-  schedule();
+  schedule(requestAnimationFrame)();
 
   return () => {
     resize.disconnect();
