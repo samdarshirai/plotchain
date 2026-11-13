@@ -28,9 +28,13 @@ for (const screen of ['sales-register', 'associate-directory']) for (const width
     const table = page.locator(`.${screen} .editable-table`);
     await expect(table.locator('tbody tr')).toHaveCount(1);
     await page.screenshot({ path: testInfo.outputPath('table.png'), fullPage: true });
-    // Below tablet width the table stacks into cards (CLAUDE.md), so the compact-row check only applies above it.
-    if (width > 768) {
-      expect((await table.locator('tbody tr').boundingBox())!.height).toBeLessThanOrEqual(72);
+    // Laptops (>=1280px) must render a real table; narrower widths may stack into cards (CLAUDE.md).
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
+    const stacked = await table.evaluate(el => el.classList.contains('table--stacked'));
+    if (width >= 1280) expect(stacked).toBeFalsy();
+    // The compact-row check only applies to a real table. 80px allows the Edit/Suspend buttons to wrap to two lines.
+    if (!stacked) {
+      expect((await table.locator('tbody tr').boundingBox())!.height).toBeLessThanOrEqual(80);
       const aligned = await table.evaluate(el => {
         const headers = Array.from(el.querySelectorAll('thead th'));
         const cells = Array.from(el.querySelectorAll('tbody tr:first-child td'));
