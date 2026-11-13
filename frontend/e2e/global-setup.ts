@@ -13,6 +13,17 @@ export default async function globalSetup() {
   if (!login.ok()) throw new Error(`e2e setup: admin login failed (${login.status()}); set ADMIN_USER/ADMIN_PASSWORD`);
   const headers = { Authorization: `Bearer ${(await login.json()).token}` };
 
+  // The book-plot spec needs a project that has plots; a fresh database has none.
+  const projects = await api.get('/api/company/projects', { headers });
+  if (projects.ok() && !(await projects.json()).length) {
+    const project = await api.post('/api/company/projects', { headers, data: { name: 'E2E Layout Project', location: 'Pune' } });
+    if (!project.ok()) throw new Error(`e2e setup: create project failed (${project.status()})`);
+    const plot = await api.post(`/api/company/projects/${(await project.json()).id}/plots`, { headers, data: {
+      plotNo: 'E2E-1', plotType: 'NORMAL', areaSqft: 1000, rate: 1500, price: 1500000
+    } });
+    if (!plot.ok()) throw new Error(`e2e setup: create plot failed (${plot.status()})`);
+  }
+
   const found = await api.get('/api/admin/associates?search=E2E%20Layout&page=0&size=5', { headers });
   const existing = found.ok() ? (await found.json()).associates?.find((a: any) => a.name === 'E2E Layout') : undefined;
   if (existing) {
