@@ -62,9 +62,8 @@ import { CycleIncome, LegVolumeSummary, NetworkSummary } from '../../models/dash
           <div class="seal-card__breakdown-row">
             <div class="topup-business seal-card__breakdown-line">
               <span>{{ 'dashboard.selfTopUpBusinessLabel' | translate }}</span>
-              <span>{{ legVolume.cycleTopUpBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
+              <span>{{ legVolume.totalTopUpBusiness | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
-            <div class="seal-card__breakdown-bar"><span [style.width.%]="barPct(legVolume.cycleTopUpBusiness)"></span></div>
           </div>
         </div>
       </div>
@@ -96,7 +95,7 @@ export class CycleIncomeCardComponent {
 
   private get volumes(): number[] {
     const v = this.legVolume;
-    return [v.newLeftBusiness, v.newRightBusiness, v.cycleSelfBusiness, v.cycleTopUpBusiness];
+    return [v.newLeftBusiness, v.newRightBusiness, v.cycleSelfBusiness];
   }
 
   get totalBusiness(): number {

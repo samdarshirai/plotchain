@@ -22,7 +22,7 @@ describe('CycleIncomeCardComponent (business summary)', () => {
   };
   const legs: LegVolumeSummary = {
     leftLegVolume: 0, rightLegVolume: 0,
-    totalLeftBusiness: 9, totalRightBusiness: 9, totalSelfBusiness: 9, totalTopUpBusiness: 0,
+    totalLeftBusiness: 9, totalRightBusiness: 9, totalSelfBusiness: 9, totalTopUpBusiness: 700000,
     newBookedAreaSqft: 0, newLeftBusiness: 3000000, newRightBusiness: 1500000, newMatchingBusiness: 0,
     cycleSelfBusiness: 400000, cycleTopUpBusiness: 100000
   };
@@ -57,10 +57,10 @@ describe('CycleIncomeCardComponent (business summary)', () => {
 
   const el = (sel: string): HTMLElement => fixture.nativeElement.querySelector(sel);
 
-  it('shows total business as left + right + self + top-up (this cycle)', () => {
+  it('shows total business as left + right + self (this cycle), excluding top-up', () => {
     createComponent();
-    expect(fixture.componentInstance.totalBusiness).toBe(5000000);
-    expect(el('.seal-card__figure').textContent).toContain('5,000,000');
+    expect(fixture.componentInstance.totalBusiness).toBe(4900000);
+    expect(el('.seal-card__figure').textContent).toContain('4,900,000');
   });
 
   it('renders left, right and self business and top-up rows', () => {
@@ -68,7 +68,8 @@ describe('CycleIncomeCardComponent (business summary)', () => {
     expect(el('.left-business').textContent).toContain('3,000,000');
     expect(el('.right-business').textContent).toContain('1,500,000');
     expect(el('.self-business').textContent).toContain('400,000');
-    expect(el('.topup-business').textContent).toContain('100,000');
+    expect(el('.topup-business').textContent).toContain('700,000');
+    expect(el('.topup-business').textContent).not.toContain('100,000');
   });
 
   it('sizes bars against the largest of the three', () => {
@@ -78,7 +79,7 @@ describe('CycleIncomeCardComponent (business summary)', () => {
   });
 
   it('returns a zero bar without dividing by zero when there is no business', () => {
-    createComponent({ legs: { ...legs, newLeftBusiness: 0, newRightBusiness: 0, cycleSelfBusiness: 0, cycleTopUpBusiness: 0 } });
+    createComponent({ legs: { ...legs, newLeftBusiness: 0, newRightBusiness: 0, cycleSelfBusiness: 0, cycleTopUpBusiness: 0, totalTopUpBusiness: 0 } });
     expect(fixture.componentInstance.barPct(0)).toBe(0);
     expect(fixture.componentInstance.totalBusiness).toBe(0);
   });
