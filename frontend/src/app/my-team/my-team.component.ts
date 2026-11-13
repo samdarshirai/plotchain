@@ -84,6 +84,7 @@ export class MyTeamComponent implements OnInit {
   view: TeamView = 'all';
   viewTabs: TabDefinition[] = [];
   columns: EditableTableColumn[] = [];
+  private allColumns: EditableTableColumn[] = [];
   rows: Record<string, string>[] = [];
   search = '';
   status = '';
@@ -93,7 +94,7 @@ export class MyTeamComponent implements OnInit {
   ngOnInit(): void {
     const t = (k: string) => this.translate.instant('admin.associateDirectory.' + k);
     this.viewTabs = VIEWS.map(id => ({ id, label: t('views.' + id) }));
-    this.columns = [
+    this.allColumns = [
       { key: 'userId', label: t('columnUserId'), type: 'text', bold: true },
       { key: 'name', label: t('columnName'), type: 'text', bold: true },
       { key: 'phone', label: t('columnPhone'), type: 'text' },
@@ -103,12 +104,19 @@ export class MyTeamComponent implements OnInit {
       { key: 'status', label: t('columnStatus'), type: 'badge', badgeTone: v => this.statusTone(v) },
       { key: 'joinedAt', label: t('columnRegistrationDate'), type: 'text' }
     ];
+    this.applyColumns();
     this.loadPage();
     this.loadCounts();
   }
 
+  // Parent ID shows only on the Sponsored Associates tab.
+  private applyColumns(): void {
+    this.columns = this.allColumns.filter(c => c.key !== 'parentUserId' || this.view === 'sponsored');
+  }
+
   onViewChange(view: string): void {
     this.view = view as TeamView;
+    this.applyColumns();
     this.loadPage();
   }
 

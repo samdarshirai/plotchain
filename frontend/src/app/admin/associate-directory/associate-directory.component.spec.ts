@@ -319,7 +319,6 @@ describe('AssociateDirectoryComponent', () => {
       loadRow();
       const keys = fixture.componentInstance.directoryColumns.map(c => c.key);
       expect(keys).toContain('phone');
-      expect(keys).toContain('parentUserId');
       expect(keys).not.toContain('email');
       expect(fixture.componentInstance.directoryRows[0]['phone']).toBe('9876543210');
     });

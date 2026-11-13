@@ -31,12 +31,11 @@ describe('MyTeamComponent', () => {
     expect(c.componentInstance.rows[1]['name']).toBe('Kid');
   });
 
-  it('shows parent id and mobile, dash when mobile hidden', () => {
-    list.and.returnValue(of({ associates: [{ ...row, parentUserId: 'VP00001', phone: '9876543210' }, { ...row, userId: 'VP3' }], page: 0, size: 20, totalElements: 2 }));
+  it('shows mobile, dash when mobile hidden', () => {
+    list.and.returnValue(of({ associates: [{ ...row, phone: '9876543210' }, { ...row, userId: 'VP3' }], page: 0, size: 20, totalElements: 2 }));
     const c = TestBed.createComponent(MyTeamComponent);
     c.detectChanges();
-    expect(c.componentInstance.columns.map(x => x.key)).toEqual(jasmine.arrayContaining(['parentUserId', 'phone']));
-    expect(c.componentInstance.rows[0]['parentUserId']).toBe('VP00001');
+    expect(c.componentInstance.columns.map(x => x.key)).toEqual(jasmine.arrayContaining(['phone']));
     expect(c.componentInstance.rows[0]['phone']).toBe('9876543210');
     expect(c.componentInstance.rows[1]['phone']).toBe('—');
   });

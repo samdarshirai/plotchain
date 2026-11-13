@@ -78,7 +78,7 @@ for (const width of [1280, 1366, 1440]) {
             buyerPhone: '9876543210', amount: 1500000, legCredited: 'L', note: 'A long note', status: 'RECORDED', recordedAt: '2026-10-01T12:00:00Z' }],
           page: 0, size: 20, totalElements: 1 } }));
         await page.route('**/api/admin/associates?*', r => r.fulfill({ json: {
-          associates: [{ id: 'a1', userId: 'VP00001', name: 'Associate With A Longer Display Name', phone: '9876543210', sponsorUserId: 'VP00002', parentUserId: 'VP00003',
+          associates: [{ id: 'a1', userId: 'VP00001', name: 'Associate With A Longer Display Name', phone: '9876543210', sponsorUserId: 'VP00002',
             position: 'L', status: 'ACTIVE', kycStatus: 'VERIFIED', role: 'ASSOCIATE', plotBuyer: true,
             loginPassword: 'Ab3dEf9hJk', transactionPassword: 'Xy7zQw2mNp', joinedAt: '2026-10-01T12:00:00Z' }],
           page: 0, size: 20, totalElements: 1 } }));
@@ -101,7 +101,7 @@ for (const width of [1280, 1366, 1440]) {
   });
 }
 
-// Associate My Team (/my-tree/team): Mobile + Parent ID columns were added; with a realistic row it must stay a real
+// Associate My Team (/my-tree/team): Mobile column was added; with a realistic row it must stay a real
 // table on laptops and in the 800px tablet range's card fallback must keep the page free of sideways scroll.
 for (const width of [1280, 1366, 1440]) {
   test.describe(`my-team stays a table at ${width}px`, () => {
@@ -117,7 +117,7 @@ for (const width of [1280, 1366, 1440]) {
       await page.route('**/api/company/setup-state', r => r.fulfill({ json: { launchedAt: '2026-01-01T00:00:00Z' } }));
       await page.route('**/api/associates/me/downline?*', r => r.fulfill({ json: {
         associates: [{ id: 'a1', userId: 'VP00001', name: 'Associate With A Longer Display Name', phone: '9876543210',
-          sponsorUserId: 'VP00002', parentUserId: 'VP00003', position: 'L', status: 'ACTIVE', kycStatus: 'VERIFIED',
+          sponsorUserId: 'VP00002', position: 'L', status: 'ACTIVE', kycStatus: 'VERIFIED',
           role: 'ASSOCIATE', plotBuyer: true, joinedAt: '2026-10-01T12:00:00Z' }],
         page: 0, size: 100, totalElements: 1 } }));
       await page.goto('/my-tree/team', { waitUntil: 'networkidle' });

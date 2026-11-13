@@ -190,7 +190,6 @@ export class AssociateDirectoryComponent implements OnInit {
       { key: 'name', label: this.translate.instant('admin.associateDirectory.columnName'), type: 'text', bold: true },
       { key: 'phone', label: this.translate.instant('admin.associateDirectory.columnPhone'), type: 'text' },
       { key: 'sponsorUserId', label: this.translate.instant('admin.associateDirectory.columnSponsorId'), type: 'text' },
-      { key: 'parentUserId', label: this.translate.instant('admin.associateDirectory.columnParentId'), type: 'text' },
       { key: 'position', label: this.translate.instant('admin.associateDirectory.columnPosition'), type: 'text' },
       {
         key: 'status',
@@ -351,7 +350,6 @@ export class AssociateDirectoryComponent implements OnInit {
           name: a.plotBuyer ? `${a.name} 🏞️` : a.name,
           phone: a.phone ?? '—',
           sponsorUserId: a.sponsorUserId ?? '—',
-          parentUserId: a.parentUserId ?? '—',
           position: a.position ?? '—',
           status: titleCase(a.status),
           joinedAt: formatIst(a.joinedAt),
