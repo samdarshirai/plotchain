@@ -25,7 +25,8 @@ async function checkScreen(page: Page, route: string, screenshotPath: string, na
       const style = getComputedStyle(th);
       if (style.backgroundColor === 'rgb(12, 10, 11)') { problems.push(`Ink table header: ${th.textContent}`); }
     }
-    for (const button of document.querySelectorAll('.brand-button:not(.brand-button--secondary):not(.brand-button--ghost):not(.brand-button--danger)')) {
+    // .projects-plots__row-book is an outlined row action by design (fills on row hover), not a primary CTA.
+    for (const button of document.querySelectorAll('.brand-button:not(.brand-button--secondary):not(.brand-button--ghost):not(.brand-button--danger):not(.projects-plots__row-book)')) {
       if (!button.getBoundingClientRect().height) { continue; }
       if (getComputedStyle(button).backgroundColor !== 'rgb(92, 26, 42)') { problems.push(`incorrect primary CTA: ${button.textContent}`); }
     }
@@ -43,11 +44,14 @@ for (const role of ROLES) for (const width of [360, 390, 768, 1440]) {
       data: { userId: process.env[role.user] ?? role.defaults[0], password: process.env[role.pass] ?? role.defaults[1] }
     });
     expect(response.ok()).toBeTruthy();
-    await page.addInitScript(login => {
-      localStorage.setItem('plotchain.auth.token', login.token);
-      localStorage.setItem('plotchain.auth.mustChangePassword', 'false');
-      localStorage.setItem('plotchain.auth.role', login.role);
-    }, await response.json());
+    // Admin and associate sessions use separate localStorage slots (auth.service.ts KEYS).
+    const admin = role.name === 'admin';
+    await page.addInitScript(a => {
+      const p = a.admin ? 'plotchain.auth.admin.' : 'plotchain.auth.';
+      localStorage.setItem(p + 'token', a.login.token);
+      localStorage.setItem(p + (a.admin ? 'mustChange' : 'mustChangePassword'), 'false');
+      localStorage.setItem(p + 'role', a.login.role);
+    }, { admin, login: await response.json() });
     const routes = [...role.routes];
     for (const route of routes) {
       await test.step(route, async () => {
@@ -70,9 +74,9 @@ test('public screens and all setup steps use the design at desktop and mobile si
   });
   expect(response.ok()).toBeTruthy();
   await page.addInitScript(login => {
-    localStorage.setItem('plotchain.auth.token', login.token);
-    localStorage.setItem('plotchain.auth.mustChangePassword', 'false');
-    localStorage.setItem('plotchain.auth.role', login.role);
+    localStorage.setItem('plotchain.auth.admin.token', login.token);
+    localStorage.setItem('plotchain.auth.admin.mustChange', 'false');
+    localStorage.setItem('plotchain.auth.admin.role', login.role);
   }, await response.json());
   // Render setup against an isolated unlaunched state; never alter the running company.
   await page.route('**/api/company/setup-state', async route => {

@@ -11,10 +11,13 @@ const plot = { id: 'plot1', plotId: 'plot1', plotNo: 'A-101', plotType: 'NORMAL'
   areaSqft: 1200, rate: 3750, price: 4500000, extraPrice: 10000, roadSizeFt: 30, status: 'AVAILABLE' };
 
 async function mockSession(page: Page, role = 'ADMIN') {
+  // Admin and associate sessions use separate localStorage slots (auth.service.ts KEYS).
   await page.addInitScript(role => {
-    localStorage.setItem('plotchain.auth.token', `test.${btoa(JSON.stringify({ exp: 4102444800 }))}.test`);
-    localStorage.setItem('plotchain.auth.role', role);
-    localStorage.setItem('plotchain.auth.mustChangePassword', 'false');
+    const admin = role === 'ADMIN';
+    const p = admin ? 'plotchain.auth.admin.' : 'plotchain.auth.';
+    localStorage.setItem(p + 'token', `test.${btoa(JSON.stringify({ exp: 4102444800 }))}.test`);
+    localStorage.setItem(p + 'role', role);
+    localStorage.setItem(p + (admin ? 'mustChange' : 'mustChangePassword'), 'false');
   }, role);
   await page.route('**/api/**', route => {
     const path = new URL(route.request().url()).pathname;
@@ -77,11 +80,12 @@ for (const width of [320, 390, 768, 1024, 1440]) {
         await noPageOverflow(page);
       });
     }
-    test('KYC: populated review table scrolls within its panel', async ({ page }) => {
+    test('KYC: populated review table fits its panel without sideways scroll', async ({ page }) => {
       await page.goto('/admin/settings/kyc-queue', { waitUntil: 'networkidle' });
       await expect(page.locator('.kyc-queue .editable-table tbody tr')).toHaveCount(1);
       await noPageOverflow(page);
-      await expect(page.locator('.kyc-queue__table-scroll')).toHaveCSS('overflow-x', 'auto');
+      // CLAUDE.md: tables never scroll sideways -- the panel must not need a scrollbar (narrow widths stack into cards).
+      await fitsInside(page.locator('.kyc-queue__table-scroll'));
     });
 
     test('plots: populated table and edit dialog', async ({ page }, testInfo) => {

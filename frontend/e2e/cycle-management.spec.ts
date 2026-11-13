@@ -36,8 +36,8 @@ for (const width of [390, 1024, 1440, 1920]) {
     await page.waitForFunction(() => Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel=stylesheet]')).every(link => link.media !== 'print'));
     const table = page.locator('.cycle-management .editable-table');
     await expect(table.locator('tbody tr')).toHaveCount(2);
-    await expect(table.locator('tbody tr:first-child td').nth(3)).toHaveText('₹12,34,56,789');
-    await expect(table.locator('tfoot td').nth(7)).toHaveText('₹24,69,13,578');
+    await expect(table.locator('tbody tr:first-child td').nth(4)).toHaveText('₹12,34,56,789');
+    await expect(table.locator('tfoot td').nth(4)).toHaveText('₹24,69,13,578');
     await expect(page.locator('.cycle-management__income-note')).toContainText('before TDS and admin deductions');
     const button = page.getByRole('button', { name: 'Credit Wallets', exact: true });
     await expect(button).toBeVisible();

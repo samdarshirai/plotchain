@@ -8,9 +8,10 @@ for (const screen of ['sales-register', 'associate-directory']) for (const width
     });
     expect(loginResponse.ok()).toBeTruthy();
     await page.addInitScript(login => {
-      localStorage.setItem('plotchain.auth.token', login.token);
-      localStorage.setItem('plotchain.auth.role', login.role);
-      localStorage.setItem('plotchain.auth.mustChangePassword', 'false');
+      // Admin session slot (auth.service.ts KEYS).
+      localStorage.setItem('plotchain.auth.admin.token', login.token);
+      localStorage.setItem('plotchain.auth.admin.role', login.role);
+      localStorage.setItem('plotchain.auth.admin.mustChange', 'false');
     }, await loginResponse.json());
     await page.route('**/api/admin/sales?*', route => route.fulfill({ json: {
       sales: [{ id: 'layout-sale', projectName: 'A Residential Project With A Rather Long Name For Testing Table Wrapping',
@@ -27,7 +28,8 @@ for (const screen of ['sales-register', 'associate-directory']) for (const width
     const table = page.locator(`.${screen} .editable-table`);
     await expect(table.locator('tbody tr')).toHaveCount(1);
     await page.screenshot({ path: testInfo.outputPath('table.png'), fullPage: true });
-    if (width > 768 || screen === 'associate-directory') {
+    // Below tablet width the table stacks into cards (CLAUDE.md), so the compact-row check only applies above it.
+    if (width > 768) {
       expect((await table.locator('tbody tr').boundingBox())!.height).toBeLessThanOrEqual(72);
       const aligned = await table.evaluate(el => {
         const headers = Array.from(el.querySelectorAll('thead th'));
@@ -38,7 +40,7 @@ for (const screen of ['sales-register', 'associate-directory']) for (const width
     }
     if (screen === 'sales-register') {
       if (width > 768) {
-        expect(await table.locator('tbody td:nth-child(8) > span').evaluate(el => el.scrollWidth <= el.clientWidth)).toBeTruthy();
+        expect(await table.locator('tbody td:nth-child(9) > span').evaluate(el => el.scrollWidth <= el.clientWidth)).toBeTruthy();
       }
       await table.locator('input').fill('Review reason');
       await expect(table.locator('input')).toHaveValue('Review reason');
