@@ -106,11 +106,34 @@ public class AdminAssociateService {
             }
             rootId = root.getId();
         }
-        return listDownline(rootId, null, null, null, null, null, null, false, leg, false, false, page, size);
+        AdminAssociatePageResponse rows = listDownlineUnmasked(rootId, null, null, null, null, null, null, false, leg, false, false, page, size);
+        return callerId == null ? rows : maskPhoneUnlessSponsored(callerId, rows);
+    }
+
+    // An associate sees mobile numbers only of associates they sponsored directly.
+    private AdminAssociatePageResponse maskPhoneUnlessSponsored(UUID callerId, AdminAssociatePageResponse page) {
+        Set<UUID> sponsored = associateRepository.findBySponsorId(callerId).stream()
+            .map(Associate::getId).collect(Collectors.toSet());
+        List<AdminAssociateSummaryResponse> rows = page.associates().stream()
+            .map(r -> sponsored.contains(r.id()) ? r : new AdminAssociateSummaryResponse(
+                r.id(), r.userId(), r.name(), r.designation(), r.kycStatus(), r.status(), r.joinedAt(),
+                r.lastActiveAt(), r.sponsorUserId(), r.position(), r.role(), r.loginPassword(),
+                r.transactionPassword(), null, r.email(), r.activatedAt(), r.plotBuyer(), r.parentUserId()))
+            .toList();
+        return new AdminAssociatePageResponse(rows, page.page(), page.size(), page.totalElements());
     }
 
     // My Team: same filters as list(), scoped to callerId's downline (self excluded, any depth).
     public AdminAssociatePageResponse listDownline(UUID callerId, String search, KycStatus kycStatus,
+                                                    KycStatus excludeKycStatus, AssociateStatus status,
+                                                    LocalDate joinedFrom, LocalDate joinedTo,
+                                                    boolean newestFirst, String leg, boolean sponsoredOnly,
+                                                    boolean includeSelf, int page, int size) {
+        return maskPhoneUnlessSponsored(callerId, listDownlineUnmasked(callerId, search, kycStatus, excludeKycStatus,
+            status, joinedFrom, joinedTo, newestFirst, leg, sponsoredOnly, includeSelf, page, size));
+    }
+
+    private AdminAssociatePageResponse listDownlineUnmasked(UUID callerId, String search, KycStatus kycStatus,
                                                     KycStatus excludeKycStatus, AssociateStatus status,
                                                     LocalDate joinedFrom, LocalDate joinedTo,
                                                     boolean newestFirst, String leg, boolean sponsoredOnly,

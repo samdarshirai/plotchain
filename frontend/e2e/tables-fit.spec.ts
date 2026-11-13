@@ -78,7 +78,7 @@ for (const width of [1280, 1366, 1440]) {
             buyerPhone: '9876543210', amount: 1500000, legCredited: 'L', note: 'A long note', status: 'RECORDED', recordedAt: '2026-10-01T12:00:00Z' }],
           page: 0, size: 20, totalElements: 1 } }));
         await page.route('**/api/admin/associates?*', r => r.fulfill({ json: {
-          associates: [{ id: 'a1', userId: 'VP00001', name: 'Associate With A Longer Display Name', phone: '9876543210', sponsorUserId: 'VP00002',
+          associates: [{ id: 'a1', userId: 'VP00001', name: 'Associate With A Longer Display Name', phone: '9876543210', sponsorUserId: 'VP00002', parentUserId: 'VP00003',
             position: 'L', status: 'ACTIVE', kycStatus: 'VERIFIED', role: 'ASSOCIATE', plotBuyer: true,
             loginPassword: 'Ab3dEf9hJk', transactionPassword: 'Xy7zQw2mNp', joinedAt: '2026-10-01T12:00:00Z' }],
           page: 0, size: 20, totalElements: 1 } }));
@@ -98,6 +98,38 @@ for (const width of [1280, 1366, 1440]) {
         expect(await page.evaluate(audit)).toEqual([]);
       });
     }
+  });
+}
+
+// Associate My Team (/my-tree/team): Mobile + Parent ID columns were added; with a realistic row it must stay a real
+// table on laptops and in the 800px tablet range's card fallback must keep the page free of sideways scroll.
+for (const width of [1280, 1366, 1440]) {
+  test.describe(`my-team stays a table at ${width}px`, () => {
+    test.use({ viewport: { width, height: 900 } });
+    test.beforeEach(({ page }) => page.addInitScript(() => {
+      localStorage.setItem('plotchain.auth.token', 'e30.' + btoa(JSON.stringify({ exp: 4102444800 })) + '.x'); // fake JWT, exp year 2100
+      localStorage.setItem('plotchain.auth.mustChangePassword', 'false');
+      localStorage.setItem('plotchain.auth.role', 'ASSOCIATE');
+    }));
+
+    test('is not stacked', async ({ page }) => {
+      await page.route('**/api/**', r => r.fulfill({ json: { name: 'Associate' } }));
+      await page.route('**/api/company/setup-state', r => r.fulfill({ json: { launchedAt: '2026-01-01T00:00:00Z' } }));
+      await page.route('**/api/associates/me/downline?*', r => r.fulfill({ json: {
+        associates: [{ id: 'a1', userId: 'VP00001', name: 'Associate With A Longer Display Name', phone: '9876543210',
+          sponsorUserId: 'VP00002', parentUserId: 'VP00003', position: 'L', status: 'ACTIVE', kycStatus: 'VERIFIED',
+          role: 'ASSOCIATE', plotBuyer: true, joinedAt: '2026-10-01T12:00:00Z' }],
+        page: 0, size: 100, totalElements: 1 } }));
+      await page.goto('/my-tree/team', { waitUntil: 'networkidle' });
+      await expect(page.locator('.associate-directory .editable-table tbody tr')).toHaveCount(1);
+      await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
+      await expect(page.locator('.associate-directory .editable-table')).not.toHaveClass(/table--stacked/);
+      const cramped = await page.locator('.associate-directory .editable-table tbody tr:first-child td').evaluateAll(tds =>
+        tds.map((td, i) => ({ i, w: td.clientWidth, over: td.scrollWidth - td.clientWidth }))
+          .filter(c => c.w === 0 || c.over > 1));
+      expect(cramped).toEqual([]);
+      expect(await page.evaluate(audit)).toEqual([]);
+    });
   });
 }
 

@@ -85,6 +85,25 @@ class AssociateDownlineControllerTest {
     }
 
     @Test
+    void phoneShownOnlyForDirectlySponsoredAssociates() throws Exception {
+        String token = token();
+        Associate mine = member(UUID.randomUUID(), "VP00002");
+        Associate deeper = member(UUID.randomUUID(), "VP00003");
+        mine.setPhone("9000000001");
+        deeper.setPhone("9000000002");
+        when(associateRepository.findSelfAndDownline(caller.getId()))
+            .thenReturn(List.of(caller.getId(), mine.getId(), deeper.getId()));
+        when(associateRepository.findBySponsorId(caller.getId())).thenReturn(List.of(mine));
+        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+            .thenReturn(new PageImpl<>(List.of(mine, deeper)));
+
+        mockMvc.perform(get("/api/associates/me/downline").header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.associates[0].phone").value("9000000001"))
+            .andExpect(jsonPath("$.associates[1].phone").doesNotExist());
+    }
+
+    @Test
     void legScopesToThatSidesSubtree() throws Exception {
         String token = token();
         UUID leftId = UUID.randomUUID(), rightId = UUID.randomUUID(), deepId = UUID.randomUUID();

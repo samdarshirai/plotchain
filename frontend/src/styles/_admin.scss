@@ -429,18 +429,19 @@
     table-layout: fixed;
   }
 
-  // 11 columns: S No, ID, Name, Phone, Sponsor, Position, Status, Registration, Login pw, Txn pw, Actions. Sum 100%.
-  th:nth-child(1) { width: 5%; }
-  th:nth-child(2) { width: 9%; }
+  // 12 columns: S No, ID, Name, Phone, Sponsor, Parent, Position, Status, Registration, Login pw, Txn pw, Actions. Sum 100%.
+  th:nth-child(1) { width: 4%; }
+  th:nth-child(2) { width: 8%; }
   th:nth-child(3) { width: 10%; }
-  th:nth-child(4) { width: 10%; }
+  th:nth-child(4) { width: 9%; }
   th:nth-child(5) { width: 8%; }
-  th:nth-child(6) { width: 7%; }
-  th:nth-child(7) { width: 8%; }
-  th:nth-child(8) { width: 12%; }
-  th:nth-child(9) { width: 8%; }
-  th:nth-child(10) { width: 8%; }
-  th:nth-child(11) { width: 15%; }
+  th:nth-child(6) { width: 8%; }
+  th:nth-child(7) { width: 5%; }
+  th:nth-child(8) { width: 7%; }
+  th:nth-child(9) { width: 12%; }
+  th:nth-child(10) { width: 7%; }
+  th:nth-child(11) { width: 7%; }
+  th:nth-child(12) { width: 15%; }
 
   thead th {
     padding: 8px 6px;
@@ -507,16 +508,16 @@
     font-weight: 600;
   }
 
-  // Registration (7th column).
-  td:nth-child(8),
-  th:nth-child(8) {
+  // Registration (9th column).
+  td:nth-child(9),
+  th:nth-child(9) {
     text-align: right;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
   }
 
   // Date + time is longer than the column: wrap between words instead of clipping.
-  tbody td:nth-child(8) > span {
+  tbody td:nth-child(9) > span {
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
@@ -532,10 +533,10 @@
 @media (min-width: 1024px) {
   .app-content--sidebar-rail:not(.app-content--sidebar-expanded) .associate-directory__table-wrap {
     th:nth-child(3) { width: 8%; }
-    th:nth-child(8) { width: 14%; }
-    th:nth-child(11) { width: 15%; }
+    th:nth-child(9) { width: 14%; }
+    th:nth-child(12) { width: 15%; }
 
-    tbody td:nth-child(8) > span {
+    tbody td:nth-child(9) > span {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;

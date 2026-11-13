@@ -96,7 +96,9 @@ export class MyTeamComponent implements OnInit {
     this.columns = [
       { key: 'userId', label: t('columnUserId'), type: 'text', bold: true },
       { key: 'name', label: t('columnName'), type: 'text', bold: true },
+      { key: 'phone', label: t('columnPhone'), type: 'text' },
       { key: 'sponsorUserId', label: t('columnSponsorId'), type: 'text' },
+      { key: 'parentUserId', label: t('columnParentId'), type: 'text' },
       { key: 'position', label: t('columnPosition'), type: 'text' },
       { key: 'status', label: t('columnStatus'), type: 'badge', badgeTone: v => this.statusTone(v) },
       { key: 'joinedAt', label: t('columnRegistrationDate'), type: 'text' }
@@ -136,7 +138,10 @@ export class MyTeamComponent implements OnInit {
           userId: a.userId,
           // Short glyph, not a column: an extra column would push the table into stacked cards.
           name: a.plotBuyer ? `${a.name} 🏞️` : a.name,
+          // Server blanks phone for anyone this associate did not sponsor.
+          phone: a.phone ?? '—',
           sponsorUserId: a.sponsorUserId ?? '—',
+          parentUserId: a.parentUserId ?? '—',
           position: a.position ?? '—',
           status: titleCase(a.status),
           joinedAt: formatIst(a.joinedAt)
