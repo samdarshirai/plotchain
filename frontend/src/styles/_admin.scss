@@ -4886,7 +4886,7 @@ button.tree-explorer__vacant-card {
 }
 
 .plot-hover {
-  position: fixed; z-index: 40; width: min(320px, calc(100vw - 16px)); box-sizing: border-box; pointer-events: none;
+  position: fixed; z-index: 40; width: min(320px, calc(100vw - 16px)); box-sizing: border-box; pointer-events: none; max-height: calc(100vh - 16px); overflow-y: auto;
   background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 5px; box-shadow: 0 6px 20px rgba(12, 10, 11, 0.18);
   .book-form__facts { grid-template-columns: 1fr 1fr; }
 }
