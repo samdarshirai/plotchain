@@ -934,7 +934,7 @@ describe('ProjectsPlotsComponent (admin project selection)', () => {
 });
 
 describe('ProjectsPlotsComponent read-only plot details', () => {
-  it('tile click opens a dialog with the plot facts, incl. derived rate and total', fakeAsync(() => {
+  it('hovering a tile shows the plot facts, incl. derived rate and total; leaving hides them', fakeAsync(() => {
     TestBed.configureTestingModule({
       imports: [ProjectsPlotsComponent, HttpClientTestingModule, TranslateModule.forRoot()],
       providers: [provideRouter([]), { provide: ActivatedRoute, useValue: { snapshot: { data: { readOnly: true }, queryParamMap: { get: () => null } } } }]
@@ -946,13 +946,17 @@ describe('ProjectsPlotsComponent read-only plot details', () => {
     http.expectOne('/api/company/projects').flush([{ id: 'p1', name: 'GV', location: 'H', hasThumbnail: false, totalPlots: 1, availablePlots: 1, soldPlots: 0, createdAt: '2026-01-01T00:00:00Z' }]);
     http.expectOne('/api/projects/p1/plots/grid').flush([{ plotId: 'id-A-1', plotNo: 'A-1', type: 'CORNER', area: 1000, price: 4000000, extraPrice: 400000, roadSizeFt: 30, status: 'AVAILABLE' }]);
     fixture.detectChanges();
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('app-plot-tile button')!.click();
-    http.match(r => r.url.startsWith('/api/company/projects/p1/plots/'));
+    const el = fixture.nativeElement as HTMLElement;
+    const li = el.querySelector('app-plot-tile')!.parentElement!;
+    li.dispatchEvent(new MouseEvent('mouseenter'));
     fixture.detectChanges();
-    const dl = (fixture.nativeElement as HTMLElement).querySelector('.plot-detail')!;
+    const dl = el.querySelector('.plot-hover')!;
     expect(dl.querySelectorAll('dt').length).toBe(9);
     expect(dl.textContent).toContain('A-1');
     expect(dl.textContent).toContain('30 ft');
+    li.dispatchEvent(new MouseEvent('mouseleave'));
+    fixture.detectChanges();
+    expect(el.querySelector('.plot-hover')).toBeNull();
     flush();
   }));
 });

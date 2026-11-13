@@ -264,7 +264,7 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
                 <span>{{ 'admin.projectsPlots.blockSummary' | translate: blockStats[b.block] }}</span>
               </h3>
               <ul class="projects-plots__tiles" [class.projects-plots__tiles--site]="view === 'site'">
-                <li *ngFor="let p of b.plots; trackBy: trackPlot">
+                <li *ngFor="let p of b.plots; trackBy: trackPlot" (mouseenter)="showHover(p, $event)" (mouseleave)="hover = null" (focusin)="showHover(p, $event)" (focusout)="hover = null">
                   <app-plot-tile [attr.data-plot-id]="p.plotId" [plotNo]="p.plotNo" [type]="p.type" [area]="p.area"
                     [price]="p.price" [status]="p.status" [selected]="p.plotId === selectedPlotId" [plan]="true" (tileSelect)="onTileSelect(p)"></app-plot-tile>
                 </li>
@@ -287,22 +287,29 @@ const STATUSES: PlotStatus[] = ['AVAILABLE', 'BOOKED', 'SOLD'];
         </aside>
       </div>
 
+      <ng-template #factsTpl let-p>
+        <dl class="book-form__facts">
+          <div><dt>{{ 'admin.projectsPlots.table.plot' | translate }}</dt><dd>{{ p.plotNo }}</dd></div>
+          <div><dt>{{ 'admin.projectsPlots.table.area' | translate }}</dt><dd>{{ areaText(p.area) }} {{ 'plotTile.sqft' | translate }}</dd></div>
+          <div><dt>{{ 'admin.projectsPlots.rateLabel' | translate }}</dt><dd>{{ p.area ? priceText(p.price / p.area) : '—' }}</dd></div>
+          <div><dt>{{ 'admin.projectsPlots.table.price' | translate }}</dt><dd>{{ priceText(p.price) }}</dd></div>
+          <div><dt>{{ 'admin.projectsPlots.table.type' | translate }}</dt><dd>{{ 'plotTile.type.' + p.type | translate }}</dd></div>
+          <div><dt>{{ 'admin.projectsPlots.table.roadSize' | translate }}</dt><dd>{{ p.roadSizeFt != null ? p.roadSizeFt + ' ft' : '—' }}</dd></div>
+          <div><dt>{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</dt><dd>{{ priceText(p.extraPrice ?? 0) }}</dd></div>
+          <div><dt>{{ 'admin.projectsPlots.table.totalPrice' | translate }}</dt><dd>{{ priceText(p.price + (p.extraPrice ?? 0)) }}</dd></div>
+          <div><dt>{{ 'admin.projectsPlots.table.status' | translate }}</dt><dd>{{ 'plotTile.status.' + p.status | translate }}</dd></div>
+        </dl>
+      </ng-template>
+      <div class="plot-hover" role="tooltip" *ngIf="hover as h" [style.left.px]="h.left" [style.top.px]="h.top">
+        <ng-container *ngTemplateOutlet="factsTpl; context: { $implicit: h.plot }"></ng-container>
+      </div>
+
       <div class="projects-plots__modal-overlay" *ngIf="modalOpen" (click)="closeAside()">
         <div class="projects-plots__modal" [class.projects-plots__modal--wide]="aside.kind === 'book'" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
           <ng-container *ngTemplateOutlet="bannerTpl"></ng-container>
           <div class="plot-detail" *ngIf="aside.kind === 'detail' && selectedPlot as p">
             <h2 class="plot-detail__title">{{ 'admin.projectsPlots.detailTitle' | translate }}</h2>
-            <dl class="book-form__facts">
-              <div><dt>{{ 'admin.projectsPlots.table.plot' | translate }}</dt><dd>{{ p.plotNo }}</dd></div>
-              <div><dt>{{ 'admin.projectsPlots.table.area' | translate }}</dt><dd>{{ areaText(p.area) }} {{ 'plotTile.sqft' | translate }}</dd></div>
-              <div><dt>{{ 'admin.projectsPlots.rateLabel' | translate }}</dt><dd>{{ p.area ? priceText(p.price / p.area) : '—' }}</dd></div>
-              <div><dt>{{ 'admin.projectsPlots.table.price' | translate }}</dt><dd>{{ priceText(p.price) }}</dd></div>
-              <div><dt>{{ 'admin.projectsPlots.table.type' | translate }}</dt><dd>{{ 'plotTile.type.' + p.type | translate }}</dd></div>
-              <div><dt>{{ 'admin.projectsPlots.table.roadSize' | translate }}</dt><dd>{{ p.roadSizeFt != null ? p.roadSizeFt + ' ft' : '—' }}</dd></div>
-              <div><dt>{{ 'admin.projectsPlots.extraPriceLabel' | translate }}</dt><dd>{{ priceText(p.extraPrice ?? 0) }}</dd></div>
-              <div><dt>{{ 'admin.projectsPlots.table.totalPrice' | translate }}</dt><dd>{{ priceText(p.price + (p.extraPrice ?? 0)) }}</dd></div>
-              <div><dt>{{ 'admin.projectsPlots.table.status' | translate }}</dt><dd>{{ 'plotTile.status.' + p.status | translate }}</dd></div>
-            </dl>
+            <ng-container *ngTemplateOutlet="factsTpl; context: { $implicit: p }"></ng-container>
             <button type="button" class="brand-button brand-button--secondary plot-detail__close" (click)="closeAside()">{{ 'admin.projectsPlots.detailClose' | translate }}</button>
           </div>
           <app-book-plot-form *ngIf="aside.kind === 'book' && selectedPlot" [plot]="selectedPlot" [associates]="associates"
@@ -570,10 +577,23 @@ export class ProjectsPlotsComponent implements OnInit {
   }
 
   // Tile view has no Book column: in book mode a tile click on an available plot opens the booking popup.
+  hover: { plot: PlotGridItem; left: number; top: number } | null = null;
+
+  // Read-only screen: hovering/focusing a tile shows its facts in a fixed card, clamped to the viewport.
+  // Touch devices have no hover, so a tap opens the detail modal instead (onTileSelect).
+  showHover(p: PlotGridItem, e: Event): void {
+    if (!this.readOnly || this.bookMode) { return; }
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const w = Math.min(320, window.innerWidth - 16);
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+    const top = r.bottom + 230 > window.innerHeight ? Math.max(8, r.top - 230) : r.bottom + 6;
+    this.hover = { plot: p, left, top };
+  }
+
   onTileSelect(p: PlotGridItem): void {
     this.selectPlot(p);
     if (this.bookMode && !this.readOnly && p.status === 'AVAILABLE') { this.openAside({ kind: 'book' }); }
-    else if (this.readOnly && !this.bookMode) { this.openAside({ kind: 'detail' }); }
+    else if (this.readOnly && !this.bookMode && window.matchMedia('(hover: none)').matches) { this.openAside({ kind: 'detail' }); }
   }
 
   editRow(p: PlotGridItem): void {

@@ -4863,6 +4863,11 @@ button.tree-explorer__vacant-card {
   .projects-plots .brand-button, .projects-plots__key { min-height: 44px; }
 }
 
+.plot-hover {
+  position: fixed; z-index: 40; width: min(320px, calc(100vw - 16px)); box-sizing: border-box; pointer-events: none;
+  background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 5px; box-shadow: 0 6px 20px rgba(12, 10, 11, 0.18);
+  .book-form__facts { grid-template-columns: 1fr 1fr; }
+}
 .projects-plots__modal-overlay {
   position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
   background: rgba(12, 10, 11, 0.55);
@@ -4886,10 +4891,10 @@ button.tree-explorer__vacant-card {
 .projects-plots__modal--wide { width: 920px; padding: 24px 28px; }
 .projects-plots__modal .book-form { gap: 1rem; }
 .projects-plots__modal .book-form__section { margin: 0.25rem 0 0; font: 600 0.6875rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
-.projects-plots__modal .book-form__facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.625rem 1rem; margin: 0; padding: 0.875rem 1rem; background: var(--surface-raised); border-radius: 3px; }
-.projects-plots__modal .book-form__facts > div { min-width: 0; }
-.projects-plots__modal .book-form__facts dt { font: 500 0.625rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
-.projects-plots__modal .book-form__facts dd { margin: 0.125rem 0 0; font: 600 0.875rem var(--font-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.projects-plots__modal .book-form__facts, .plot-hover .book-form__facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.625rem 1rem; margin: 0; padding: 0.875rem 1rem; background: var(--surface-raised); border-radius: 3px; }
+.projects-plots__modal .book-form__facts > div, .plot-hover .book-form__facts > div { min-width: 0; }
+.projects-plots__modal .book-form__facts dt, .plot-hover .book-form__facts dt { font: 500 0.625rem var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.projects-plots__modal .book-form__facts dd, .plot-hover .book-form__facts dd { margin: 0.125rem 0 0; font: 600 0.875rem var(--font-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .projects-plots__modal .book-form__total-line { display: flex; justify-content: space-between; align-items: baseline; padding: 0.625rem 0.875rem; border: 1px solid var(--border-subtle); border-radius: 3px; font: 500 0.8125rem var(--font-sans); }
 .projects-plots__modal .book-form__total-value { font: 600 1.125rem var(--font-mono); font-variant-numeric: tabular-nums; }
 .projects-plots__modal .book-form__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
