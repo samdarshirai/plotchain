@@ -99,7 +99,8 @@ export class CycleIncomeCardComponent {
   }
 
   get totalBusiness(): number {
-    return this.volumes.reduce((sum, v) => sum + v, 0);
+    // Self business is already inside left/right volume, so don't add it again.
+    return this.legVolume.newLeftBusiness + this.legVolume.newRightBusiness;
   }
 
   barPct(value: number): number {
