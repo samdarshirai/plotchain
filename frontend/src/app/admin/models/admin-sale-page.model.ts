@@ -9,6 +9,7 @@ export interface AdminSalePage {
 
 export interface AdminSaleFilters {
   associateId?: string;
+  search?: string;
   status?: SaleStatus | '';
   recordedFrom?: string;
   recordedTo?: string;

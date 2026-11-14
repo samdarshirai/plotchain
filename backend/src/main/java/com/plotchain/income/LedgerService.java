@@ -23,8 +23,10 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -63,9 +65,16 @@ public class LedgerService {
     // per row.
     public AdminLedgerPageResponse adminList(
             UUID associateId, IncomeType incomeType, UUID cycleId, LedgerEntryStatus status,
-            LocalDate from, LocalDate to, int page, int size) {
-        Page<LedgerEntry> result = ledgerEntryRepository.search(
-            associateId, incomeType, cycleId, status, startOf(from), endExclusive(to), PageRequest.of(page, size));
+            LocalDate from, LocalDate to, int page, int size, String search) {
+        // Text filter (name / userId contains), used when no exact associateId is given.
+        List<UUID> matchIds = associateId == null && search != null ? associateRepository.findIdsBySearch(search) : null;
+        Page<LedgerEntry> result = matchIds == null
+            ? ledgerEntryRepository.search(
+                associateId, incomeType, cycleId, status, startOf(from), endExclusive(to), PageRequest.of(page, size))
+            : matchIds.isEmpty()
+                ? Page.empty(PageRequest.of(page, size))
+                : ledgerEntryRepository.searchByAssociates(
+                    matchIds, incomeType, cycleId, status, startOf(from), endExclusive(to), PageRequest.of(page, size));
 
         List<LedgerEntry> content = result.getContent();
         Map<UUID, Associate> associatesById = associatesById(content);
@@ -95,9 +104,14 @@ public class LedgerService {
     // Admin Summary tab: one row per associate x cycle, net per income type. Newest cycle first,
     // then associate id; paged in memory (see LedgerEntryRepository#summarise).
     public AdminLedgerSummaryPageResponse adminSummary(
-            UUID associateId, UUID cycleId, LocalDate fromDate, LocalDate toDate, int page, int size) {
+            UUID associateId, UUID cycleId, LocalDate fromDate, LocalDate toDate, int page, int size, String search) {
         List<AdminLedgerSummaryRow> rows = toSummaryRows(
             ledgerEntryRepository.summarise(associateId, cycleId, startOf(fromDate), endExclusive(toDate)));
+        if (associateId == null && search != null) {
+            // ponytail: filtered in memory, the summary is already paged in memory
+            Set<UUID> matchIds = new HashSet<>(associateRepository.findIdsBySearch(search));
+            rows = rows.stream().filter(r -> matchIds.contains(r.associateId())).toList();
+        }
         int from = Math.min(page * size, rows.size());
         int to = Math.min(from + size, rows.size());
         return new AdminLedgerSummaryPageResponse(rows.subList(from, to), page, size, rows.size());
@@ -151,7 +165,7 @@ public class LedgerService {
     // Associate Income Statement "All" tab: the caller's own per-cycle summary, every cycle,
     // newest first. Same rows as the admin Summary tab, scoped to one associate.
     public List<AdminLedgerSummaryRow> mySummary(UUID associateId, LocalDate from, LocalDate to) {
-        return adminSummary(associateId, null, from, to, 0, Integer.MAX_VALUE).rows();
+        return adminSummary(associateId, null, from, to, 0, Integer.MAX_VALUE, null).rows();
     }
 
     // Flow "Associate own ledger" (same spec doc, steps 1-6): associateId is always the caller's

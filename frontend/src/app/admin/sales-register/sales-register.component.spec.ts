@@ -19,7 +19,6 @@ describe('SalesRegisterComponent', () => {
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
-    httpMock.expectOne(req => req.url === '/api/associates' && req.method === 'GET').flush([]);
     httpMock.expectOne('/api/admin/sales?page=0&size=100').flush({
       sales: [
         {
@@ -57,10 +56,10 @@ describe('SalesRegisterComponent', () => {
     expect(rowText).toContain('Sold to Jane');
   });
 
-  it('reloads with the associateId filter when it changes', () => {
-    fixture.componentInstance.onAssociateIdChange('a2');
+  it('reloads with the search text when it changes', () => {
+    fixture.componentInstance.onSearchInput('jane');
 
-    const req = httpMock.expectOne(r => r.url === '/api/admin/sales' && r.params.get('associateId') === 'a2');
+    const req = httpMock.expectOne(r => r.url === '/api/admin/sales' && r.params.get('search') === 'jane');
     req.flush({ sales: [], page: 0, size: 20, totalElements: 0 });
   });
 

@@ -40,11 +40,12 @@ public class LedgerController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search
     ) {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
-        return ledgerService.adminList(associateId, incomeType, cycleId, status, from, to, page, size);
+        return ledgerService.adminList(associateId, incomeType, cycleId, status, from, to, page, size, blankToNull(search));
     }
 
     @GetMapping("/summary")
@@ -54,9 +55,14 @@ public class LedgerController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search
     ) {
-        return ledgerService.adminSummary(associateId, cycleId, from, to, Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        return ledgerService.adminSummary(associateId, cycleId, from, to, Math.max(page, 0), Math.min(Math.max(size, 1), 100), blankToNull(search));
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
     }
 
     @PostMapping("/summary/mark-paid")

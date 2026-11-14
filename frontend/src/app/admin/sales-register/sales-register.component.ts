@@ -5,8 +5,6 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { RouterLink } from '@angular/router';
 import { SalesRegisterService } from './sales-register.service';
 import { AdminSalePage, AdminSaleFilters } from '../models/admin-sale-page.model';
-import { AdminService } from '../admin.service';
-import { AssociateSummary } from '../models/associate-summary.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { titleCase } from '../../shared/utils/title-case';
@@ -35,12 +33,11 @@ import { TableToolsComponent } from '../../shared/components/table-tools/table-t
       <div class="sales-register__filters">
         <label>
           {{ 'admin.salesRegister.associateFilterLabel' | translate }}
-          <select (change)="onAssociateIdChange($any($event.target).value)">
-            <option value="">{{ 'admin.salesRegister.associateFilterAllOption' | translate }}</option>
-            <option *ngFor="let associate of associates" [value]="associate.id">
-              {{ associate.userId }} — {{ associate.name }}
-            </option>
-          </select>
+          <input
+            type="text"
+            [placeholder]="'admin.associateDirectory.searchPlaceholder' | translate"
+            (input)="onSearchInput($any($event.target).value)"
+          />
         </label>
         <label>
           {{ 'admin.salesRegister.statusFilterLabel' | translate }}
@@ -99,7 +96,6 @@ import { TableToolsComponent } from '../../shared/components/table-tools/table-t
 })
 export class SalesRegisterComponent implements OnInit {
   private salesRegisterService = inject(SalesRegisterService);
-  private adminService = inject(AdminService);
   private translate = inject(TranslateService);
   private datePipe = inject(DatePipe);
   private currencyPipe = inject(CurrencyPipe);
@@ -107,11 +103,10 @@ export class SalesRegisterComponent implements OnInit {
   page: AdminSalePage | null = null;
   loadError = false;
   actionError = false;
-  associates: AssociateSummary[] = [];
   registerColumns: EditableTableColumn[] = [];
   registerRows: Record<string, string>[] = [];
   voidReasons: Record<string, string> = {};
-  private associateId = '';
+  private search = '';
   private status = '';
   private recordedFrom = '';
   private recordedTo = '';
@@ -133,12 +128,11 @@ export class SalesRegisterComponent implements OnInit {
       { key: 'recordedAt', label: this.translate.instant('admin.salesRegister.columnRecordedAt'), type: 'text' },
       { key: 'actions', label: this.translate.instant('admin.salesRegister.columnActions'), type: 'action' }
     ];
-    this.adminService.listAssociates().subscribe(associates => (this.associates = associates));
     this.loadPage(0);
   }
 
-  onAssociateIdChange(value: string): void {
-    this.associateId = value;
+  onSearchInput(value: string): void {
+    this.search = value.trim();
     this.loadPage(0);
   }
 
@@ -171,7 +165,7 @@ export class SalesRegisterComponent implements OnInit {
   protected loadPage(page: number): void {
     this.loadError = false;
     const filters: AdminSaleFilters = {};
-    if (this.associateId) filters.associateId = this.associateId;
+    if (this.search) filters.search = this.search;
     if (this.status) filters.status = this.status as AdminSaleFilters['status'];
     if (this.recordedFrom) filters.recordedFrom = this.recordedFrom;
     if (this.recordedTo) filters.recordedTo = this.recordedTo;

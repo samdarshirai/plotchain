@@ -111,7 +111,7 @@ class AdminStatsServiceTest {
             .thenReturn(Optional.of(oldestWithdrawal));
         when(ledgerEntryRepository.countDistinctAssociatesByCycle(cycleId)).thenReturn(18L);
         when(associateRepository.findDeepestLegDepth()).thenReturn(7L);
-        when(saleService.list(null, null, null, null, 0, 5))
+        when(saleService.list(null, null, null, null, 0, 5, null))
             .thenReturn(new AdminSalePageResponse(List.of(), 0, 5, 0));
 
         when(ledgerEntryRepository.sumGrossAmount(null, IncomeType.DIRECT, cycleId, null, null, null)).thenReturn(new BigDecimal("1200"));
@@ -202,7 +202,7 @@ class AdminStatsServiceTest {
             UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Jane Buyer", "9999999999", null,
             new BigDecimal("600000"), cycleId, "L", "RECORDED", null, Instant.now(), "A-101", "Viraj Greens",
             "VP00001", "Jane Associate", "Sold to Jane Buyer");
-        when(saleService.list(null, null, null, null, 0, 5))
+        when(saleService.list(null, null, null, null, 0, 5, null))
             .thenReturn(new AdminSalePageResponse(List.of(recentSale), 0, 5, 1));
 
         when(ledgerEntryRepository.sumGrossAmount(null, IncomeType.DIRECT, cycleId, null, null, null)).thenReturn(BigDecimal.ZERO);
@@ -234,7 +234,7 @@ class AdminStatsServiceTest {
         when(plotRepository.countByStatusNot(PlotStatus.SOLD)).thenReturn(0L);
         when(saleRepository.countByStatus(SaleStatus.RECORDED)).thenReturn(0L);
         when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED))).thenReturn(0L);
-        when(saleService.list(null, null, null, null, 0, 5))
+        when(saleService.list(null, null, null, null, 0, 5, null))
             .thenReturn(new AdminSalePageResponse(List.of(), 0, 5, 0));
 
         AdminStatsResponse response = adminStatsService.getStats();

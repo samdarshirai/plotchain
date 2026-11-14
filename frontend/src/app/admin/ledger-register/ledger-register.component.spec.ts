@@ -36,7 +36,6 @@ describe('LedgerRegisterComponent', () => {
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
-    httpMock.expectOne(req => req.url === '/api/associates' && req.method === 'GET').flush([]);
     httpMock
       .expectOne(req => req.url === '/api/admin/cycles' && req.method === 'GET')
       .flush({ cycles: [], page: 0, size: 100, totalElements: 0 });
@@ -62,10 +61,10 @@ describe('LedgerRegisterComponent', () => {
     expect(rowText).not.toContain('c1');
   });
 
-  it('reloads with the associateId filter when it changes', () => {
-    fixture.componentInstance.onAssociateIdChange('a2');
+  it('reloads with the search text when it changes', () => {
+    fixture.componentInstance.onSearchInput('jane');
 
-    const req = httpMock.expectOne(r => r.url === '/api/admin/ledger' && r.params.get('associateId') === 'a2');
+    const req = httpMock.expectOne(r => r.url === '/api/admin/ledger' && r.params.get('search') === 'jane');
     req.flush({ entries: [], page: 0, size: 20, totalElements: 0 });
   });
 
@@ -257,7 +256,6 @@ describe('LedgerRegisterComponent', () => {
   it('defaults the cycle filter to the most recent cycle', () => {
     const f = TestBed.createComponent(LedgerRegisterComponent);
     f.detectChanges();
-    httpMock.expectOne(req => req.url === '/api/associates').flush([]);
     httpMock.expectOne(req => req.url === '/api/admin/cycles').flush({
       cycles: [
         { id: 'old', periodStart: '2026-01-01', periodEnd: '2026-01-15' },
@@ -268,6 +266,6 @@ describe('LedgerRegisterComponent', () => {
     httpMock.expectOne(r => r.url === '/api/admin/ledger' && r.params.get('cycleId') === 'new')
       .flush({ entries: [], page: 0, size: 20, totalElements: 0 });
     f.detectChanges();
-    expect((f.nativeElement.querySelectorAll('select')[1] as HTMLSelectElement).value).toBe('new');
+    expect((f.nativeElement.querySelectorAll('select')[0] as HTMLSelectElement).value).toBe('new');
   });
 });

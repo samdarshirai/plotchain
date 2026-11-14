@@ -127,6 +127,27 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         @Param("toExclusive") Instant toExclusive,
         Pageable pageable);
 
+    // Same as search(), restricted to a set of associates (admin text filter; caller
+    // short-circuits an empty set).
+    @Query("""
+        SELECT l FROM LedgerEntry l
+        WHERE l.associateId IN :associateIds
+        AND (:incomeType IS NULL OR l.incomeType = :incomeType)
+        AND (:cycleId IS NULL OR l.cycleId = :cycleId)
+        AND (:status IS NULL OR l.status = :status)
+        AND (CAST(:from AS timestamp) IS NULL OR l.createdAt >= :from)
+        AND (CAST(:toExclusive AS timestamp) IS NULL OR l.createdAt < :toExclusive)
+        ORDER BY l.createdAt DESC
+        """)
+    Page<LedgerEntry> searchByAssociates(
+        @Param("associateIds") Collection<UUID> associateIds,
+        @Param("incomeType") IncomeType incomeType,
+        @Param("cycleId") UUID cycleId,
+        @Param("status") LedgerEntryStatus status,
+        @Param("from") Instant from,
+        @Param("toExclusive") Instant toExclusive,
+        Pageable pageable);
+
     // Same null-safe filter as search(), summed over the whole filtered set (not one page) -- feeds
     // the associate Income Statement's "Total income" card.
     @Query("""
