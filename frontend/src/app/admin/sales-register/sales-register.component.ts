@@ -119,7 +119,6 @@ export class SalesRegisterComponent implements OnInit {
       { key: 'buyerName', label: this.translate.instant('admin.salesRegister.columnBuyerName'), type: 'text' },
       { key: 'buyerPhone', label: this.translate.instant('admin.salesRegister.columnBuyerPhone'), type: 'text' },
       { key: 'amount', label: this.translate.instant('admin.salesRegister.columnAmount'), type: 'text', sum: true },
-      { key: 'legCredited', label: this.translate.instant('admin.salesRegister.columnLegCredited'), type: 'text' },
       {
         key: 'status',
         label: this.translate.instant('admin.salesRegister.columnStatus'),
@@ -187,9 +186,8 @@ export class SalesRegisterComponent implements OnInit {
       buyerName: sale.buyerName ?? '',
       buyerPhone: sale.buyerPhone ?? '',
       amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.0-0') ?? String(sale.amount),
-      legCredited: sale.legCredited,
       status: titleCase(sale.status),
-      recordedAt: this.datePipe.transform(sale.recordedAt, 'medium') ?? sale.recordedAt
+      recordedAt: this.datePipe.transform(sale.recordedAt, 'd MMM y, h:mm a') ?? sale.recordedAt
     }));
   }
 
