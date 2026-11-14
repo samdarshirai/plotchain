@@ -56,14 +56,13 @@ describe('SalesRegisterComponent', () => {
     expect(rowText).not.toContain('100000');
   });
 
-  it('renders projectName and note columns', () => {
+  it('renders the projectName column and no note column', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.registerColumns.some(c => c.key === 'projectName')).toBeTrue();
-    expect(fixture.componentInstance.registerColumns.some(c => c.key === 'note')).toBeTrue();
+    expect(fixture.componentInstance.registerColumns.some(c => c.key === 'note')).toBeFalse();
     const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
     expect(rowText).toContain('Green Meadows');
-    expect(rowText).toContain('Sold to Jane');
   });
 
   it('reloads with the search text when it changes', () => {

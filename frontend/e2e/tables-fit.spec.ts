@@ -74,7 +74,7 @@ for (const width of [1280, 1366, 1440]) {
     for (const screen of ['sales-register', 'associate-directory', 'kyc-queue']) {
       test(`${screen} is not stacked`, async ({ page }) => {
         await page.route('**/api/admin/sales?*', r => r.fulfill({ json: {
-          sales: [{ id: 's1', projectName: 'A Residential Project With A Rather Long Name', buyerName: 'Buyer With A Longer Display Name',
+          sales: [{ id: 's1', projectName: 'A Residential Project With A Rather Long Name', associateUserId: 'VP00001', buyerAssociateUserId: 'VP00002', buyerName: 'Buyer With A Longer Display Name',
             buyerPhone: '9876543210', amount: 1500000, legCredited: 'L', note: 'A long note', status: 'RECORDED', recordedAt: '2026-10-01T12:00:00Z' }],
           page: 0, size: 20, totalElements: 1 } }));
         await page.route('**/api/admin/associates?*', r => r.fulfill({ json: {
