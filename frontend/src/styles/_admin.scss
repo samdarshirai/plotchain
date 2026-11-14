@@ -818,6 +818,12 @@
 }
 
 // Recorded At -- wraps between date and time rather than clipping.
+.sales-register .editable-table td:nth-child(9) > span {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
 .sales-register .editable-table td:nth-child(9) {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
