@@ -694,6 +694,7 @@
       "viewConfirmedPlot": "Confirm Payments",
       "plotTransfer": "Plot Transfer",
       "viewPlotEmi": "Pending EMI",
+      "emiReport": "EMI Report",
       "viewTransferredPlots": "View Transferred Plots",
       "viewCancelledPlot": "View Cancelled Plots"
     },
@@ -1452,6 +1453,11 @@
     "plotTransfer": {
       "title": "Plot Transfer", "subtitle": "Active bookings eligible for plot transfer. Open Details for the full booking, or Transfer to move it to another available plot.", "transfer": "Transfer",
       "col": { "actions": "Actions" }
+    },
+    "emiReport": {
+      "title": "EMI Report", "subtitle": "Confirmed EMI payments by payment date and project. Open Detail for the plot and every payment made against it.",
+      "plotId": "Plot ID", "plotIdPlaceholder": "e.g. A-12", "empty": "No confirmed payments match these filters.",
+      "col": { "paymentDate": "Payment Date", "paymentAmount": "Payment Amount" }
     },
     "viewPlotEmi": {
       "associate": "Associate Id", "anyAssociate": "Any associate", "cycle": "Cycle", "allCycles": "All cycles",

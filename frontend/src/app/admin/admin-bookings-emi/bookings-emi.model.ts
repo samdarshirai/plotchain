@@ -28,7 +28,7 @@ export interface PaymentRow {
   totalAmount?: number | null; paidAmount?: number | null; dueAmount?: number | null;
 }
 export interface PaymentPage { payments: PaymentRow[]; page: number; size: number; totalElements: number; pageTotal: number; grandTotal: number; }
-export interface PaymentFilters { from?: string; to?: string; projectId?: string; }
+export interface PaymentFilters { from?: string; to?: string; projectId?: string; associateId?: string; plotNo?: string; }
 export interface PlotTransferRow {
   transferDate: string; associateCode: string | null; associateName: string | null; associatePhone: string | null;
   projectName: string | null; plotNo: string | null; oldPlotNo: string | null; paidAmount: number; restAmount: number;

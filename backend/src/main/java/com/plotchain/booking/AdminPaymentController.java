@@ -42,6 +42,8 @@ public class AdminPaymentController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) UUID projectId,
+            @RequestParam(required = false) UUID associateId,
+            @RequestParam(required = false) String plotNo,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         if (status != InstallmentStatus.ENTERED && status != InstallmentStatus.PAID) {
@@ -52,6 +54,6 @@ public class AdminPaymentController {
         }
         page = Math.max(page, 0);
         size = Math.min(Math.max(size, 1), 100);
-        return paymentLedgerService.list(status, from, to, projectId, page, size);
+        return paymentLedgerService.list(status, from, to, projectId, associateId, plotNo, page, size);
     }
 }

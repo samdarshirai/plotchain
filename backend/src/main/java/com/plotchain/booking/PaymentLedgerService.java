@@ -22,16 +22,17 @@ public class PaymentLedgerService {
     // page/size must already be clamped by the caller (controller).
     @Transactional(readOnly = true)
     public PaymentPageResponse list(InstallmentStatus status, LocalDate from, LocalDate to, UUID projectId,
-                                    int page, int size) {
+                                    UUID associateId, String plotNo, int page, int size) {
         var fromInstant = BookingService.fromInstant(from);
         var toInstant = BookingService.toInstant(to);
         // No date bounds: skip the paid_at predicate so legacy PAID rows with NULL paid_at still list.
         boolean unbounded = from == null && to == null;
+        String plot = plotNo == null ? "" : plotNo.trim(); // '' = no plot filter (a null String param breaks LOWER() on Postgres)
         Page<PaymentRow> result = emiInstallmentRepository.findPayments(
-            status, fromInstant, toInstant, unbounded, projectId, PageRequest.of(page, size));
+            status, fromInstant, toInstant, unbounded, projectId, associateId, plot, PageRequest.of(page, size));
         BigDecimal pageTotal = result.getContent().stream().map(PaymentRow::amount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal sum = emiInstallmentRepository.sumPayments(status, fromInstant, toInstant, unbounded, projectId);
+        BigDecimal sum = emiInstallmentRepository.sumPayments(status, fromInstant, toInstant, unbounded, projectId, associateId, plot);
         return new PaymentPageResponse(result.getContent(), page, size, result.getTotalElements(),
             pageTotal, sum == null ? BigDecimal.ZERO : sum);
     }

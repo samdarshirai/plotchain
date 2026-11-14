@@ -47,7 +47,7 @@ class AdminPaymentControllerTest {
     }
 
     private void stubAny() {
-        when(paymentLedgerService.list(any(), any(), any(), any(), anyInt(), anyInt()))
+        when(paymentLedgerService.list(any(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
             .thenReturn(new PaymentPageResponse(List.of(), 0, 20, 0, BigDecimal.ZERO, BigDecimal.ZERO));
     }
 
@@ -60,7 +60,7 @@ class AdminPaymentControllerTest {
             .andExpect(jsonPath("$.pageTotal").value(0))
             .andExpect(jsonPath("$.grandTotal").value(0))
             .andExpect(jsonPath("$.totalElements").value(0));
-        verify(paymentLedgerService).list(InstallmentStatus.ENTERED, null, null, null, 0, 20);
+        verify(paymentLedgerService).list(InstallmentStatus.ENTERED, null, null, null, null, null, 0, 20);
     }
 
     @Test
@@ -72,7 +72,7 @@ class AdminPaymentControllerTest {
                 .param("projectId", project.toString()).param("page", "2").param("size", "5"))
             .andExpect(status().isOk());
         verify(paymentLedgerService).list(InstallmentStatus.PAID, LocalDate.of(2026, 6, 1),
-            LocalDate.of(2026, 6, 30), project, 2, 5);
+            LocalDate.of(2026, 6, 30), project, null, null, 2, 5);
     }
 
     @Test
@@ -81,7 +81,7 @@ class AdminPaymentControllerTest {
             .andExpect(status().isBadRequest());
         mockMvc.perform(get("/api/admin/payments").header("Authorization", admin()).param("status", "VOID"))
             .andExpect(status().isBadRequest());
-        verify(paymentLedgerService, never()).list(any(), any(), any(), any(), anyInt(), anyInt());
+        verify(paymentLedgerService, never()).list(any(), any(), any(), any(), any(), any(), anyInt(), anyInt());
     }
 
     @Test
@@ -96,12 +96,23 @@ class AdminPaymentControllerTest {
         stubAny();
         mockMvc.perform(get("/api/admin/payments").header("Authorization", admin()).param("size", "0"))
             .andExpect(status().isOk());
-        verify(paymentLedgerService).list(InstallmentStatus.ENTERED, null, null, null, 0, 1);
+        verify(paymentLedgerService).list(InstallmentStatus.ENTERED, null, null, null, null, null, 0, 1);
         mockMvc.perform(get("/api/admin/payments").header("Authorization", admin()).param("size", "500"))
             .andExpect(status().isOk());
-        verify(paymentLedgerService).list(InstallmentStatus.ENTERED, null, null, null, 0, 100);
+        verify(paymentLedgerService).list(InstallmentStatus.ENTERED, null, null, null, null, null, 0, 100);
         mockMvc.perform(get("/api/admin/payments").header("Authorization", admin()).param("page", "-3"))
             .andExpect(status().isOk());
-        verify(paymentLedgerService).list(InstallmentStatus.ENTERED, null, null, null, 0, 20);
+        verify(paymentLedgerService).list(InstallmentStatus.ENTERED, null, null, null, null, null, 0, 20);
+    }
+
+    @Test
+    void associateIdAndPlotNoAreForwarded() throws Exception {
+        UUID assoc = UUID.randomUUID();
+        when(paymentLedgerService.list(any(), any(), any(), any(), any(), any(), anyInt(), anyInt()))
+            .thenReturn(new PaymentPageResponse(List.of(), 0, 20, 0, BigDecimal.ZERO, BigDecimal.ZERO));
+        mockMvc.perform(get("/api/admin/payments").header("Authorization", admin())
+                .param("status", "PAID").param("associateId", assoc.toString()).param("plotNo", "A-12"))
+            .andExpect(status().isOk());
+        verify(paymentLedgerService).list(InstallmentStatus.PAID, null, null, null, assoc, "A-12", 0, 20);
     }
 }

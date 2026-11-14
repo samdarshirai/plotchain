@@ -52,6 +52,8 @@ export class BookingsEmiService {
     if (f.from) { params = params.set('from', f.from); }
     if (f.to) { params = params.set('to', f.to); }
     if (f.projectId) { params = params.set('projectId', f.projectId); }
+    if (f.associateId) { params = params.set('associateId', f.associateId); }
+    if (f.plotNo) { params = params.set('plotNo', f.plotNo); }
     return this.http.get<PaymentPage>('/api/admin/payments', { params });
   }
 

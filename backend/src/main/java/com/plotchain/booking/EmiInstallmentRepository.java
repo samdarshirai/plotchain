@@ -43,6 +43,8 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
         WHERE i.status = :status
         AND (:unbounded = true OR (i.paidAt >= :from AND i.paidAt < :to))
         AND (:projectId IS NULL OR pl.projectId = :projectId)
+        AND (:associateId IS NULL OR b.associateId = :associateId)
+        AND (:plotNo = '' OR LOWER(pl.plotNo) = LOWER(:plotNo))
         ORDER BY i.paidAt DESC NULLS LAST, i.id DESC
         """,
         countQuery = """
@@ -55,10 +57,13 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
         WHERE i.status = :status
         AND (:unbounded = true OR (i.paidAt >= :from AND i.paidAt < :to))
         AND (:projectId IS NULL OR pl.projectId = :projectId)
+        AND (:associateId IS NULL OR b.associateId = :associateId)
+        AND (:plotNo = '' OR LOWER(pl.plotNo) = LOWER(:plotNo))
         """)
     Page<PaymentRow> findPayments(@Param("status") InstallmentStatus status, @Param("from") Instant from,
         @Param("to") Instant to, @Param("unbounded") boolean unbounded,
-        @Param("projectId") UUID projectId, Pageable pageable);
+        @Param("projectId") UUID projectId, @Param("associateId") UUID associateId,
+        @Param("plotNo") String plotNo, Pageable pageable);
 
     @Query("""
         SELECT SUM(i.amount)
@@ -68,10 +73,13 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
         WHERE i.status = :status
         AND (:unbounded = true OR (i.paidAt >= :from AND i.paidAt < :to))
         AND (:projectId IS NULL OR pl.projectId = :projectId)
+        AND (:associateId IS NULL OR b.associateId = :associateId)
+        AND (:plotNo = '' OR LOWER(pl.plotNo) = LOWER(:plotNo))
         """)
     BigDecimal sumPayments(@Param("status") InstallmentStatus status, @Param("from") Instant from,
         @Param("to") Instant to, @Param("unbounded") boolean unbounded,
-        @Param("projectId") UUID projectId);
+        @Param("projectId") UUID projectId, @Param("associateId") UUID associateId,
+        @Param("plotNo") String plotNo);
 
     // One-off backfill (BookingSaleBackfill): PAID installments that were confirmed before business
     // was credited per payment, so they have no Sale. Legacy CONFIRMED bookings already carry one
