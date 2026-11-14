@@ -22,13 +22,13 @@ describe('LedgerRegisterService', () => {
     const mockResponse: AdminLedgerPage = { entries: [], page: 0, size: 20, totalElements: 0 };
 
     service
-      .list({ associateId: 'a1', incomeType: 'ROYALTY', cycleId: 'c1', status: 'PAID' }, 0, 20)
+      .list({ search: 'a1', incomeType: 'ROYALTY', cycleId: 'c1', status: 'PAID' }, 0, 20)
       .subscribe(res => expect(res).toEqual(mockResponse));
 
     const req = httpMock.expectOne(
       r =>
         r.url === '/api/admin/ledger' &&
-        r.params.get('associateId') === 'a1' &&
+        r.params.get('search') === 'a1' &&
         r.params.get('incomeType') === 'ROYALTY' &&
         r.params.get('cycleId') === 'c1' &&
         r.params.get('status') === 'PAID'

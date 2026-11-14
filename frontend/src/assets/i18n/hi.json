@@ -920,7 +920,6 @@
     "salesRegister": {
       "title": "Sales Register",
       "associateFilterLabel": "Associate",
-      "associateFilterAllOption": "All associates",
       "statusFilterLabel": "Status",
       "statusFilterAllOption": "All statuses",
       "statusRecordedOption": "Recorded",
@@ -1024,7 +1023,6 @@
       "title": "Income Statement",
       "subtitle": "Every posted ledger entry, across every associate and cycle — a raw, view-only audit trail. No entry here can be edited or removed.",
       "associateFilterLabel": "Associate",
-      "associateFilterAllOption": "All associates",
       "incomeTypeFilterLabel": "Income Type",
       "incomeTypeFilterAllOption": "All income types",
       "incomeTypeDirectOption": "Direct",
