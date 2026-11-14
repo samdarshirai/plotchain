@@ -449,7 +449,7 @@
     letter-spacing: 0.03em;
     text-transform: uppercase;
     color: var(--text-muted);
-    text-align: left;
+    text-align: center;
     border-bottom: none;
   }
 
@@ -461,6 +461,7 @@
   tbody td {
     padding: 8px 6px;
     font-size: 14px;
+    text-align: center;
     border-bottom: none;
   }
 
@@ -510,7 +511,7 @@
   // Registration (8th column).
   td:nth-child(8),
   th:nth-child(8) {
-    text-align: right;
+    text-align: center;
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
   }
@@ -556,6 +557,7 @@
 // A div, not a span: the table's `td > span` ellipsis rule would clip the second button.
 .associate-directory__row-actions {
   display: flex;
+  justify-content: center;
   flex-wrap: wrap; // wrap (2 per line) so the Action column stays narrow and the table fits without stacking
   gap: 3px;
   max-width: 100%;
@@ -759,57 +761,63 @@
   border-bottom: none;
 }
 
-// Buyer Name column (2nd) -- mockup's `s.buyer` is set weight 600 with no font-family override
-// (Viraj_Acres_Settings.dc.html isSales section); Project Name (1st) stays unstyled/default,
-// matching how the mockup's own leading column carries no override either.
-.sales-register .editable-table td:nth-child(3) {
-  font-weight: 600;
+// 10 columns: S No, Project, Sponsor ID, Buyer ID, Buyer Name, Phone, Amount, Status, Recorded At,
+// Actions. Fixed layout + explicit widths so the table fits at laptop widths; everything centered.
+.sales-register .editable-table {
+  table-layout: fixed;
 }
 
-// Buyer Phone column (3rd) -- ledger typography (mockup: color #6B6153/--text-muted, IBM Plex
-// Mono, 12.5px -- Viraj_Acres_Settings.dc.html isSales section, `s.phone`)
-.sales-register .editable-table td:nth-child(4) {
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  color: var(--text-muted);
-}
-
-// Amount column (4th) -- ledger typography (mockup: weight 600, IBM Plex Mono)
-.sales-register .editable-table td:nth-child(5) {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-// Leg Credited column (5th) -- directional glyphs baked into the row's string value. Renders in
-// the normal body font per the mockup (`s.leg` carries no font-family override), not mono.
-.sales-register .editable-table td:nth-child(6) {
-  font-size: 0.8125rem;
-  letter-spacing: 0.02em;
-  color: var(--text-muted);
+.sales-register .editable-table thead th,
+.sales-register .editable-table tbody td {
+  padding: 8px 6px;
   text-align: center;
 }
 
-// Note column (6th) -- free-text, not part of the mockup's original 7-column set. Muted and
-// clipped so a long note can't blow out the row height or push the ledger columns around.
-.sales-register .editable-table td:nth-child(7) {
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+.sales-register .editable-table th:nth-child(1) { width: 4%; }
+.sales-register .editable-table th:nth-child(2) { width: 15%; }
+.sales-register .editable-table th:nth-child(3) { width: 8%; }
+.sales-register .editable-table th:nth-child(4) { width: 8%; }
+.sales-register .editable-table th:nth-child(5) { width: 14%; }
+.sales-register .editable-table th:nth-child(6) { width: 10%; }
+.sales-register .editable-table th:nth-child(7) { width: 11%; }
+.sales-register .editable-table th:nth-child(8) { width: 8%; }
+.sales-register .editable-table th:nth-child(9) { width: 12%; }
+.sales-register .editable-table th:nth-child(10) { width: 10%; }
+
+// Long project names wrap instead of widening the table.
+.sales-register .editable-table td:nth-child(2) {
+  overflow-wrap: anywhere;
 }
 
-// Status column (7th) -- colored per value via EditableTableComponent's `type: 'badge'` (see
-// SalesRegisterComponent.statusBadgeTone); renders in the normal body font per the mockup
-// (`s.status` carries no font-family override, only `color`/`font-weight`), not mono.
+// Sponsor ID, Buyer ID, Phone -- ledger typography, muted.
+.sales-register .editable-table td:nth-child(3),
+.sales-register .editable-table td:nth-child(4),
+.sales-register .editable-table td:nth-child(6) {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+// Buyer Name.
+.sales-register .editable-table td:nth-child(5) {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+// Amount -- ledger typography; money stays on one line.
+.sales-register .editable-table td:nth-child(7) {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .sales-register .editable-table td:nth-child(8) {
   font-size: 0.8125rem;
 }
 
-// Recorded At column (8th)
+// Recorded At -- wraps between date and time rather than clipping.
 .sales-register .editable-table td:nth-child(9) {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
@@ -821,13 +829,15 @@
 .sales-register__actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   min-width: 0;
   flex-wrap: wrap;
 }
 
 .sales-register__void-reason-input {
-  width: 200px;
+  width: 100%;
+  min-width: 0;
   padding: 0.5rem 0.75rem;
   font-size: 0.8125rem;
 }
