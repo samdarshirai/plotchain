@@ -761,11 +761,7 @@
   border-bottom: none;
 }
 
-// 10 columns: S No, Project, Sponsor ID, Buyer ID, Buyer Name, Phone, Amount, Status, Recorded At,
-// Actions. Fixed layout + explicit widths so the table fits at laptop widths; everything centered.
-.sales-register .editable-table {
-  table-layout: fixed;
-}
+// Column widths live in the min-width: 769px block below. Everything is centered.
 
 .sales-register .editable-table thead th,
 .sales-register .editable-table tbody td {
@@ -773,16 +769,6 @@
   text-align: center;
 }
 
-.sales-register .editable-table th:nth-child(1) { width: 4%; }
-.sales-register .editable-table th:nth-child(2) { width: 15%; }
-.sales-register .editable-table th:nth-child(3) { width: 8%; }
-.sales-register .editable-table th:nth-child(4) { width: 8%; }
-.sales-register .editable-table th:nth-child(5) { width: 14%; }
-.sales-register .editable-table th:nth-child(6) { width: 10%; }
-.sales-register .editable-table th:nth-child(7) { width: 11%; }
-.sales-register .editable-table th:nth-child(8) { width: 8%; }
-.sales-register .editable-table th:nth-child(9) { width: 12%; }
-.sales-register .editable-table th:nth-child(10) { width: 10%; }
 
 // Long project names wrap instead of widening the table.
 .sales-register .editable-table td:nth-child(2) {
@@ -808,6 +794,7 @@
 // Amount -- ledger typography; money stays on one line.
 .sales-register .editable-table td:nth-child(7) {
   font-family: var(--font-mono);
+  font-size: 12.5px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -818,12 +805,6 @@
 }
 
 // Recorded At -- wraps between date and time rather than clipping.
-.sales-register .editable-table td:nth-child(9) > span {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
-}
-
 .sales-register .editable-table td:nth-child(9) {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
@@ -876,34 +857,31 @@
   .sales-register .editable-table {
     table-layout: fixed;
 
-    thead th, tbody td { padding: 0.5rem; }
-    th { white-space: nowrap; }
-    // 10 columns: S No, Project, Buyer, Phone, Amount, Leg, Note, Status, Recorded, Actions. Sum 100%.
+    thead th, tbody td { padding: 8px 6px; text-align: center; }
+    // 10 columns: S No, Project, Sponsor ID, Buyer ID, Buyer Name, Phone, Amount, Status, Recorded At, Actions. Sum 100%.
     th:nth-child(1) { width: 4%; }
-    th:nth-child(2) { width: 15%; }
-    th:nth-child(3) { width: 11%; }
-    th:nth-child(4) { width: 10%; }
-    th:nth-child(5) { width: 11%; text-align: right; }
-    th:nth-child(6) { width: 4%; text-align: center; }
-    th:nth-child(7) { width: 7%; }
+    th:nth-child(2) { width: 10%; }
+    th:nth-child(3) { width: 8%; }
+    th:nth-child(4) { width: 8%; }
+    th:nth-child(5) { width: 11%; }
+    th:nth-child(6) { width: 11%; }
+    th:nth-child(7) { width: 15%; }
     th:nth-child(8) { width: 8%; }
-    th:nth-child(9) { width: 11%; }
-    th:nth-child(10) { width: 19%; }
+    th:nth-child(9) { width: 12%; }
+    th:nth-child(10) { width: 13%; }
 
+    // Text wraps (between words, or anywhere for long IDs) up to 2 lines, keeping rows compact.
     td > span {
-      display: block;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-
-    td:nth-child(2) > span, td:nth-child(3) > span, td:nth-child(9) > span {
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
+      overflow: hidden;
       white-space: normal;
       overflow-wrap: anywhere;
     }
+
+    // Money stays on one line.
+    td:nth-child(7) > span { display: block; white-space: nowrap; }
   }
 
   .sales-register__actions { flex-wrap: nowrap; }
