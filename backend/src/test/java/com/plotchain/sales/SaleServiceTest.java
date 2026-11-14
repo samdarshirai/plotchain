@@ -542,13 +542,27 @@ class SaleServiceTest {
     // Sales unit 6 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // "Admin register -- GET /api/admin/sales"): list() delegation and date-range conversion.
     @Test
+    void listWithSearchFiltersByMatchingAssociatesAndShortCircuitsWhenNoneMatch() {
+        when(associateRepository.findIdsBySearch("jane")).thenReturn(java.util.List.of(ASSOCIATE_ID));
+        when(saleRepository.searchRegisterByAssociates(
+            eq(java.util.List.of(ASSOCIATE_ID)), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(java.util.List.of(recordedSale(UUID.randomUUID(), PLOT_ID)), PageRequest.of(0, 20), 1));
+        assertThat(saleService.list(null, null, null, null, 0, 20, "jane").totalElements()).isEqualTo(1);
+
+        when(associateRepository.findIdsBySearch("nobody")).thenReturn(java.util.List.of());
+        assertThat(saleService.list(null, null, null, null, 0, 20, "nobody").totalElements()).isZero();
+        org.mockito.Mockito.verify(saleRepository, org.mockito.Mockito.never())
+            .searchRegister(any(), any(), any(), any(), any());
+    }
+
+    @Test
     void listReturnsAPageMappedToSaleResponses() {
         Sale sale = recordedSale(UUID.randomUUID(), PLOT_ID);
         when(saleRepository.searchRegister(
             eq(ASSOCIATE_ID), eq(SaleStatus.RECORDED), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(java.util.List.of(sale), PageRequest.of(0, 20), 1));
 
-        AdminSalePageResponse response = saleService.list(ASSOCIATE_ID, SaleStatus.RECORDED, null, null, 0, 20);
+        AdminSalePageResponse response = saleService.list(ASSOCIATE_ID, SaleStatus.RECORDED, null, null, 0, 20, null);
 
         assertThat(response.totalElements()).isEqualTo(1);
         assertThat(response.page()).isEqualTo(0);
@@ -563,7 +577,7 @@ class SaleServiceTest {
         when(saleRepository.searchRegister(isNull(), isNull(), any(), any(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(java.util.List.of()));
 
-        saleService.list(null, null, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), 0, 20);
+        saleService.list(null, null, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), 0, 20, null);
 
         ArgumentCaptor<Instant> fromCaptor = ArgumentCaptor.forClass(Instant.class);
         ArgumentCaptor<Instant> toCaptor = ArgumentCaptor.forClass(Instant.class);
@@ -578,7 +592,7 @@ class SaleServiceTest {
         when(saleRepository.searchRegister(isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(java.util.List.of()));
 
-        AdminSalePageResponse response = saleService.list(null, null, null, null, 0, 20);
+        AdminSalePageResponse response = saleService.list(null, null, null, null, 0, 20, null);
 
         assertThat(response.totalElements()).isEqualTo(0);
         verify(saleRepository).searchRegister(isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20)));

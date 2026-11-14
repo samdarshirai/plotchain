@@ -63,7 +63,7 @@ class LedgerControllerTest {
             LedgerEntryStatus.PAID, UUID.randomUUID(), Instant.now(), null, null, null, null, null);
         AdminLedgerPageResponse page = new AdminLedgerPageResponse(List.of(row), 0, 20, 1);
         when(ledgerService.adminList(
-            eq(associateId), eq(IncomeType.DIRECT), eq(cycleId), eq(LedgerEntryStatus.PAID), isNull(), isNull(), eq(0), eq(20)))
+            eq(associateId), eq(IncomeType.DIRECT), eq(cycleId), eq(LedgerEntryStatus.PAID), isNull(), isNull(), eq(0), eq(20), isNull()))
             .thenReturn(page);
 
         mockMvc.perform(get("/api/admin/ledger")
@@ -83,7 +83,7 @@ class LedgerControllerTest {
 
     @Test
     void listReturns200WithAnEmptyPageWhenUnfiltered() throws Exception {
-        when(ledgerService.adminList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20)))
+        when(ledgerService.adminList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20), isNull()))
             .thenReturn(new AdminLedgerPageResponse(List.of(), 0, 20, 0));
 
         mockMvc.perform(get("/api/admin/ledger")
@@ -95,26 +95,26 @@ class LedgerControllerTest {
 
     @Test
     void listClampsAnOversizedPageSizeToTheServerSideMaximum() throws Exception {
-        when(ledgerService.adminList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(100)))
+        when(ledgerService.adminList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(100), isNull()))
             .thenReturn(new AdminLedgerPageResponse(List.of(), 0, 100, 0));
 
         mockMvc.perform(get("/api/admin/ledger").param("size", "999999")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
-        verify(ledgerService).adminList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(100));
+        verify(ledgerService).adminList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(100), isNull());
     }
 
     @Test
     void listClampsANegativePageToZeroInsteadOfThrowing() throws Exception {
-        when(ledgerService.adminList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20)))
+        when(ledgerService.adminList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20), isNull()))
             .thenReturn(new AdminLedgerPageResponse(List.of(), 0, 20, 0));
 
         mockMvc.perform(get("/api/admin/ledger").param("page", "-5")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isOk());
 
-        verify(ledgerService).adminList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20));
+        verify(ledgerService).adminList(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(0), eq(20), isNull());
     }
 
     @Test
@@ -214,7 +214,7 @@ class LedgerControllerTest {
 
     @Test
     void summaryReturns200ForAdminAnd403ForAssociate() throws Exception {
-        when(ledgerService.adminSummary(isNull(), isNull(), isNull(), isNull(), eq(0), eq(20)))
+        when(ledgerService.adminSummary(isNull(), isNull(), isNull(), isNull(), eq(0), eq(20), isNull()))
             .thenReturn(new AdminLedgerSummaryPageResponse(List.of(), 0, 20, 0));
 
         mockMvc.perform(get("/api/admin/ledger/summary")

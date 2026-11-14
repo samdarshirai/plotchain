@@ -5,8 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LedgerRegisterService } from './ledger-register.service';
 import { AdminLedgerPage, AdminLedgerFilters } from '../models/admin-ledger-page.model';
-import { AdminService } from '../admin.service';
-import { AssociateSummary } from '../models/associate-summary.model';
 import { CycleManagementService } from '../cycle-management/cycle-management.service';
 import { CycleSummary } from '../models/cycle.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
@@ -81,12 +79,11 @@ const LEG_FIELD: Record<string, string> = {
         <div class="ledger-register__filter-field">
           <label>
             {{ 'admin.ledgerRegister.associateFilterLabel' | translate }}
-            <select (change)="onAssociateIdChange($any($event.target).value)">
-              <option value="">{{ 'admin.ledgerRegister.associateFilterAllOption' | translate }}</option>
-              <option *ngFor="let associate of associates" [value]="associate.id">
-                {{ associate.userId }} — {{ associate.name }}
-              </option>
-            </select>
+            <input
+              type="text"
+              [placeholder]="'admin.associateDirectory.searchPlaceholder' | translate"
+              (input)="onSearchInput($any($event.target).value)"
+            />
           </label>
         </div>
         <div class="ledger-register__filter-field">
@@ -168,7 +165,6 @@ const LEG_FIELD: Record<string, string> = {
 })
 export class LedgerRegisterComponent implements OnInit {
   private ledgerRegisterService = inject(LedgerRegisterService);
-  private adminService = inject(AdminService);
   private cycleManagementService = inject(CycleManagementService);
   private translate = inject(TranslateService);
   private currencyPipe = inject(CurrencyPipe);
@@ -176,11 +172,10 @@ export class LedgerRegisterComponent implements OnInit {
 
   page: AdminLedgerPage | null = null;
   loadError = false;
-  associates: AssociateSummary[] = [];
   cycles: CycleSummary[] = [];
   registerColumns: EditableTableColumn[] = [];
   registerRows: Record<string, string>[] = [];
-  private associateId = '';
+  private search = '';
   incomeType = '';
   cycleId = '';
   dateFrom = '';
@@ -205,7 +200,6 @@ export class LedgerRegisterComponent implements OnInit {
 
   ngOnInit(): void {
     this.registerColumns = this.buildColumns();
-    this.adminService.listAssociates().subscribe(associates => (this.associates = associates));
     // Default the cycle filter to the most recent cycle; first page loads once that's known.
     this.cycleManagementService.list('', 0, CYCLE_LOOKUP_SIZE).subscribe({
       next: res => {
@@ -326,8 +320,8 @@ export class LedgerRegisterComponent implements OnInit {
     return columns;
   }
 
-  onAssociateIdChange(value: string): void {
-    this.associateId = value;
+  onSearchInput(value: string): void {
+    this.search = value.trim();
     this.loadPage(0);
   }
 
@@ -397,7 +391,7 @@ export class LedgerRegisterComponent implements OnInit {
   protected loadPage(page: number): void {
     this.loadError = false;
     if (this.isSummary) {
-      fetchAllPages((p, size) => this.ledgerRegisterService.summary(this.associateId, this.cycleId, p, size, this.dateFrom, this.dateTo)).subscribe({
+      fetchAllPages((p, size) => this.ledgerRegisterService.summary(this.search, this.cycleId, p, size, this.dateFrom, this.dateTo)).subscribe({
         next: res => {
           this.summaryPage = res;
           // Shared pagination footer reads page/size/totalElements only.
@@ -409,7 +403,7 @@ export class LedgerRegisterComponent implements OnInit {
       return;
     }
     const filters: AdminLedgerFilters = {};
-    if (this.associateId) filters.associateId = this.associateId;
+    if (this.search) filters.search = this.search;
     if (this.incomeType) filters.incomeType = this.incomeType as AdminLedgerFilters['incomeType'];
     if (this.cycleId) filters.cycleId = this.cycleId;
     if (this.status) filters.status = this.status as AdminLedgerFilters['status'];

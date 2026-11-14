@@ -110,7 +110,7 @@ public class AdminStatsService {
                 associateRepository.countByRoleAndJoinedBefore(AssociateRole.ASSOCIATE, cutoffExclusive)));
         }
 
-        List<SaleResponse> recentSales = saleService.list(null, null, null, null, 0, 5).sales();
+        List<SaleResponse> recentSales = saleService.list(null, null, null, null, 0, 5, null).sales();
 
         Optional<Cycle> openCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN);
         AdminStatsResponse.CurrentCycleStats currentCycle = openCycle

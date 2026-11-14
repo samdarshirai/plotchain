@@ -8,7 +8,7 @@ export interface AdminLedgerPage {
 }
 
 export interface AdminLedgerFilters {
-  associateId?: string;
+  search?: string;
   incomeType?: IncomeType | '';
   cycleId?: string;
   status?: LedgerEntryStatus | '';

@@ -37,10 +37,12 @@ public class SaleController {
             @RequestParam(required = false) LocalDate recordedFrom,
             @RequestParam(required = false) LocalDate recordedTo,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search
     ) {
         page = Math.max(page, 0);
         size = Math.min(size, 100);
-        return saleService.list(associateId, status, recordedFrom, recordedTo, page, size);
+        return saleService.list(associateId, status, recordedFrom, recordedTo, page, size,
+            search == null || search.isBlank() ? null : search.trim());
     }
 }

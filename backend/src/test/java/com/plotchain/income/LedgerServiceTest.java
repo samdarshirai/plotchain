@@ -116,7 +116,7 @@ class LedgerServiceTest {
         when(associateRepository.findAllById(List.of(associateId))).thenReturn(List.of(associate));
         when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of(cycle));
 
-        AdminLedgerPageResponse response = service.adminList(null, null, null, null, null, null, 0, 20);
+        AdminLedgerPageResponse response = service.adminList(null, null, null, null, null, null, 0, 20, null);
 
         assertThat(response.totalElements()).isEqualTo(1);
         assertThat(response.page()).isEqualTo(0);
@@ -138,6 +138,21 @@ class LedgerServiceTest {
     }
 
     @Test
+    void adminListWithSearchUsesMatchingAssociateIdsAndShortCircuitsWhenNoneMatch() {
+        UUID id = UUID.randomUUID();
+        when(associateRepository.findIdsBySearch("jane")).thenReturn(List.of(id));
+        when(ledgerEntryRepository.searchByAssociates(
+            eq(List.of(id)), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+        service.adminList(null, null, null, null, null, null, 0, 20, "jane");
+        verify(ledgerEntryRepository).searchByAssociates(
+            eq(List.of(id)), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20)));
+
+        when(associateRepository.findIdsBySearch("nobody")).thenReturn(List.of());
+        assertThat(service.adminList(null, null, null, null, null, null, 0, 20, "nobody").entries()).isEmpty();
+    }
+
+    @Test
     void adminListPassesAllFourFiltersThroughToSearchUnchanged() {
         UUID associateId = UUID.randomUUID();
         UUID cycleId = UUID.randomUUID();
@@ -146,7 +161,7 @@ class LedgerServiceTest {
             isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
-        service.adminList(associateId, IncomeType.MATCHING, cycleId, LedgerEntryStatus.PENDING, null, null, 0, 20);
+        service.adminList(associateId, IncomeType.MATCHING, cycleId, LedgerEntryStatus.PENDING, null, null, 0, 20, null);
 
         verify(ledgerEntryRepository).search(
             eq(associateId), eq(IncomeType.MATCHING), eq(cycleId), eq(LedgerEntryStatus.PENDING),
@@ -168,7 +183,7 @@ class LedgerServiceTest {
         when(associateRepository.findAllById(List.of(associateId))).thenReturn(List.of());
         when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of());
 
-        AdminLedgerEntryResponse row = service.adminList(null, null, null, null, null, null, 0, 20).entries().get(0);
+        AdminLedgerEntryResponse row = service.adminList(null, null, null, null, null, null, 0, 20, null).entries().get(0);
 
         assertThat(row.associateUserId()).isNull();
         assertThat(row.associateName()).isNull();
@@ -182,7 +197,7 @@ class LedgerServiceTest {
         when(ledgerEntryRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
-        AdminLedgerPageResponse response = service.adminList(null, null, null, null, null, null, 0, 20);
+        AdminLedgerPageResponse response = service.adminList(null, null, null, null, null, null, 0, 20, null);
 
         assertThat(response.entries()).isEmpty();
         assertThat(response.totalElements()).isZero();

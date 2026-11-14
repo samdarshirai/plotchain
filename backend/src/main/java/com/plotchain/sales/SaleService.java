@@ -248,14 +248,21 @@ public class SaleService {
     // upper-bound Instant the same way joinedTo is in that method -- recorded_at is a TIMESTAMP
     // column, so a bare same-day Instant would exclude same-day sales on the last day requested.
     public AdminSalePageResponse list(
-            UUID associateId, SaleStatus status, LocalDate recordedFrom, LocalDate recordedTo, int page, int size) {
+            UUID associateId, SaleStatus status, LocalDate recordedFrom, LocalDate recordedTo, int page, int size, String search) {
         Instant recordedFromInstant = recordedFrom == null
             ? null : recordedFrom.atStartOfDay(ZoneOffset.UTC).toInstant();
         Instant recordedToExclusive = recordedTo == null
             ? null : recordedTo.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 
-        Page<Sale> result = saleRepository.searchRegister(
-            associateId, status, recordedFromInstant, recordedToExclusive, PageRequest.of(page, size));
+        // Text filter (name / userId contains), used when no exact associateId is given.
+        List<UUID> matchIds = associateId == null && search != null ? associateRepository.findIdsBySearch(search) : null;
+        Page<Sale> result = matchIds == null
+            ? saleRepository.searchRegister(
+                associateId, status, recordedFromInstant, recordedToExclusive, PageRequest.of(page, size))
+            : matchIds.isEmpty()
+                ? Page.empty(PageRequest.of(page, size))
+                : saleRepository.searchRegisterByAssociates(
+                    matchIds, status, recordedFromInstant, recordedToExclusive, PageRequest.of(page, size));
 
         List<SaleResponse> sales = toResponses(result.getContent());
         return new AdminSalePageResponse(sales, page, size, result.getTotalElements());

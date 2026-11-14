@@ -16,6 +16,15 @@ import java.util.UUID;
 
 public interface AssociateRepository extends JpaRepository<Associate, UUID> {
 
+    // Admin register "Associate" text filter: ids whose name or userId contains :search
+    // (same match as searchDirectory).
+    @Query("""
+        SELECT a.id FROM Associate a
+        WHERE LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+        OR LOWER(a.userId) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+        """)
+    List<UUID> findIdsBySearch(@Param("search") String search);
+
     // e-PIN activation: atomic PENDING -> ACTIVE, so two racing activations (or an admin suspend)
     // can't both win. Returns 0 if the associate was not PENDING.
     @Modifying(clearAutomatically = true, flushAutomatically = true)

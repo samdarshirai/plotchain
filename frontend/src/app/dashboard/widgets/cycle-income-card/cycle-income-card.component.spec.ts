@@ -57,10 +57,10 @@ describe('CycleIncomeCardComponent (business summary)', () => {
 
   const el = (sel: string): HTMLElement => fixture.nativeElement.querySelector(sel);
 
-  it('shows total business as left + right + self (this cycle), excluding top-up', () => {
+  it('shows total business as left + right (this cycle), excluding self and top-up', () => {
     createComponent();
-    expect(fixture.componentInstance.totalBusiness).toBe(4900000);
-    expect(el('.seal-card__figure').textContent).toContain('4,900,000');
+    expect(fixture.componentInstance.totalBusiness).toBe(4500000);
+    expect(el('.seal-card__figure').textContent).toContain('4,500,000');
   });
 
   it('renders left, right and self business and top-up rows', () => {

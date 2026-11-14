@@ -96,6 +96,23 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
         @Param("recordedToExclusive") Instant recordedToExclusive,
         Pageable pageable);
 
+    // Same as searchRegister, restricted to a set of associates (admin text filter; caller
+    // short-circuits an empty set).
+    @Query("""
+        SELECT s FROM Sale s
+        WHERE s.associateId IN :associateIds
+        AND (:status IS NULL OR s.status = :status)
+        AND (CAST(:recordedFrom AS timestamp) IS NULL OR s.recordedAt >= :recordedFrom)
+        AND (CAST(:recordedToExclusive AS timestamp) IS NULL OR s.recordedAt < :recordedToExclusive)
+        ORDER BY s.recordedAt DESC
+        """)
+    Page<Sale> searchRegisterByAssociates(
+        @Param("associateIds") java.util.Collection<UUID> associateIds,
+        @Param("status") SaleStatus status,
+        @Param("recordedFrom") Instant recordedFrom,
+        @Param("recordedToExclusive") Instant recordedToExclusive,
+        Pageable pageable);
+
     // Top-up business of plot associate B = RECORDED sales of bookings B bought (buyer_associate_id).
     // Self business of sponsor S = the same for buyers whose direct sponsor_id is S (one hop).
     // :cycleId NULL = lifetime, otherwise that cycle only.

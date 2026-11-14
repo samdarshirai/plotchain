@@ -90,7 +90,7 @@ class AdminStatsControllerTest {
         when(saleRepository.countByStatus(SaleStatus.RECORDED)).thenReturn(63L);
         when(cycleRepository.countByStatusIn(List.of(CycleStatus.CLOSED))).thenReturn(11L);
         when(cycleRepository.findAllByOrderByPeriodStartDesc(any())).thenReturn(Page.empty());
-        when(saleService.list(null, null, null, null, 0, 5))
+        when(saleService.list(null, null, null, null, 0, 5, null))
             .thenReturn(new AdminSalePageResponse(List.of(), 0, 5, 0));
 
         mockMvc.perform(get("/api/admin/stats")
@@ -146,7 +146,7 @@ class AdminStatsControllerTest {
             "Buyer Name", "9999999999", "buyer@example.com",
             new BigDecimal("1000.00"), cycle.getId(), "LEFT", "RECORDED", null,
             java.time.Instant.now(), "P-1", "Green Acres", "VP00001", "Jane Associate", "Sold to Buyer Name");
-        when(saleService.list(null, null, null, null, 0, 5))
+        when(saleService.list(null, null, null, null, 0, 5, null))
             .thenReturn(new AdminSalePageResponse(List.of(sale), 0, 5, 1));
 
         mockMvc.perform(get("/api/admin/stats")

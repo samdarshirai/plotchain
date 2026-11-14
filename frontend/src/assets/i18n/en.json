@@ -950,7 +950,6 @@
     "salesRegister": {
       "title": "Sales Register",
       "associateFilterLabel": "Associate",
-      "associateFilterAllOption": "All associates",
       "statusFilterLabel": "Status",
       "statusFilterAllOption": "All statuses",
       "statusRecordedOption": "Recorded",
@@ -1348,7 +1347,6 @@
       "title": "Income Statement",
       "subtitle": "Every posted ledger entry, across every associate and cycle — select entries to record their payment date. Entries themselves cannot be edited or removed.",
       "associateFilterLabel": "Associate",
-      "associateFilterAllOption": "All associates",
       "incomeTypeFilterLabel": "Income Type",
       "incomeTypeFilterAllOption": "All income types",
       "incomeTypeDirectOption": "Direct",

@@ -22,12 +22,12 @@ describe('SalesRegisterService', () => {
   it('lists sales with filters and pagination as query params', () => {
     const mockResponse: AdminSalePage = { sales: [], page: 0, size: 20, totalElements: 0 };
 
-    service.list({ associateId: 'a1', status: 'RECORDED' }, 0, 20).subscribe(res => {
+    service.list({ search: 'a1', status: 'RECORDED' }, 0, 20).subscribe(res => {
       expect(res).toEqual(mockResponse);
     });
 
     const req = httpMock.expectOne(
-      r => r.url === '/api/admin/sales' && r.params.get('associateId') === 'a1' && r.params.get('status') === 'RECORDED'
+      r => r.url === '/api/admin/sales' && r.params.get('search') === 'a1' && r.params.get('status') === 'RECORDED'
     );
     expect(req.request.method).toBe('GET');
     req.flush(mockResponse);
