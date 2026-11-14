@@ -78,7 +78,6 @@ class SaleRepositoryTest {
         sale.setPlotId(plotId);
         sale.setProjectId(projectId);
         sale.setAssociateId(associateId);
-        sale.setBuyerName("Jane Buyer");
         sale.setBuyerPhone("9999999999");
         sale.setNote("Sold to Jane Buyer");
         sale.setAmount(new BigDecimal("600000.00"));

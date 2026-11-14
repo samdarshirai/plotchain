@@ -260,7 +260,6 @@ class PlotBookingSchemaTest {
         s.setPlotId(b.getPlotId());
         s.setProjectId(entityManager.find(Plot.class, b.getPlotId()).getProjectId());
         s.setAssociateId(b.getAssociateId());
-        s.setBuyerName("Jane Buyer");
         s.setNote("Confirmed from booking " + b.getId());
         s.setAmount(b.getTotalAmount());
         s.setCycleId(cycleId);

@@ -17,8 +17,8 @@ public class Sale {
     private UUID projectId;
     @Column(name = "associate_id", nullable = false)
     private UUID associateId;
-    @Column(name = "buyer_name", nullable = false)
-    private String buyerName;
+    @Column(name = "buyer_associate_id")
+    private UUID buyerAssociateId;
     @Column(name = "buyer_phone")
     private String buyerPhone;
     @Column(name = "buyer_email")
@@ -51,8 +51,8 @@ public class Sale {
     public void setProjectId(UUID projectId) { this.projectId = projectId; }
     public UUID getAssociateId() { return associateId; }
     public void setAssociateId(UUID associateId) { this.associateId = associateId; }
-    public String getBuyerName() { return buyerName; }
-    public void setBuyerName(String buyerName) { this.buyerName = buyerName; }
+    public UUID getBuyerAssociateId() { return buyerAssociateId; }
+    public void setBuyerAssociateId(UUID buyerAssociateId) { this.buyerAssociateId = buyerAssociateId; }
     public String getBuyerPhone() { return buyerPhone; }
     public void setBuyerPhone(String buyerPhone) { this.buyerPhone = buyerPhone; }
     public String getBuyerEmail() { return buyerEmail; }

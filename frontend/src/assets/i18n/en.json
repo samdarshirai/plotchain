@@ -957,6 +957,8 @@
       "recordedFromLabel": "Recorded from",
       "recordedToLabel": "Recorded to",
       "columnProjectName": "Project",
+      "columnSponsorId": "Sponsor ID",
+      "columnBuyerAssociateId": "Buyer Associate ID",
       "columnBuyerName": "Buyer",
       "columnBuyerPhone": "Phone",
       "columnAmount": "Amount",

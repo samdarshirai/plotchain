@@ -23,4 +23,5 @@ export interface Sale {
   rate?: number | null;
   listPrice?: number | null;
   extraPrice?: number | null;
+  buyerAssociateUserId?: string | null;
 }

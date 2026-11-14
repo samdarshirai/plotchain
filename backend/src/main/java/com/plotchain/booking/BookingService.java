@@ -312,7 +312,6 @@ public class BookingService {
         List<EmiInstallment> installments =
             emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId());
         Instant now = clock.instant();
-        String buyerName = buyerName(booking);
         for (int n : numbers) {
             EmiInstallment installment = installments.stream()
                 .filter(i -> i.getInstallmentNumber() == n)
@@ -355,13 +354,12 @@ public class BookingService {
             throw new PlotNotAvailableException(plot.getId());
         }
         Instant now = clock.instant();
-        String buyerName = buyerName(booking);
         for (int n : numbers) {
             EmiInstallment installment = installments.stream()
                 .filter(i -> i.getInstallmentNumber() == n).findFirst().orElseThrow();
             boolean completes = fullyPaid && n == numbers.get(numbers.size() - 1);
             saleService.recordInstallmentPayment(
-                booking.getId(), installment.getId(), n, booking.getAssociateId(), buyerName,
+                booking.getId(), installment.getId(), n, booking.getAssociateId(), booking.getBuyerAssociateId(),
                 booking.getBuyerPhone(), installment.getAmount(), plot, completes);
         }
         if (fullyPaid) {
@@ -394,16 +392,10 @@ public class BookingService {
             return;
         }
         Plot plot = plotRepository.findById(booking.getPlotId()).orElseThrow(() -> missingPlot(booking));
-        String buyerName = buyerName(booking);
         for (EmiInstallment i : missing) {
             saleService.recordInstallmentPayment(booking.getId(), i.getId(), i.getInstallmentNumber(),
-                booking.getAssociateId(), buyerName, booking.getBuyerPhone(), i.getAmount(), plot, false);
+                booking.getAssociateId(), booking.getBuyerAssociateId(), booking.getBuyerPhone(), i.getAmount(), plot, false);
         }
-    }
-
-    // buyer_name is no longer stored: the buyer is always an associate (buyer_associate_id NOT NULL).
-    private String buyerName(PlotBooking booking) {
-        return associateRepository.findById(booking.getBuyerAssociateId()).map(Associate::getName).orElse(null);
     }
 
     private IllegalStateException missingPlot(PlotBooking booking) {

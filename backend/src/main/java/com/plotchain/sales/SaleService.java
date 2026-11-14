@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class SaleService {
@@ -85,7 +86,7 @@ public class SaleService {
     // Core of recordInstallmentPayment. plot may be null only for legacy plotless sales being voided elsewhere.
     // Runs inside the caller's transaction.
     private SaleResponse persistSaleAndIncome(Plot plot, Associate associate, Project project,
-            String buyerName, String buyerPhone, String buyerEmail, String note,
+            UUID buyerAssociateId, String buyerPhone, String buyerEmail, String note,
             BigDecimal amount, UUID bookingId, UUID installmentId, boolean markPlotSold) {
         // Flow step 4: flip Plot -> SOLD (Decision 1) -- only when a Plot is linked. A booking
         // payment that doesn't complete the booking leaves the plot BOOKED.
@@ -107,7 +108,7 @@ public class SaleService {
         sale.setPlotId(plot != null ? plot.getId() : null);
         sale.setProjectId(project.getId());
         sale.setAssociateId(associate.getId());
-        sale.setBuyerName(buyerName);
+        sale.setBuyerAssociateId(buyerAssociateId);
         sale.setBuyerPhone(buyerPhone);
         sale.setBuyerEmail(buyerEmail);
         sale.setNote(note);
@@ -170,7 +171,7 @@ public class SaleService {
     // the allowed dependency direction (booking must not be imported by sales).
     @Transactional
     public SaleResponse recordInstallmentPayment(UUID bookingId, UUID installmentId, int installmentNumber,
-            UUID associateId, String buyerName, String buyerPhone, BigDecimal amount, Plot plot,
+            UUID associateId, UUID buyerAssociateId, String buyerPhone, BigDecimal amount, Plot plot,
             boolean markPlotSold) {
         Associate associate = associateRepository.findById(associateId)
             .orElseThrow(() -> new AssociateNotFoundException(associateId));
@@ -179,7 +180,7 @@ public class SaleService {
             .orElseThrow(() -> new ProjectNotFoundException(plot.getProjectId()));
 
         return persistSaleAndIncome(plot, associate, project,
-            buyerName, buyerPhone, null,
+            buyerAssociateId, buyerPhone, null,
             "Payment " + installmentNumber + " of booking " + bookingId, amount, bookingId, installmentId,
             markPlotSold);
     }
@@ -303,7 +304,8 @@ public class SaleService {
         List<UUID> projectIds = sales.stream().map(Sale::getProjectId).filter(Objects::nonNull).distinct().toList();
         Map<UUID, String> projectNamesByProjectId = projectRepository.findAllById(projectIds).stream()
             .collect(Collectors.toMap(Project::getId, Project::getName));
-        List<UUID> associateIds = sales.stream().map(Sale::getAssociateId).distinct().toList();
+        List<UUID> associateIds = sales.stream()
+            .flatMap(s -> Stream.of(s.getAssociateId(), s.getBuyerAssociateId())).filter(Objects::nonNull).distinct().toList();
         Map<UUID, Associate> associatesById = associateRepository.findAllById(associateIds).stream()
             .collect(Collectors.toMap(Associate::getId, a -> a));
 
@@ -314,7 +316,8 @@ public class SaleService {
             Associate associate = associatesById.get(sale.getAssociateId());
             String associateUserId = associate != null ? associate.getUserId() : null;
             String associateName = associate != null ? associate.getName() : null;
-            return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName);
+            Associate buyer = sale.getBuyerAssociateId() != null ? associatesById.get(sale.getBuyerAssociateId()) : null;
+            return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName, buyer);
         }).toList();
     }
 
@@ -327,19 +330,22 @@ public class SaleService {
         String projectName = project != null ? project.getName() : null;
         String associateUserId = associate != null ? associate.getUserId() : null;
         String associateName = associate != null ? associate.getName() : null;
-        return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName);
+        Associate buyer = sale.getBuyerAssociateId() == null ? null
+            : associateRepository.findById(sale.getBuyerAssociateId()).orElse(null);
+        return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName, buyer);
     }
 
     private SaleResponse buildResponse(
-            Sale sale, Plot plot, String plotNo, String projectName, String associateUserId, String associateName) {
+            Sale sale, Plot plot, String plotNo, String projectName, String associateUserId, String associateName,
+            Associate buyer) {
         return new SaleResponse(
             sale.getId(), sale.getPlotId(), sale.getAssociateId(),
-            sale.getBuyerName(), sale.getBuyerPhone(), sale.getBuyerEmail(),
+            buyer != null ? buyer.getName() : null, sale.getBuyerPhone(), sale.getBuyerEmail(),
             sale.getAmount(), sale.getCycleId(), sale.getLegCredited(),
             sale.getStatus().name(), sale.getVoidReason(), sale.getRecordedAt(),
             plotNo, projectName, associateUserId, associateName, sale.getNote(),
             plot != null ? plot.getPlotType().name() : null, plot != null ? plot.getAreaSqft() : null,
             plot != null ? plot.getRate() : null, plot != null ? plot.getPrice() : null,
-            plot != null ? plot.getExtraPrice() : null);
+            plot != null ? plot.getExtraPrice() : null, buyer != null ? buyer.getUserId() : null);
     }
 }

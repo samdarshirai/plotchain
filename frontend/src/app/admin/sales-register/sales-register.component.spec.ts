@@ -25,7 +25,8 @@ describe('SalesRegisterComponent', () => {
           id: 's1', plotId: 'p1', associateId: 'a1', buyerName: 'Jane', buyerPhone: '9999999999',
           buyerEmail: null, amount: 100000, cycleId: 'c1', legCredited: 'L', status: 'RECORDED',
           voidReason: null, recordedAt: '2026-01-01T00:00:00Z', plotNo: 'A1', projectName: 'Green Meadows',
-          associateUserId: 'VP00001', associateName: 'Jane Associate', note: 'Sold to Jane'
+          associateUserId: 'VP00001', associateName: 'Jane Associate', note: 'Sold to Jane',
+          buyerAssociateUserId: 'VP00009'
         }
       ],
       page: 0, size: 20, totalElements: 1
@@ -36,6 +37,15 @@ describe('SalesRegisterComponent', () => {
 
   it('loads the first page of sales on init', () => {
     expect(fixture.componentInstance.page?.sales.length).toBe(1);
+  });
+
+  it('shows Sponsor ID, Buyer Associate ID and Buyer name columns', () => {
+    fixture.detectChanges();
+
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('VP00001');
+    expect(rowText).toContain('VP00009');
+    expect(rowText).toContain('Jane');
   });
 
   it('formats the amount column as currency with thousands separators, not a raw number', () => {

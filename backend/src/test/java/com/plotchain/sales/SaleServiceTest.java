@@ -112,9 +112,10 @@ class SaleServiceTest {
     // recordInstallmentPayment: one Sale per confirmed booking payment, amount = that installment.
     private static final UUID BOOKING_ID = UUID.randomUUID();
     private static final UUID INSTALLMENT_ID = UUID.randomUUID();
+    private static final UUID BUYER_ID = UUID.randomUUID();
 
     private SaleResponse confirm(String totalAmount, Plot plot) {
-        return saleService.recordInstallmentPayment(BOOKING_ID, INSTALLMENT_ID, 2, ASSOCIATE_ID, "Jane Buyer",
+        return saleService.recordInstallmentPayment(BOOKING_ID, INSTALLMENT_ID, 2, ASSOCIATE_ID, BUYER_ID,
             "9999999999", new BigDecimal(totalAmount), plot, true);
     }
 
@@ -154,7 +155,7 @@ class SaleServiceTest {
         assertThat(saved.getProjectId()).isEqualTo(PROJECT_ID);
         assertThat(saved.getAssociateId()).isEqualTo(ASSOCIATE_ID);
         assertThat(saved.getAmount()).isEqualByComparingTo("750000.00");
-        assertThat(saved.getBuyerName()).isEqualTo("Jane Buyer");
+        assertThat(saved.getBuyerAssociateId()).isEqualTo(BUYER_ID);
         assertThat(saved.getBuyerPhone()).isEqualTo("9999999999");
         assertThat(saved.getNote()).isEqualTo("Payment 2 of booking " + BOOKING_ID);
         assertThat(saved.getStatus()).isEqualTo(SaleStatus.RECORDED);
@@ -172,7 +173,7 @@ class SaleServiceTest {
         stubConfirmedPathDependencies();
         Plot plot = plotForBooking(PlotStatus.BOOKED, "1200.00");
 
-        saleService.recordInstallmentPayment(BOOKING_ID, INSTALLMENT_ID, 1, ASSOCIATE_ID, "Jane Buyer",
+        saleService.recordInstallmentPayment(BOOKING_ID, INSTALLMENT_ID, 1, ASSOCIATE_ID, BUYER_ID,
             "9999999999", new BigDecimal("100000.00"), plot, false);
 
         assertThat(plot.getStatus()).isEqualTo(PlotStatus.BOOKED);
@@ -313,7 +314,6 @@ class SaleServiceTest {
         sale.setPlotId(plotId);
         sale.setProjectId(PROJECT_ID);
         sale.setAssociateId(ASSOCIATE_ID);
-        sale.setBuyerName("Jane Buyer");
         sale.setBuyerPhone("9999999999");
         sale.setNote("Sold to Jane Buyer");
         sale.setAmount(new BigDecimal("600000.00"));
@@ -645,7 +645,6 @@ class SaleServiceTest {
         sale.setPlotId(plotId);
         sale.setProjectId(projectId);
         sale.setAssociateId(ASSOCIATE_ID);
-        sale.setBuyerName("Jane Buyer");
         sale.setBuyerPhone("9999999999");
         sale.setAmount(new BigDecimal("600000.00"));
         sale.setCycleId(CYCLE_ID);
@@ -680,7 +679,6 @@ class SaleServiceTest {
         sale.setId(UUID.randomUUID());
         sale.setPlotId(plotId);
         sale.setAssociateId(ASSOCIATE_ID);
-        sale.setBuyerName("Jane Buyer");
         sale.setBuyerPhone("9999999999");
         sale.setAmount(new BigDecimal("600000.00"));
         sale.setCycleId(CYCLE_ID);
@@ -708,7 +706,6 @@ class SaleServiceTest {
         sale.setPlotId(plotId);
         sale.setProjectId(PROJECT_ID);
         sale.setAssociateId(ASSOCIATE_ID);
-        sale.setBuyerName("Jane Buyer");
         sale.setBuyerPhone("9999999999");
         sale.setAmount(new BigDecimal("600000.00"));
         sale.setCycleId(CYCLE_ID);
@@ -738,7 +735,6 @@ class SaleServiceTest {
         sale.setPlotId(plotId);
         sale.setProjectId(PROJECT_ID);
         sale.setAssociateId(ASSOCIATE_ID);
-        sale.setBuyerName("Jane Buyer");
         sale.setBuyerPhone("9999999999");
         sale.setAmount(new BigDecimal("600000.00"));
         sale.setCycleId(CYCLE_ID);

@@ -114,6 +114,8 @@ export class SalesRegisterComponent implements OnInit {
   ngOnInit(): void {
     this.registerColumns = [
       { key: 'projectName', label: this.translate.instant('admin.salesRegister.columnProjectName'), type: 'text' },
+      { key: 'sponsorId', label: this.translate.instant('admin.salesRegister.columnSponsorId'), type: 'text' },
+      { key: 'buyerAssociateId', label: this.translate.instant('admin.salesRegister.columnBuyerAssociateId'), type: 'text' },
       { key: 'buyerName', label: this.translate.instant('admin.salesRegister.columnBuyerName'), type: 'text' },
       { key: 'buyerPhone', label: this.translate.instant('admin.salesRegister.columnBuyerPhone'), type: 'text' },
       { key: 'amount', label: this.translate.instant('admin.salesRegister.columnAmount'), type: 'text', sum: true },
@@ -181,7 +183,9 @@ export class SalesRegisterComponent implements OnInit {
   private updateTableRows(): void {
     this.registerRows = (this.page?.sales ?? []).map(sale => ({
       projectName: sale.projectName ?? '',
-      buyerName: sale.buyerName,
+      sponsorId: sale.associateUserId ?? '',
+      buyerAssociateId: sale.buyerAssociateUserId ?? '',
+      buyerName: sale.buyerName ?? '',
       buyerPhone: sale.buyerPhone ?? '',
       amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.0-0') ?? String(sale.amount),
       legCredited: sale.legCredited,

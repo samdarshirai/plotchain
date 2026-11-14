@@ -1026,7 +1026,6 @@ class BookingServiceTest {
         i1.setPaymentRef("UTR-1");
         EmiInstallment i2 = installment(2, "100000.00", LocalDate.of(2026, 8, 15), InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(i1, i2);
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
 
         BookingResponse response = bookingService.confirmPayment(booking.getId(), 1, ACTOR_ID);
 
@@ -1042,7 +1041,7 @@ class BookingServiceTest {
         assertThat(response.dueAmount()).isEqualByComparingTo("100000.00");
         // business/income credited for exactly this payment; plot stays BOOKED (installment 2 still pending)
         verify(saleService).recordInstallmentPayment(eq(booking.getId()), any(), eq(1), eq(ASSOCIATE_ID),
-            eq("Jane Buyer"), any(), eq(new BigDecimal("100000.00")), any(Plot.class), eq(false));
+            eq(booking.getBuyerAssociateId()), any(), eq(new BigDecimal("100000.00")), any(Plot.class), eq(false));
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
     }
 
