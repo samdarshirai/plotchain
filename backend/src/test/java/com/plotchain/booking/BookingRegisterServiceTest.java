@@ -101,7 +101,7 @@ class BookingRegisterServiceTest {
 
         BookingResponse b1 = page.bookings().get(1);
         assertThat(b1.status()).isEqualTo(BookingStatus.ACTIVE);
-        assertThat(b1.buyerName()).isEqualTo("Buyer 1");
+        assertThat(b1.buyerName()).isEqualTo("Reg Associate");  // fixture buyer = the seller associate
         assertThat(b1.installments()).extracting(EmiInstallmentResponse::installmentNumber).containsExactly(1, 2, 3);
         assertThat(b1.installments()).extracting(EmiInstallmentResponse::overdue).containsExactly(true, true, false);
         assertThat(b1.paidAmount()).isEqualByComparingTo("0");

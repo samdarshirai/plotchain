@@ -64,7 +64,6 @@ class BookingEventRepositoryTest {
         b.setId(UUID.randomUUID());
         b.setPlotId(plotId);
         b.setAssociateId(persistAssociate());
-        b.setBuyerName("Jane Buyer");
         b.setBuyerAssociateId(b.getAssociateId());
         b.setTotalAmount(new BigDecimal("600000.00"));
         b.setInstallmentCount(1);

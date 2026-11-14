@@ -67,7 +67,6 @@ class BookingTopUpServiceTest {
         b.setId(UUID.randomUUID());
         b.setPlotId(UUID.randomUUID());
         b.setAssociateId(UUID.randomUUID());
-        b.setBuyerName("Jane Buyer");
         b.setBuyerAssociateId(b.getAssociateId());
         b.setTotalAmount(new BigDecimal("100000.00"));
         b.setInstallmentCount(3);

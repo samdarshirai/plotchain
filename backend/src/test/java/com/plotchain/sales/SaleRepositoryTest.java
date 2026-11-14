@@ -298,7 +298,6 @@ class SaleRepositoryTest {
         b.setPlotId(plotId);
         b.setAssociateId(sellerId);
         b.setBuyerAssociateId(buyerId);
-        b.setBuyerName("Buyer");
         b.setTotalAmount(new BigDecimal("600000.00"));
         b.setInstallmentCount(1);
         b.setBookedAt(Instant.now());

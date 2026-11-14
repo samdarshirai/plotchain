@@ -100,7 +100,6 @@ class BookingRegisterTestData {
         b.setTotalAmount(new BigDecimal("600000.00"));
         b.setInstallmentCount(3);
         b.setBookedAt(T.plusSeconds(86400L * bookedDayOffset));
-        b.setBuyerName("Buyer " + bookedDayOffset);
         b.setBuyerAssociateId(b.getAssociateId());
         b.setStatus(status);
         return bookings.saveAndFlush(b);

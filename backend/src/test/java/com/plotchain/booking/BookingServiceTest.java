@@ -79,7 +79,6 @@ class BookingServiceTest {
         booking.setId(UUID.randomUUID());
         booking.setPlotId(PLOT_ID);
         booking.setAssociateId(ASSOCIATE_ID);
-        booking.setBuyerName("Jane Buyer");
         booking.setBuyerAssociateId(booking.getAssociateId());
         booking.setTotalAmount(new BigDecimal("600000.00"));
         booking.setInstallmentCount(1);
@@ -134,6 +133,7 @@ class BookingServiceTest {
             paid,
             installment(2, "250000.00", LocalDate.of(2026, 8, 1), InstallmentStatus.PENDING),
             installment(3, "150000.00", LocalDate.of(2026, 9, 1), InstallmentStatus.VOID)));
+        when(associateRepository.findAllById(any())).thenReturn(List.of(associateWithId(ASSOCIATE_ID)));
 
         BookingResponse r = bookingService.getMyBookings(ASSOCIATE_ID, null, null, 0, 20).bookings().get(0);
 
@@ -594,7 +594,7 @@ class BookingServiceTest {
 
         ArgumentCaptor<PlotBooking> captor = ArgumentCaptor.forClass(PlotBooking.class);
         verify(plotBookingRepository).save(captor.capture());
-        assertThat(captor.getValue().getBuyerName()).isEqualTo("Jane Buyer");
+        assertThat(captor.getValue().getBuyerAssociateId()).isNotNull();
         assertThat(captor.getValue().getBuyerPhone()).isEqualTo("9999999999");
         assertThat(captor.getValue().getStatus()).isEqualTo(BookingStatus.ACTIVE);
     }
@@ -1026,6 +1026,7 @@ class BookingServiceTest {
         i1.setPaymentRef("UTR-1");
         EmiInstallment i2 = installment(2, "100000.00", LocalDate.of(2026, 8, 15), InstallmentStatus.PENDING);
         PlotBooking booking = lockedBookingWith(i1, i2);
+        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
 
         BookingResponse response = bookingService.confirmPayment(booking.getId(), 1, ACTOR_ID);
 

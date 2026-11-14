@@ -142,7 +142,6 @@ public class BookingService {
         booking.setRate(plot.getRate());
         booking.setInstallmentCount(schedule.size());
         booking.setBookedAt(bookedAt);
-        booking.setBuyerName(buyer.getName());
         booking.setBuyerAssociateId(buyer.getId());
         booking.setBuyerPhone(request.buyerPhone() == null || request.buyerPhone().isBlank()
             ? null : request.buyerPhone().trim());
@@ -313,6 +312,7 @@ public class BookingService {
         List<EmiInstallment> installments =
             emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId());
         Instant now = clock.instant();
+        String buyerName = buyerName(booking);
         for (int n : numbers) {
             EmiInstallment installment = installments.stream()
                 .filter(i -> i.getInstallmentNumber() == n)
@@ -355,12 +355,13 @@ public class BookingService {
             throw new PlotNotAvailableException(plot.getId());
         }
         Instant now = clock.instant();
+        String buyerName = buyerName(booking);
         for (int n : numbers) {
             EmiInstallment installment = installments.stream()
                 .filter(i -> i.getInstallmentNumber() == n).findFirst().orElseThrow();
             boolean completes = fullyPaid && n == numbers.get(numbers.size() - 1);
             saleService.recordInstallmentPayment(
-                booking.getId(), installment.getId(), n, booking.getAssociateId(), booking.getBuyerName(),
+                booking.getId(), installment.getId(), n, booking.getAssociateId(), buyerName,
                 booking.getBuyerPhone(), installment.getAmount(), plot, completes);
         }
         if (fullyPaid) {
@@ -393,10 +394,16 @@ public class BookingService {
             return;
         }
         Plot plot = plotRepository.findById(booking.getPlotId()).orElseThrow(() -> missingPlot(booking));
+        String buyerName = buyerName(booking);
         for (EmiInstallment i : missing) {
             saleService.recordInstallmentPayment(booking.getId(), i.getId(), i.getInstallmentNumber(),
-                booking.getAssociateId(), booking.getBuyerName(), booking.getBuyerPhone(), i.getAmount(), plot, false);
+                booking.getAssociateId(), buyerName, booking.getBuyerPhone(), i.getAmount(), plot, false);
         }
+    }
+
+    // buyer_name is no longer stored: the buyer is always an associate (buyer_associate_id NOT NULL).
+    private String buyerName(PlotBooking booking) {
+        return associateRepository.findById(booking.getBuyerAssociateId()).map(Associate::getName).orElse(null);
     }
 
     private IllegalStateException missingPlot(PlotBooking booking) {
@@ -722,7 +729,9 @@ public class BookingService {
         Map<UUID, Plot> plots = byId(plotRepository.findAllById(ids(bookings, PlotBooking::getPlotId)), Plot::getId);
         Map<UUID, Project> projects = byId(projectRepository.findAllById(
             plots.values().stream().map(Plot::getProjectId).filter(java.util.Objects::nonNull).distinct().toList()), Project::getId);
-        Map<UUID, Associate> associates = byId(associateRepository.findAllById(ids(bookings, PlotBooking::getAssociateId)), Associate::getId);
+        Map<UUID, Associate> associates = byId(associateRepository.findAllById(
+            java.util.stream.Stream.concat(ids(bookings, PlotBooking::getAssociateId).stream(),
+                ids(bookings, PlotBooking::getBuyerAssociateId).stream()).distinct().toList()), Associate::getId);
         LocalDate today = LocalDate.now(clock);
         return bookings.stream().map(booking -> {
             List<EmiInstallment> installments = installmentsByBooking.getOrDefault(booking.getId(), List.of());
@@ -735,9 +744,10 @@ public class BookingService {
             Plot plot = plots.get(booking.getPlotId());
             Project project = plot == null ? null : projects.get(plot.getProjectId());
             Associate associate = associates.get(booking.getAssociateId());
+            Associate buyer = associates.get(booking.getBuyerAssociateId());
             return new BookingResponse(
                 booking.getId(), booking.getPlotId(), booking.getAssociateId(),
-                booking.getStatus(), booking.getBuyerName(),
+                booking.getStatus(), buyer == null ? null : buyer.getName(),
                 booking.getTotalAmount(), booking.getInstallmentCount(), booking.getBookedAt(),
                 sumByStatus(installments, InstallmentStatus.PAID),
                 // ENTERED is received-but-unconfirmed money: still due until confirmed (paid + due = total).
