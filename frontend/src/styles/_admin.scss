@@ -864,17 +864,17 @@
     // Phone, Amount, Status, Recorded At, Actions. Sum 100%.
     th:nth-child(1) { width: 3%; }
     th:nth-child(2) { width: 7%; }
-    th:nth-child(3) { width: 6%; }
+    th:nth-child(3) { width: 5%; }
     th:nth-child(4) { width: 8%; }
     th:nth-child(5) { width: 9%; }
     th:nth-child(6) { width: 8%; }
     th:nth-child(7) { width: 9%; }
-    th:nth-child(8) { width: 8%; }
-    th:nth-child(9) { width: 9%; }
-    th:nth-child(10) { width: 9%; }
+    th:nth-child(8) { width: 7%; }
+    th:nth-child(9) { width: 8%; }
+    th:nth-child(10) { width: 11%; }
     th:nth-child(11) { width: 6%; }
     th:nth-child(12) { width: 9%; }
-    th:nth-child(13) { width: 9%; }
+    th:nth-child(13) { width: 10%; }
 
     // Text wraps (between words, or anywhere for long IDs) up to 2 lines, keeping rows compact.
     td > span {
