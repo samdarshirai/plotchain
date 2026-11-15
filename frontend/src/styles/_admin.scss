@@ -775,24 +775,26 @@
   overflow-wrap: anywhere;
 }
 
-// Sponsor ID, Buyer ID, Phone -- ledger typography, muted.
-.sales-register .editable-table td:nth-child(3),
+// Sponsor ID, Associate ID, Placement ID, Phone -- ledger typography, muted.
 .sales-register .editable-table td:nth-child(4),
-.sales-register .editable-table td:nth-child(6) {
+.sales-register .editable-table td:nth-child(6),
+.sales-register .editable-table td:nth-child(8),
+.sales-register .editable-table td:nth-child(9) {
   font-family: var(--font-mono);
   font-size: 12.5px;
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
 
-// Buyer Name.
-.sales-register .editable-table td:nth-child(5) {
+// Sponsor Name, Associate Name.
+.sales-register .editable-table td:nth-child(5),
+.sales-register .editable-table td:nth-child(7) {
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 // Amount -- ledger typography; money stays on one line.
-.sales-register .editable-table td:nth-child(7) {
+.sales-register .editable-table td:nth-child(10) {
   font-family: var(--font-mono);
   font-size: 12.5px;
   font-weight: 600;
@@ -800,18 +802,18 @@
   white-space: nowrap;
 }
 
-.sales-register .editable-table td:nth-child(8) {
+.sales-register .editable-table td:nth-child(11) {
   font-size: 0.8125rem;
 }
 
 // Recorded At -- wraps between date and time rather than clipping.
-.sales-register .editable-table td:nth-child(9) {
+.sales-register .editable-table td:nth-child(12) {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
   font-size: 0.8125rem;
 }
 
-// Actions column (9th) -- lays out the inline void-reason input + Void button (or the
+// Actions column (13th) -- lays out the inline void-reason input + Void button (or the
 // Voided tag) in a row without needing to restructure the component's markup.
 .sales-register__actions {
   display: flex;
@@ -858,17 +860,21 @@
     table-layout: fixed;
 
     thead th, tbody td { padding: 8px 6px; text-align: center; }
-    // 10 columns: S No, Project, Sponsor ID, Buyer ID, Buyer Name, Phone, Amount, Status, Recorded At, Actions. Sum 100%.
-    th:nth-child(1) { width: 4%; }
-    th:nth-child(2) { width: 10%; }
-    th:nth-child(3) { width: 8%; }
+    // 13 columns: S No, Project, Plot No, Sponsor ID, Sponsor Name, Associate ID, Associate Name, Placement ID,
+    // Phone, Amount, Status, Recorded At, Actions. Sum 100%.
+    th:nth-child(1) { width: 3%; }
+    th:nth-child(2) { width: 7%; }
+    th:nth-child(3) { width: 6%; }
     th:nth-child(4) { width: 8%; }
-    th:nth-child(5) { width: 11%; }
-    th:nth-child(6) { width: 11%; }
-    th:nth-child(7) { width: 15%; }
+    th:nth-child(5) { width: 9%; }
+    th:nth-child(6) { width: 8%; }
+    th:nth-child(7) { width: 9%; }
     th:nth-child(8) { width: 8%; }
-    th:nth-child(9) { width: 12%; }
-    th:nth-child(10) { width: 13%; }
+    th:nth-child(9) { width: 9%; }
+    th:nth-child(10) { width: 9%; }
+    th:nth-child(11) { width: 6%; }
+    th:nth-child(12) { width: 9%; }
+    th:nth-child(13) { width: 9%; }
 
     // Text wraps (between words, or anywhere for long IDs) up to 2 lines, keeping rows compact.
     td > span {
@@ -881,7 +887,7 @@
     }
 
     // Money stays on one line.
-    td:nth-child(7) > span { display: block; white-space: nowrap; }
+    td:nth-child(10) > span { display: block; white-space: nowrap; }
   }
 
   .sales-register__actions { flex-wrap: nowrap; }
