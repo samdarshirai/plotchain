@@ -250,6 +250,12 @@ public class SaleService {
     // column, so a bare same-day Instant would exclude same-day sales on the last day requested.
     public AdminSalePageResponse list(
             UUID associateId, SaleStatus status, LocalDate recordedFrom, LocalDate recordedTo, int page, int size, String search) {
+        return list(associateId, status, recordedFrom, recordedTo, page, size, search, null, null);
+    }
+
+    public AdminSalePageResponse list(
+            UUID associateId, SaleStatus status, LocalDate recordedFrom, LocalDate recordedTo, int page, int size,
+            String search, UUID cycleId, String plotNo) {
         Instant recordedFromInstant = recordedFrom == null
             ? null : recordedFrom.atStartOfDay(ZoneOffset.UTC).toInstant();
         Instant recordedToExclusive = recordedTo == null
@@ -259,11 +265,11 @@ public class SaleService {
         List<UUID> matchIds = associateId == null && search != null ? associateRepository.findIdsBySearch(search) : null;
         Page<Sale> result = matchIds == null
             ? saleRepository.searchRegister(
-                associateId, status, recordedFromInstant, recordedToExclusive, PageRequest.of(page, size))
+                associateId, status, recordedFromInstant, recordedToExclusive, cycleId, plotNo, PageRequest.of(page, size))
             : matchIds.isEmpty()
                 ? Page.empty(PageRequest.of(page, size))
                 : saleRepository.searchRegisterByAssociates(
-                    matchIds, status, recordedFromInstant, recordedToExclusive, PageRequest.of(page, size));
+                    matchIds, status, recordedFromInstant, recordedToExclusive, cycleId, plotNo, PageRequest.of(page, size));
 
         List<SaleResponse> sales = toResponses(result.getContent());
         return new AdminSalePageResponse(sales, page, size, result.getTotalElements());
@@ -309,6 +315,11 @@ public class SaleService {
         Map<UUID, Associate> associatesById = associateRepository.findAllById(associateIds).stream()
             .collect(Collectors.toMap(Associate::getId, a -> a));
 
+        List<UUID> parentIds = sales.stream().map(s -> s.getBuyerAssociateId() == null ? null : associatesById.get(s.getBuyerAssociateId()))
+            .filter(Objects::nonNull).map(Associate::getParentId).filter(Objects::nonNull).distinct().toList();
+        Map<UUID, String> parentUserIds = associateRepository.findAllById(parentIds).stream()
+            .collect(Collectors.toMap(Associate::getId, Associate::getUserId));
+
         return sales.stream().map(sale -> {
             Plot plot = sale.getPlotId() != null ? plotsById.get(sale.getPlotId()) : null;
             String plotNo = plot != null ? plot.getPlotNo() : null;
@@ -317,7 +328,8 @@ public class SaleService {
             String associateUserId = associate != null ? associate.getUserId() : null;
             String associateName = associate != null ? associate.getName() : null;
             Associate buyer = sale.getBuyerAssociateId() != null ? associatesById.get(sale.getBuyerAssociateId()) : null;
-            return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName, buyer);
+            String placement = buyer != null && buyer.getParentId() != null ? parentUserIds.get(buyer.getParentId()) : null;
+            return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName, buyer, placement);
         }).toList();
     }
 
@@ -332,12 +344,14 @@ public class SaleService {
         String associateName = associate != null ? associate.getName() : null;
         Associate buyer = sale.getBuyerAssociateId() == null ? null
             : associateRepository.findById(sale.getBuyerAssociateId()).orElse(null);
-        return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName, buyer);
+        String placement = buyer == null || buyer.getParentId() == null ? null
+            : associateRepository.findById(buyer.getParentId()).map(Associate::getUserId).orElse(null);
+        return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName, buyer, placement);
     }
 
     private SaleResponse buildResponse(
             Sale sale, Plot plot, String plotNo, String projectName, String associateUserId, String associateName,
-            Associate buyer) {
+            Associate buyer, String placementUserId) {
         return new SaleResponse(
             sale.getId(), sale.getPlotId(), sale.getAssociateId(),
             buyer != null ? buyer.getName() : null, sale.getBuyerPhone(), sale.getBuyerEmail(),
@@ -346,6 +360,6 @@ public class SaleService {
             plotNo, projectName, associateUserId, associateName, sale.getNote(),
             plot != null ? plot.getPlotType().name() : null, plot != null ? plot.getAreaSqft() : null,
             plot != null ? plot.getRate() : null, plot != null ? plot.getPrice() : null,
-            plot != null ? plot.getExtraPrice() : null, buyer != null ? buyer.getUserId() : null);
+            plot != null ? plot.getExtraPrice() : null, buyer != null ? buyer.getUserId() : null, placementUserId);
     }
 }

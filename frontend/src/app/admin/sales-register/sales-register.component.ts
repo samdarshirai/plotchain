@@ -9,6 +9,8 @@ import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../sh
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { titleCase } from '../../shared/utils/title-case';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
+import { CycleManagementService } from '../cycle-management/cycle-management.service';
+import { CycleSummary } from '../models/cycle.model';
 import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
 
 
@@ -46,6 +48,19 @@ import { TableToolsComponent } from '../../shared/components/table-tools/table-t
             <option value="RECORDED">{{ 'admin.salesRegister.statusRecordedOption' | translate }}</option>
             <option value="VOIDED">{{ 'admin.salesRegister.statusVoidedOption' | translate }}</option>
           </select>
+        </label>
+        <label>
+          {{ 'admin.salesRegister.cycleFilterLabel' | translate }}
+          <select (change)="onCycleChange($any($event.target).value)">
+            <option value="">{{ 'admin.salesRegister.allCycles' | translate }}</option>
+            <option *ngFor="let c of cycles" [value]="c.id">
+              {{ c.periodStart | date: 'mediumDate' }} – {{ c.periodEnd ? (c.periodEnd | date: 'mediumDate') : ('admin.cycleManagement.ongoing' | translate) }}
+            </option>
+          </select>
+        </label>
+        <label>
+          {{ 'admin.salesRegister.plotNoFilterLabel' | translate }}
+          <input type="text" (input)="onPlotNoInput($any($event.target).value)" />
         </label>
         <label>
           {{ 'admin.salesRegister.recordedFromLabel' | translate }}
@@ -99,6 +114,11 @@ export class SalesRegisterComponent implements OnInit {
   private translate = inject(TranslateService);
   private datePipe = inject(DatePipe);
   private currencyPipe = inject(CurrencyPipe);
+  private cycleService = inject(CycleManagementService);
+
+  cycles: CycleSummary[] = [];
+  private cycleId = '';
+  private plotNo = '';
 
   page: AdminSalePage | null = null;
   loadError = false;
@@ -114,9 +134,12 @@ export class SalesRegisterComponent implements OnInit {
   ngOnInit(): void {
     this.registerColumns = [
       { key: 'projectName', label: this.translate.instant('admin.salesRegister.columnProjectName'), type: 'text' },
+      { key: 'plotNo', label: this.translate.instant('admin.salesRegister.columnPlotNo'), type: 'text' },
       { key: 'sponsorId', label: this.translate.instant('admin.salesRegister.columnSponsorId'), type: 'text' },
+      { key: 'sponsorName', label: this.translate.instant('admin.salesRegister.columnSponsorName'), type: 'text' },
       { key: 'buyerAssociateId', label: this.translate.instant('admin.salesRegister.columnBuyerAssociateId'), type: 'text' },
       { key: 'buyerName', label: this.translate.instant('admin.salesRegister.columnBuyerName'), type: 'text' },
+      { key: 'placementId', label: this.translate.instant('admin.salesRegister.columnPlacementId'), type: 'text' },
       { key: 'buyerPhone', label: this.translate.instant('admin.salesRegister.columnBuyerPhone'), type: 'text' },
       { key: 'amount', label: this.translate.instant('admin.salesRegister.columnAmount'), type: 'text', sum: true },
       {
@@ -128,6 +151,17 @@ export class SalesRegisterComponent implements OnInit {
       { key: 'recordedAt', label: this.translate.instant('admin.salesRegister.columnRecordedAt'), type: 'text' },
       { key: 'actions', label: this.translate.instant('admin.salesRegister.columnActions'), type: 'action' }
     ];
+    this.cycleService.list('', 0, 100).subscribe({ next: r => (this.cycles = r.cycles), error: () => undefined });
+    this.loadPage(0);
+  }
+
+  onCycleChange(value: string): void {
+    this.cycleId = value;
+    this.loadPage(0);
+  }
+
+  onPlotNoInput(value: string): void {
+    this.plotNo = value.trim();
     this.loadPage(0);
   }
 
@@ -169,6 +203,8 @@ export class SalesRegisterComponent implements OnInit {
     if (this.status) filters.status = this.status as AdminSaleFilters['status'];
     if (this.recordedFrom) filters.recordedFrom = this.recordedFrom;
     if (this.recordedTo) filters.recordedTo = this.recordedTo;
+    if (this.cycleId) filters.cycleId = this.cycleId;
+    if (this.plotNo) filters.plotNo = this.plotNo;
     fetchAllPages((p, size) => this.salesRegisterService.list(filters, p, size)).subscribe({
       next: res => {
         this.page = res;
@@ -181,9 +217,12 @@ export class SalesRegisterComponent implements OnInit {
   private updateTableRows(): void {
     this.registerRows = (this.page?.sales ?? []).map(sale => ({
       projectName: sale.projectName ?? '',
+      plotNo: sale.plotNo ?? '',
       sponsorId: sale.associateUserId ?? '',
+      sponsorName: sale.associateName ?? '',
       buyerAssociateId: sale.buyerAssociateUserId ?? '',
       buyerName: sale.buyerName ?? '',
+      placementId: sale.buyerPlacementUserId ?? '',
       buyerPhone: sale.buyerPhone ?? '',
       amount: this.currencyPipe.transform(sale.amount, 'INR', 'symbol', '1.0-0') ?? String(sale.amount),
       status: titleCase(sale.status),

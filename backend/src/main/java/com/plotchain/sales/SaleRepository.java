@@ -87,6 +87,8 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
         AND (:status IS NULL OR s.status = :status)
         AND (CAST(:recordedFrom AS timestamp) IS NULL OR s.recordedAt >= :recordedFrom)
         AND (CAST(:recordedToExclusive AS timestamp) IS NULL OR s.recordedAt < :recordedToExclusive)
+        AND (:cycleId IS NULL OR s.cycleId = :cycleId)
+        AND (:plotNo IS NULL OR s.plotId IN (SELECT p.id FROM Plot p WHERE p.plotNo = :plotNo))
         ORDER BY s.recordedAt DESC
         """)
     Page<Sale> searchRegister(
@@ -94,6 +96,8 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
         @Param("status") SaleStatus status,
         @Param("recordedFrom") Instant recordedFrom,
         @Param("recordedToExclusive") Instant recordedToExclusive,
+        @Param("cycleId") UUID cycleId,
+        @Param("plotNo") String plotNo,
         Pageable pageable);
 
     // Same as searchRegister, restricted to a set of associates (admin text filter; caller
@@ -104,6 +108,8 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
         AND (:status IS NULL OR s.status = :status)
         AND (CAST(:recordedFrom AS timestamp) IS NULL OR s.recordedAt >= :recordedFrom)
         AND (CAST(:recordedToExclusive AS timestamp) IS NULL OR s.recordedAt < :recordedToExclusive)
+        AND (:cycleId IS NULL OR s.cycleId = :cycleId)
+        AND (:plotNo IS NULL OR s.plotId IN (SELECT p.id FROM Plot p WHERE p.plotNo = :plotNo))
         ORDER BY s.recordedAt DESC
         """)
     Page<Sale> searchRegisterByAssociates(
@@ -111,6 +117,8 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
         @Param("status") SaleStatus status,
         @Param("recordedFrom") Instant recordedFrom,
         @Param("recordedToExclusive") Instant recordedToExclusive,
+        @Param("cycleId") UUID cycleId,
+        @Param("plotNo") String plotNo,
         Pageable pageable);
 
     // Top-up business of plot associate B = RECORDED sales of bookings B bought (buyer_associate_id).

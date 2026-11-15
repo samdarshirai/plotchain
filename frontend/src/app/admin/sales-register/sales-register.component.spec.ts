@@ -19,6 +19,7 @@ describe('SalesRegisterComponent', () => {
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
+    httpMock.expectOne(r => r.url === '/api/admin/cycles').flush({ cycles: [{ id: 'c1', periodStart: '2026-01-01', periodEnd: null }], page: 0, size: 100, totalElements: 1 });
     httpMock.expectOne('/api/admin/sales?page=0&size=100').flush({
       sales: [
         {
@@ -26,7 +27,7 @@ describe('SalesRegisterComponent', () => {
           buyerEmail: null, amount: 100000, cycleId: 'c1', legCredited: 'L', status: 'RECORDED',
           voidReason: null, recordedAt: '2026-01-01T00:00:00Z', plotNo: 'A1', projectName: 'Green Meadows',
           associateUserId: 'VP00001', associateName: 'Jane Associate', note: 'Sold to Jane',
-          buyerAssociateUserId: 'VP00009'
+          buyerAssociateUserId: 'VP00009', buyerPlacementUserId: 'VP00005'
         }
       ],
       page: 0, size: 20, totalElements: 1
@@ -46,6 +47,27 @@ describe('SalesRegisterComponent', () => {
     expect(rowText).toContain('VP00001');
     expect(rowText).toContain('VP00009');
     expect(rowText).toContain('Jane');
+  });
+
+  it('shows Plot No, Sponsor Name and Placement ID columns', () => {
+    fixture.detectChanges();
+
+    const rowText: string = fixture.nativeElement.querySelector('.editable-table tbody tr').textContent;
+    expect(rowText).toContain('A1');
+    expect(rowText).toContain('Jane Associate');
+    expect(rowText).toContain('VP00005');
+  });
+
+  it('reloads with cycleId when the cycle filter changes', () => {
+    fixture.componentInstance.onCycleChange('c1');
+    httpMock.expectOne(r => r.url === '/api/admin/sales' && r.params.get('cycleId') === 'c1')
+      .flush({ sales: [], page: 0, size: 20, totalElements: 0 });
+  });
+
+  it('reloads with plotNo when the plot no filter changes', () => {
+    fixture.componentInstance.onPlotNoInput(' A1 ');
+    httpMock.expectOne(r => r.url === '/api/admin/sales' && r.params.get('plotNo') === 'A1')
+      .flush({ sales: [], page: 0, size: 20, totalElements: 0 });
   });
 
   it('formats the amount column as currency with thousands separators, not a raw number', () => {

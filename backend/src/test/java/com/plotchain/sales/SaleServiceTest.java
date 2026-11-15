@@ -545,21 +545,21 @@ class SaleServiceTest {
     void listWithSearchFiltersByMatchingAssociatesAndShortCircuitsWhenNoneMatch() {
         when(associateRepository.findIdsBySearch("jane")).thenReturn(java.util.List.of(ASSOCIATE_ID));
         when(saleRepository.searchRegisterByAssociates(
-            eq(java.util.List.of(ASSOCIATE_ID)), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            eq(java.util.List.of(ASSOCIATE_ID)), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(java.util.List.of(recordedSale(UUID.randomUUID(), PLOT_ID)), PageRequest.of(0, 20), 1));
         assertThat(saleService.list(null, null, null, null, 0, 20, "jane").totalElements()).isEqualTo(1);
 
         when(associateRepository.findIdsBySearch("nobody")).thenReturn(java.util.List.of());
         assertThat(saleService.list(null, null, null, null, 0, 20, "nobody").totalElements()).isZero();
         org.mockito.Mockito.verify(saleRepository, org.mockito.Mockito.never())
-            .searchRegister(any(), any(), any(), any(), any());
+            .searchRegister(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
     void listReturnsAPageMappedToSaleResponses() {
         Sale sale = recordedSale(UUID.randomUUID(), PLOT_ID);
         when(saleRepository.searchRegister(
-            eq(ASSOCIATE_ID), eq(SaleStatus.RECORDED), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            eq(ASSOCIATE_ID), eq(SaleStatus.RECORDED), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(java.util.List.of(sale), PageRequest.of(0, 20), 1));
 
         AdminSalePageResponse response = saleService.list(ASSOCIATE_ID, SaleStatus.RECORDED, null, null, 0, 20, null);
@@ -574,28 +574,39 @@ class SaleServiceTest {
 
     @Test
     void listConvertsRecordedDateRangeToAnExclusiveUpperBoundInstant() {
-        when(saleRepository.searchRegister(isNull(), isNull(), any(), any(), eq(PageRequest.of(0, 20))))
+        when(saleRepository.searchRegister(isNull(), isNull(), any(), any(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(java.util.List.of()));
 
         saleService.list(null, null, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), 0, 20, null);
 
         ArgumentCaptor<Instant> fromCaptor = ArgumentCaptor.forClass(Instant.class);
         ArgumentCaptor<Instant> toCaptor = ArgumentCaptor.forClass(Instant.class);
-        verify(saleRepository).searchRegister(isNull(), isNull(), fromCaptor.capture(), toCaptor.capture(), any());
+        verify(saleRepository).searchRegister(isNull(), isNull(), fromCaptor.capture(), toCaptor.capture(), any(), any(), any());
         assertThat(fromCaptor.getValue()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
         // Exclusive upper bound: the day AFTER recordedTo, so Jan 31 itself is included.
         assertThat(toCaptor.getValue()).isEqualTo(Instant.parse("2026-02-01T00:00:00Z"));
     }
 
     @Test
+    void listPassesCycleIdAndPlotNoThrough() {
+        UUID cycleId = UUID.randomUUID();
+        when(saleRepository.searchRegister(isNull(), isNull(), isNull(), isNull(), eq(cycleId), eq("A-12"), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(java.util.List.of()));
+
+        saleService.list(null, null, null, null, 0, 20, null, cycleId, "A-12");
+
+        verify(saleRepository).searchRegister(isNull(), isNull(), isNull(), isNull(), eq(cycleId), eq("A-12"), eq(PageRequest.of(0, 20)));
+    }
+
+    @Test
     void listPassesNullFiltersThroughWhenNoneAreProvided() {
-        when(saleRepository.searchRegister(isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(saleRepository.searchRegister(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(java.util.List.of()));
 
         AdminSalePageResponse response = saleService.list(null, null, null, null, 0, 20, null);
 
         assertThat(response.totalElements()).isEqualTo(0);
-        verify(saleRepository).searchRegister(isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20)));
+        verify(saleRepository).searchRegister(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20)));
     }
 
     // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,

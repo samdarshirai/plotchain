@@ -123,7 +123,7 @@ class SaleControllerTest {
             new BigDecimal("600000.00"), UUID.randomUUID(), "L", "RECORDED", null, Instant.now(), null, null,
             null, null, "Sold to Jane Buyer");
         AdminSalePageResponse page = new AdminSalePageResponse(List.of(sale), 0, 20, 1);
-        when(saleService.list(eq(associateId), eq(SaleStatus.RECORDED), any(), any(), eq(0), eq(20), isNull()))
+        when(saleService.list(eq(associateId), eq(SaleStatus.RECORDED), any(), any(), eq(0), eq(20), isNull(), isNull(), isNull()))
             .thenReturn(page);
 
         mockMvc.perform(get("/api/admin/sales")

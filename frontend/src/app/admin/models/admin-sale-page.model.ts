@@ -12,4 +12,6 @@ export interface AdminSaleFilters {
   status?: SaleStatus | '';
   recordedFrom?: string;
   recordedTo?: string;
+  cycleId?: string;
+  plotNo?: string;
 }

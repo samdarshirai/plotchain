@@ -15,7 +15,7 @@ for (const screen of ['sales-register', 'associate-directory']) for (const width
     }, await loginResponse.json());
     await page.route('**/api/admin/sales?*', route => route.fulfill({ json: {
       sales: [{ id: 'layout-sale', projectName: 'A Residential Project With A Rather Long Name For Testing Table Wrapping',
-        associateUserId: 'VP00001', buyerAssociateUserId: 'VP00002', buyerName: 'Buyer With A Longer Display Name', buyerPhone: '9876543210', amount: 1500000, legCredited: 'L',
+        associateUserId: 'VP00001', associateName: 'Sponsor With A Longer Display Name', plotNo: 'A-101', buyerAssociateUserId: 'VP00002', buyerPlacementUserId: 'VP00003', buyerName: 'Buyer With A Longer Display Name', buyerPhone: '9876543210', amount: 1500000, legCredited: 'L',
         note: 'A long note that should remain readable without expanding the entire sales row', status: 'RECORDED', recordedAt: '2026-10-01T12:00:00Z' }],
       page: 0, size: 20, totalElements: 1
     } }));
@@ -44,7 +44,7 @@ for (const screen of ['sales-register', 'associate-directory']) for (const width
     }
     if (screen === 'sales-register') {
       if (width > 768) {
-        expect(await table.locator('tbody td:nth-child(9) > span').evaluate(el => el.scrollWidth <= el.clientWidth)).toBeTruthy();
+        expect(await table.locator('tbody td:nth-child(12) > span').evaluate(el => el.scrollWidth <= el.clientWidth)).toBeTruthy();
       }
       await table.locator('input').fill('Review reason');
       await expect(table.locator('input')).toHaveValue('Review reason');

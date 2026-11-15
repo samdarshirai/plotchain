@@ -139,19 +139,38 @@ class SaleRepositoryTest {
         Sale recordedForB = persistSale(projectId, associateB, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
         entityManager.flush();
 
-        Page<Sale> byAssociate = saleRepository.searchRegister(associateA, null, null, null, PageRequest.of(0, 20));
+        Page<Sale> byAssociate = saleRepository.searchRegister(associateA, null, null, null, null, null, PageRequest.of(0, 20));
         assertThat(byAssociate.getContent()).hasSize(2)
             .allMatch(s -> s.getAssociateId().equals(associateA));
 
-        Page<Sale> byStatus = saleRepository.searchRegister(null, SaleStatus.RECORDED, null, null, PageRequest.of(0, 20));
+        Page<Sale> byStatus = saleRepository.searchRegister(null, SaleStatus.RECORDED, null, null, null, null, PageRequest.of(0, 20));
         assertThat(byStatus.getContent()).extracting(Sale::getId)
             .containsExactlyInAnyOrder(recordedForA.getId(), recordedForB.getId());
 
-        Page<Sale> byBoth = saleRepository.searchRegister(associateA, SaleStatus.RECORDED, null, null, PageRequest.of(0, 20));
+        Page<Sale> byBoth = saleRepository.searchRegister(associateA, SaleStatus.RECORDED, null, null, null, null, PageRequest.of(0, 20));
         assertThat(byBoth.getContent()).extracting(Sale::getId).containsExactly(recordedForA.getId());
 
-        Page<Sale> noFilters = saleRepository.searchRegister(null, null, null, null, PageRequest.of(0, 20));
+        Page<Sale> noFilters = saleRepository.searchRegister(null, null, null, null, null, null, PageRequest.of(0, 20));
         assertThat(noFilters.getTotalElements()).isEqualTo(3);
+    }
+
+    @Test
+    void searchRegisterFiltersByCycleIdAndPlotNo() {
+        UUID projectId = persistProject();
+        UUID plotId = persistPlot(projectId); // plotNo "A-101"
+        UUID cycleA = persistCycle();
+        UUID cycleB = persistCycle();
+        UUID associateId = persistAssociate();
+        Sale inCycleA = persistSale(projectId, associateId, plotId, cycleA, SaleStatus.RECORDED, Instant.now());
+        persistSale(projectId, associateId, plotId, cycleB, SaleStatus.RECORDED, Instant.now());
+        entityManager.flush();
+
+        assertThat(saleRepository.searchRegister(null, null, null, null, cycleA, null, PageRequest.of(0, 20)).getContent())
+            .extracting(Sale::getId).containsExactly(inCycleA.getId());
+        assertThat(saleRepository.searchRegister(null, null, null, null, null, "A-101", PageRequest.of(0, 20)).getTotalElements())
+            .isEqualTo(2);
+        assertThat(saleRepository.searchRegister(null, null, null, null, null, "nope", PageRequest.of(0, 20)).getTotalElements())
+            .isZero();
     }
 
     @Test
@@ -169,7 +188,7 @@ class SaleRepositoryTest {
         Page<Sale> result = saleRepository.searchRegister(
             null, null,
             Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-02-01T00:00:00Z"),
-            PageRequest.of(0, 20));
+            null, null, PageRequest.of(0, 20));
 
         assertThat(result.getContent()).extracting(Sale::getId).containsExactly(inRangeSale.getId());
     }
@@ -186,7 +205,7 @@ class SaleRepositoryTest {
         Sale laterSale = persistSale(projectId, associateId, plotId, cycleId, SaleStatus.RECORDED, later);
         entityManager.flush();
 
-        Page<Sale> result = saleRepository.searchRegister(null, null, null, null, PageRequest.of(0, 20));
+        Page<Sale> result = saleRepository.searchRegister(null, null, null, null, null, null, PageRequest.of(0, 20));
 
         assertThat(result.getContent()).extracting(Sale::getId)
             .containsExactly(laterSale.getId(), earlierSale.getId());
