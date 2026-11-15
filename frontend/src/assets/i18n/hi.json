@@ -797,7 +797,7 @@
       "columnPhone": "मोबाइल",
       "columnEmail": "ईमेल",
       "columnSponsorId": "Sponsor ID",
-      "columnParentId": "Parent ID",
+      "columnParentId": "Placement ID",
       "columnDesignation": "Designation",
       "columnKyc": "KYC Status",
       "columnAction": "Action",
