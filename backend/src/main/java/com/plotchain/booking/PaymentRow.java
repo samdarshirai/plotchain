@@ -12,4 +12,11 @@ public record PaymentRow(UUID bookingId, int installmentNumber, Instant paymentD
                          PaymentMode paymentMode, String paymentRef, String entryBy, String confirmBy,
                          Instant confirmedAt, Instant bookedAt, String associatePhone, PlotType plotType,
                          BigDecimal areaSqft, BigDecimal rate, BigDecimal extraPrice, BigDecimal discount,
-                         BigDecimal totalAmount, BigDecimal paidAmount, BigDecimal dueAmount) {}
+                         BigDecimal totalAmount, BigDecimal paidAmount, BigDecimal dueAmount) {
+    // Associates see payments of their team, not which staff member entered/confirmed them.
+    public PaymentRow withoutStaff() {
+        return new PaymentRow(bookingId, installmentNumber, paymentDate, associateCode, associateName, projectName,
+            plotNo, amount, paymentMode, paymentRef, null, null, confirmedAt, bookedAt, associatePhone, plotType,
+            areaSqft, rate, extraPrice, discount, totalAmount, paidAmount, dueAmount);
+    }
+}

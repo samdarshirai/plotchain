@@ -20,6 +20,8 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
     // Ordered by number so each booking's group is already in schedule order.
     List<EmiInstallment> findByBookingIdInOrderByInstallmentNumberAsc(Collection<UUID> bookingIds);
 
+    // scoped=false ignores ids (callers still pass a non-empty list: an empty IN () is invalid SQL). Associate
+    // reports pass scoped=true with self+downline ids.
     // Admin payments list (U3). ENTERED = unconfirmed queue, PAID = confirmed ledger; date filter is on
     // paid_at (payment date) for both. LEFT JOINs keep rows whose entry-by/confirm-by is NULL (token
     // installments, legacy rows). Pageable must be UNSORTED: order is fixed here.
@@ -43,7 +45,7 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
         WHERE i.status = :status
         AND (:unbounded = true OR (i.paidAt >= :from AND i.paidAt < :to))
         AND (:projectId IS NULL OR pl.projectId = :projectId)
-        AND (:associateId IS NULL OR b.associateId = :associateId)
+        AND (:scoped = false OR b.associateId IN :ids)
         AND (:plotNo = '' OR LOWER(pl.plotNo) = LOWER(:plotNo))
         ORDER BY i.paidAt DESC NULLS LAST, i.id DESC
         """,
@@ -57,12 +59,12 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
         WHERE i.status = :status
         AND (:unbounded = true OR (i.paidAt >= :from AND i.paidAt < :to))
         AND (:projectId IS NULL OR pl.projectId = :projectId)
-        AND (:associateId IS NULL OR b.associateId = :associateId)
+        AND (:scoped = false OR b.associateId IN :ids)
         AND (:plotNo = '' OR LOWER(pl.plotNo) = LOWER(:plotNo))
         """)
     Page<PaymentRow> findPayments(@Param("status") InstallmentStatus status, @Param("from") Instant from,
         @Param("to") Instant to, @Param("unbounded") boolean unbounded,
-        @Param("projectId") UUID projectId, @Param("associateId") UUID associateId,
+        @Param("projectId") UUID projectId, @Param("scoped") boolean scoped, @Param("ids") Collection<UUID> ids,
         @Param("plotNo") String plotNo, Pageable pageable);
 
     @Query("""
@@ -73,12 +75,12 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
         WHERE i.status = :status
         AND (:unbounded = true OR (i.paidAt >= :from AND i.paidAt < :to))
         AND (:projectId IS NULL OR pl.projectId = :projectId)
-        AND (:associateId IS NULL OR b.associateId = :associateId)
+        AND (:scoped = false OR b.associateId IN :ids)
         AND (:plotNo = '' OR LOWER(pl.plotNo) = LOWER(:plotNo))
         """)
     BigDecimal sumPayments(@Param("status") InstallmentStatus status, @Param("from") Instant from,
         @Param("to") Instant to, @Param("unbounded") boolean unbounded,
-        @Param("projectId") UUID projectId, @Param("associateId") UUID associateId,
+        @Param("projectId") UUID projectId, @Param("scoped") boolean scoped, @Param("ids") Collection<UUID> ids,
         @Param("plotNo") String plotNo);
 
     // One-off backfill (BookingSaleBackfill): PAID installments that were confirmed before business

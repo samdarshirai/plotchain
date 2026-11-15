@@ -4,6 +4,7 @@ import com.plotchain.cycle.CycleSummaryResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,10 +23,13 @@ public class AssociateBookingController {
 
     private final BookingService bookingService;
     private final AssociatePendingEmiService pendingEmiService;
+    private final AssociateEmiReportService emiReportService;
 
-    public AssociateBookingController(BookingService bookingService, AssociatePendingEmiService pendingEmiService) {
+    public AssociateBookingController(BookingService bookingService, AssociatePendingEmiService pendingEmiService,
+                                      AssociateEmiReportService emiReportService) {
         this.bookingService = bookingService;
         this.pendingEmiService = pendingEmiService;
+        this.emiReportService = emiReportService;
     }
 
     // Self-scoped by construction: associateId always comes from the verified JWT, never the
@@ -82,6 +86,31 @@ public class AssociateBookingController {
     ) {
         return pendingEmiService.list(me, legToPosition(leg), associateId, cycleId,
             Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+    }
+
+    // EMI Report: confirmed payments of me + my downline. associateId = login id; dates filter the payment date.
+    @GetMapping("/api/associates/me/reports/emi-payments")
+    public PaymentPageResponse getEmiPayments(
+            @AuthenticationPrincipal UUID me,
+            @RequestParam(defaultValue = "ALL") String leg,
+            @RequestParam(required = false) String associateId,
+            @RequestParam(required = false) String plotNo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "from must not be after to");
+        }
+        return emiReportService.list(me, legToPosition(leg), associateId, from, to, plotNo,
+            Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+    }
+
+    @GetMapping("/api/associates/me/reports/emi-payments/{bookingId}")
+    public BookingResponse getEmiPaymentBooking(@AuthenticationPrincipal UUID me, @PathVariable UUID bookingId) {
+        return emiReportService.booking(me, bookingId);
     }
 
     @GetMapping("/api/associates/me/cycles")

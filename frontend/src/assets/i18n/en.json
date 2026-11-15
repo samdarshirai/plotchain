@@ -160,6 +160,11 @@
     "loadError": "Could not load the report.",
     "empty": "No records for this period.",
     "myBusiness": { "title": "My Business Datewise", "left": "Left Business", "right": "Right Business" },
+    "emiReport": {
+      "title": "EMI Report", "subtitle": "Confirmed EMI payments by you and your team, by payment date. Open Detail for the plot and every payment made against it.",
+      "plotId": "Plot ID", "plotIdPlaceholder": "e.g. A-12", "empty": "No confirmed payments match these filters.",
+      "col": { "paymentDate": "Payment Date", "paymentAmount": "Payment Amount" }
+    },
     "emi": { "title": "Pending EMI", "subtitle": "Pending EMI of everyone in your team.", "cycle": "Cycle", "allCycles": "All cycles", "open": "Open", "side": "Tree side", "sideAll": "All", "sideLeft": "Left", "sideRight": "Right" },
     "column": {
       "number": "Number", "paymentDate": "Payment Date", "confirmDate": "Confirm Date", "associateId": "Associate Id",
@@ -700,6 +705,7 @@
     },
     "reports": "Reports",
     "myBusinessDatewise": "My Business Datewise",
+    "emiPaymentReport": "EMI Report",
     "emiReport": "Pending EMI",
     "dashboard": "Dashboard",
     "myTree": "Genealogy",

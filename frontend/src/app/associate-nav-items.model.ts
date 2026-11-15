@@ -72,7 +72,8 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
     key: 'reports', labelKey: 'nav.reports', icon: 'assessment', path: '/reports',
     children: [
       { key: 'myBusiness', labelKey: 'nav.myBusinessDatewise', path: '/reports/my-business' },
-      { key: 'emiReport', labelKey: 'nav.emiReport', path: '/reports/emi' }
+      { key: 'emiReport', labelKey: 'nav.emiReport', path: '/reports/emi' },
+      { key: 'emiPaymentReport', labelKey: 'nav.emiPaymentReport', path: '/reports/emi-report' }
     ]
   },
   { key: 'payoutHistory', labelKey: 'nav.payoutHistory', icon: 'payments', path: '/payout-history' },

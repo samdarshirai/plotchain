@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class PaymentLedgerRepositoryTest {
 
+    static final List<UUID> NONE = List.of(new UUID(0, 0));
     static final Instant MAX = Instant.parse("9999-01-01T00:00:00Z");
 
     @Autowired PlotBookingRepository bookings;
@@ -57,7 +59,7 @@ class PaymentLedgerRepositoryTest {
     }
 
     private Page<PaymentRow> find(InstallmentStatus s, Instant from, Instant to, UUID project, int page, int size) {
-        return installments.findPayments(s, from, to, false, project, null, "", PageRequest.of(page, size));
+        return installments.findPayments(s, from, to, false, project, false, NONE, "", PageRequest.of(page, size));
     }
 
     @Test
@@ -98,17 +100,44 @@ class PaymentLedgerRepositoryTest {
     @Test
     void associateAndPlotNoFiltersNarrowTheList() {
         Page<PaymentRow> byAssociate = installments.findPayments(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, false,
-            d.p1, d.a1, "", PageRequest.of(0, 50));   // b1 and b2 both belong to a1
+            d.p1, true, List.of(d.a1), "", PageRequest.of(0, 50));   // b1 and b2 both belong to a1
         assertThat(byAssociate.getContent()).extracting(PaymentRow::bookingId).containsExactlyInAnyOrder(d.b1.getId(), d.b2.getId());
-        assertThat(installments.findPayments(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, false, d.p1, d.a2, "",
+        assertThat(installments.findPayments(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, false, d.p1, true, List.of(d.a2), "",
             PageRequest.of(0, 50)).getContent()).isEmpty();
 
         String plotNo = find(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, d.p1, 0, 50).getContent().get(1).plotNo();
         Page<PaymentRow> byPlot = installments.findPayments(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, false,
-            d.p1, null, plotNo.toLowerCase(), PageRequest.of(0, 50));   // case-insensitive exact match
+            d.p1, false, NONE, plotNo.toLowerCase(), PageRequest.of(0, 50));   // case-insensitive exact match
         assertThat(byPlot.getContent()).extracting(PaymentRow::plotNo).containsOnly(plotNo);
-        assertThat(installments.sumPayments(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, false, d.p1, d.a1, ""))
+        assertThat(installments.sumPayments(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, false, d.p1, true, List.of(d.a1), ""))
             .isEqualByComparingTo(new BigDecimal("400000.00"));
+    }
+
+    @Test
+    void scopedIdsListPaymentsOfEveryGivenAssociateAndNoOthers() {
+        assertThat(installments.findPayments(InstallmentStatus.PAID, Instant.EPOCH, MAX, false, null, true,
+            List.of(d.a1, d.a2), "", PageRequest.of(0, 500)).getContent()).extracting(PaymentRow::bookingId)
+            .contains(d.b7.getId());
+        assertThat(installments.findPayments(InstallmentStatus.PAID, Instant.EPOCH, MAX, false, null, true,
+            List.of(UUID.randomUUID()), "", PageRequest.of(0, 500)).getContent()).isEmpty();
+    }
+
+    private UUID child(UUID parent, String position) {
+        UUID id = d.associate();
+        var a = associates.findById(id).orElseThrow();
+        a.setParentId(parent);
+        a.setPosition(position);
+        associates.saveAndFlush(a);
+        return id;
+    }
+
+    @Test
+    void selfAndDownlineIdsCoverSelfPlusEveryDescendantOrOnlyOneLeg() {
+        UUID left = child(d.a1, "L"), right = child(d.a1, "R"), grand = child(left, "L");
+        assertThat(bookings.findSelfAndDownlineIds(d.a1, null)).containsExactlyInAnyOrder(d.a1, left, right, grand);
+        assertThat(bookings.findSelfAndDownlineIds(d.a1, "L")).containsExactlyInAnyOrder(left, grand);
+        assertThat(bookings.findSelfAndDownlineIds(d.a1, "R")).containsExactly(right);
+        assertThat(bookings.findSelfAndDownlineIds(grand, null)).containsExactly(grand);
     }
 
     @Test
@@ -123,9 +152,9 @@ class PaymentLedgerRepositoryTest {
         legacy.setPaidAt(null);
         installments.saveAndFlush(legacy);
 
-        assertThat(installments.findPayments(InstallmentStatus.PAID, Instant.EPOCH, MAX, true, null, null, "",
+        assertThat(installments.findPayments(InstallmentStatus.PAID, Instant.EPOCH, MAX, true, null, false, NONE, "",
             PageRequest.of(0, 500)).getContent()).extracting(PaymentRow::bookingId).contains(d.b7.getId());
-        assertThat(installments.findPayments(InstallmentStatus.PAID, Instant.EPOCH, MAX, false, null, null, "",
+        assertThat(installments.findPayments(InstallmentStatus.PAID, Instant.EPOCH, MAX, false, null, false, NONE, "",
             PageRequest.of(0, 500)).getContent()).extracting(PaymentRow::bookingId).doesNotContain(d.b7.getId());
     }
 
@@ -134,7 +163,7 @@ class PaymentLedgerRepositoryTest {
         Page<PaymentRow> p = find(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, d.p1, 0, 1);
         assertThat(p.getContent()).hasSize(1);
         assertThat(p.getTotalElements()).isEqualTo(2);
-        assertThat(installments.sumPayments(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, false, d.p1, null, ""))
+        assertThat(installments.sumPayments(InstallmentStatus.ENTERED, Instant.EPOCH, MAX, false, d.p1, false, NONE, ""))
             .isEqualByComparingTo(new BigDecimal("400000.00"));
     }
 

@@ -155,4 +155,23 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         """, nativeQuery = true)
     List<PlotBooking> findByDownlineBetween(@Param("associateId") UUID associateId, @Param("position") String position,
                                             @Param("from") Instant from, @Param("to") Instant to);
+
+    // Associate "EMI Report" scope. position null = the caller plus the whole downline; 'L'/'R' = that leg only
+    // (caller excluded). ponytail: an id list bound to IN (...) -- fine to ~30k associates (Postgres bind limit).
+    @Query(value = """
+        WITH RECURSIVE downline(id) AS (
+            SELECT id FROM associate
+              WHERE (CAST(:position AS text) IS NULL AND id = :associateId)
+                 OR (CAST(:position AS text) IS NOT NULL AND parent_id = :associateId AND position = CAST(:position AS text))
+            UNION ALL
+            SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
+        )
+        SELECT CAST(id AS text) FROM downline
+        """, nativeQuery = true)
+    List<String> findSelfAndDownlineIdStrings(@Param("associateId") UUID associateId, @Param("position") String position);
+
+    // Text round-trip: a native uuid column does not map to UUID reliably across the test DB and Postgres.
+    default List<UUID> findSelfAndDownlineIds(UUID associateId, String position) {
+        return findSelfAndDownlineIdStrings(associateId, position).stream().map(UUID::fromString).toList();
+    }
 }
