@@ -47,7 +47,7 @@ app-booking-table { display: contents; }
   > app-date-range { flex: 0 0 auto; width: max-content; max-width: 100%; order: 2; }
   .booking-table__filter { order: 2; }
   .booking-table__scroll { order: 3; }
-  app-date-range .date-range { padding: 0; background: none; flex-wrap: nowrap; }
+  app-date-range .date-range { padding: 0; background: none; flex-wrap: wrap; }
   app-date-range .date-range__field { flex: none; width: 14rem; min-width: 0; margin: 0; gap: 0.25rem; font: 600 0.8125rem/1.25rem var(--font-sans); letter-spacing: 0; text-transform: none; color: var(--text-muted); }
   app-date-range .date-range__field input { box-sizing: border-box; height: 40px; min-height: 40px; border-radius: 5px; font-size: 0.875rem; }
   max-width: 1480px; margin: 0 auto; padding: 1.5rem 2rem;

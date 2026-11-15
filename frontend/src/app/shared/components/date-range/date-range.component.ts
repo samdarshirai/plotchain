@@ -35,8 +35,7 @@ export const last30Days = (): DateRange =>
     <app-field-error [message]="rangeError ? ('plotBookings.dateRangeError' | translate) : ''"></app-field-error>
   `,
   styles: [`
-    app-date-range { display: block; min-width: 0; max-width: 100%; }
-    .date-range { min-width: 0; max-width: 100%; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; padding: 20px 24px; background: var(--surface-raised); border-radius: var(--radius-sm); }
+    .date-range { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; padding: 20px 24px; background: var(--surface-raised); border-radius: var(--radius-sm); }
     .date-range__field { display: flex; flex-direction: column; gap: 6px; min-width: 170px; flex: 1 1 170px; margin: 0;
       font: 500 11px var(--font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
     .date-range__field input, .date-range__field select { min-height: 44px; width: 100%; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--border-subtle); border-radius: 3px; background: var(--surface-card); font: 14px var(--font-sans); text-transform: none; letter-spacing: 0; color: inherit; }
