@@ -31,6 +31,7 @@ export class BookingsEmiService {
     if (f.from) { params = params.set('from', f.from); }
     if (f.to) { params = params.set('to', f.to); }
     if (f.projectId) { params = params.set('projectId', f.projectId); }
+    if (f.associateId) { params = params.set('associateId', f.associateId); }
     return this.http.get<PlotTransferPage>('/api/admin/plot-transfers', { params });
   }
 

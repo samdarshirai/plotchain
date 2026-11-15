@@ -23,7 +23,7 @@ const LEG: Record<Scope, 'ALL' | 'L' | 'R'> = { TEAM: 'ALL', LEFT: 'L', RIGHT: '
       <h1>{{ 'plotBookings.team.title.' + scope | translate }}</h1>
       <p>{{ 'plotBookings.team.subtitle.' + scope | translate }}</p>
 
-      <app-date-range [from]="from" [to]="to" (rangeChange)="onRange($event)"></app-date-range>
+      <app-date-range [showCycles]="true" [from]="from" [to]="to" (rangeChange)="onRange($event)"></app-date-range>
 
       <app-inline-banner *ngIf="error" tone="danger">
         {{ 'plotBookings.team.loadError' | translate }}

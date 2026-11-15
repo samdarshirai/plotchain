@@ -14,6 +14,7 @@ import { PlotGridItem, formatArea } from '../../shared/utils/plot-grid.util';
 import { InlineBannerComponent } from '../../shared/components/inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
+import { AssociateCycleFilterComponent } from '../../shared/components/associate-cycle-filter/associate-cycle-filter.component';
 
 const round2 = (n: number): number => Math.round(n); // whole rupees
 const isoDate = (d: Date): string => {
@@ -26,7 +27,7 @@ const isoDate = (d: Date): string => {
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['../add-plot-emi/add-plot-emi.component.scss'],
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, AssociateCycleFilterComponent],
   template: `
     <div class="add-plot-emi">
       <div class="add-plot-emi__intro">
@@ -47,6 +48,8 @@ const isoDate = (d: Date): string => {
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === projectId">{{ p.name }}</option>
           </select>
         </label>
+        <app-associate-cycle-filter [from]="from" [to]="to" [associateId]="associateId"
+          (associateChange)="onAssociate($event)" (rangeChange)="onRange($event)"></app-associate-cycle-filter>
       </div>
       <app-field-error [message]="rangeError ? ('admin.addPlotEmi.rangeError' | translate) : undefined"></app-field-error>
 
@@ -287,6 +290,15 @@ export class PlotTransferComponent implements OnInit {
     });
   }
 
+  associateId = '';
+
+  onAssociate(id: string): void { this.associateId = id; this.load(); }
+
+  // A cycle is a shortcut for its date range (see CycleSelectComponent).
+  onRange(r: { from: string; to: string }): void {
+    this.from = r.from; this.to = r.to; this.rangeError = false; this.load();
+  }
+
   onProject(id: string): void { this.projectId = id; this.load(); }
 
   onDate(which: 'from' | 'to', v: string): void {
@@ -297,7 +309,7 @@ export class PlotTransferComponent implements OnInit {
 
   private filters(): RegisterFilters {
     // Only ACTIVE bookings can be transferred (BookingService.transferPlot).
-    return { status: 'ACTIVE', associateId: '', plotId: '', projectId: this.projectId, overdue: false,
+    return { status: 'ACTIVE', associateId: this.associateId, plotId: '', projectId: this.projectId, overdue: false,
       bookedFrom: this.from, bookedTo: this.to, hasPending: false };
   }
 

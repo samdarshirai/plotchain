@@ -26,7 +26,7 @@ describe('AddPlotEmiComponent', () => {
     c = fixture.componentInstance;
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
-    http.match(() => true).forEach(r => r.flush([])); // projects list
+    http.match(() => true).forEach(r => r.flush(r.request.url === '/api/admin/cycles' ? { cycles: [] } : [])); // projects, associates, cycles
   });
 
   it('does not load bookings until a project is chosen', () => {

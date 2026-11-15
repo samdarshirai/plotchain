@@ -32,7 +32,7 @@ describe('MyBookingsComponent', () => {
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
   });
-  afterEach(() => http.verify());
+  afterEach(() => { http.match('/api/associates/me/cycles').forEach(r => r.flush([])); http.verify(); });
 
   it('renders a single page heading', () => {
     boot([]);
@@ -104,6 +104,6 @@ describe('MyBookingsComponent', () => {
 
   it('exposes no write controls', () => {
     boot();
-    expect(el().querySelectorAll('form, textarea, select, input:not([type="date"]):not([type="search"])').length).toBe(0);
+    expect(el().querySelectorAll('form, textarea, select:not([name="cycle"]), input:not([type="date"]):not([type="search"])').length).toBe(0);
   });
 });

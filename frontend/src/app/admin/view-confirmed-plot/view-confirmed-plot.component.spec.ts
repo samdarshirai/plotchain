@@ -27,7 +27,7 @@ describe('ViewConfirmedPlotComponent', () => {
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
   });
-  afterEach(() => http.verify());
+  afterEach(() => { http.match(r => r.url === '/api/associates' || r.url === '/api/admin/cycles').forEach(r => r.flush([])); http.verify(); });
 
   it('defaults to pending, first project and a last-month range', () => {
     http.expectOne('/api/company/projects').flush([{ id: 'p1', name: 'Alpha' }, { id: 'p2', name: 'Beta' }]);

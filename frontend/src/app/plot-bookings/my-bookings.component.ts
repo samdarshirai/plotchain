@@ -18,7 +18,7 @@ import { fetchAllPages } from '../shared/utils/fetch-all-pages';
   template: `
     <div class="my-bookings booking-page" [attr.aria-busy]="loading">
       <h1 class="my-bookings__title">{{ 'plotBookings.myBookings.title' | translate }}</h1>
-      <app-date-range [from]="from" [to]="to" (rangeChange)="onRange($event)"></app-date-range>
+      <app-date-range [showCycles]="true" [from]="from" [to]="to" (rangeChange)="onRange($event)"></app-date-range>
       <app-inline-banner *ngIf="error" tone="danger">
         {{ 'plotBookings.bookingsLoadError' | translate }}
         <button type="button" class="my-bookings__retry" (click)="load(requestedPage)">{{ 'plotBookings.retryAction' | translate }}</button>

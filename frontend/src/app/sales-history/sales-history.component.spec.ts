@@ -48,7 +48,7 @@ describe('SalesHistoryComponent', () => {
     fixture.detectChanges();
   });
 
-  afterEach(() => httpMock.verify());
+  afterEach(() => { httpMock.match('/api/associates/me/cycles').forEach(r => r.flush([])); httpMock.verify(); });
 
   const q = (sel: string): HTMLElement => fixture.nativeElement.querySelector(sel);
 

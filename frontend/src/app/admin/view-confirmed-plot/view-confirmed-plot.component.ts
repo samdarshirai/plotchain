@@ -11,6 +11,7 @@ import { FieldErrorComponent } from '../../shared/components/field-error/field-e
 import { formatArea } from '../../shared/utils/plot-grid.util';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
+import { AssociateCycleFilterComponent } from '../../shared/components/associate-cycle-filter/associate-cycle-filter.component';
 
 type Status = 'ENTERED' | 'PAID';
 const isoDate = (d: Date): string => {
@@ -24,7 +25,7 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['../add-plot-emi/add-plot-emi.component.scss'],
-  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, AssociateCycleFilterComponent],
   template: `
     <div class="add-plot-emi">
       <div class="add-plot-emi__intro">
@@ -45,6 +46,8 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === projectId">{{ p.name }}</option>
           </select>
         </label>
+        <app-associate-cycle-filter [from]="from" [to]="to" [associateId]="associateId"
+          (associateChange)="onAssociate($event)" (rangeChange)="onRange($event)"></app-associate-cycle-filter>
       </div>
       <app-field-error [message]="rangeError ? ('admin.addPlotEmi.rangeError' | translate) : undefined"></app-field-error>
 
@@ -197,6 +200,15 @@ export class ViewConfirmedPlotComponent implements OnInit {
     });
   }
 
+  associateId = '';
+
+  onAssociate(id: string): void { this.associateId = id; this.load(); }
+
+  // A cycle is a shortcut for its date range (see CycleSelectComponent).
+  onRange(r: { from: string; to: string }): void {
+    this.from = r.from; this.to = r.to; this.rangeError = false; this.load();
+  }
+
   onProject(id: string): void { this.projectId = id; this.load(); }
 
   onDate(which: 'from' | 'to', v: string): void {
@@ -250,7 +262,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
     this.loadError = false;
     this.selected.clear();
     this.asking = false;
-    fetchAllPages((p, size) => this.service.payments(this.status, { from: this.from, to: this.to, projectId: this.projectId }, p, size)).subscribe({
+    fetchAllPages((p, size) => this.service.payments(this.status, { from: this.from, to: this.to, projectId: this.projectId, associateId: this.associateId }, p, size)).subscribe({
       next: r => {
         if (seq !== this.seq) { return; }
         this.page = r;

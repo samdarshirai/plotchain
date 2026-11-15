@@ -10,6 +10,7 @@ import { InlineBannerComponent } from '../../shared/components/inline-banner/inl
 import { FieldErrorComponent } from '../../shared/components/field-error/field-error.component';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
 import { TableToolsComponent } from '../../shared/components/table-tools/table-tools.component';
+import { AssociateCycleFilterComponent } from '../../shared/components/associate-cycle-filter/associate-cycle-filter.component';
 
 const isoDate = (d: Date): string => {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -21,7 +22,7 @@ const isoDate = (d: Date): string => {
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['../add-plot-emi/add-plot-emi.component.scss'],
-  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, AssociateCycleFilterComponent],
   template: `
     <div class="add-plot-emi">
       <div class="add-plot-emi__intro">
@@ -42,6 +43,8 @@ const isoDate = (d: Date): string => {
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === projectId">{{ p.name }}</option>
           </select>
         </label>
+        <app-associate-cycle-filter [from]="from" [to]="to" [associateId]="associateId"
+          (associateChange)="onAssociate($event)" (rangeChange)="onRange($event)"></app-associate-cycle-filter>
       </div>
       <app-field-error [message]="rangeError ? ('admin.addPlotEmi.rangeError' | translate) : undefined"></app-field-error>
 
@@ -128,6 +131,15 @@ export class ViewTransferredPlotComponent implements OnInit {
     });
   }
 
+  associateId = '';
+
+  onAssociate(id: string): void { this.associateId = id; this.load(); }
+
+  // A cycle is a shortcut for its date range (see CycleSelectComponent).
+  onRange(r: { from: string; to: string }): void {
+    this.from = r.from; this.to = r.to; this.rangeError = false; this.load();
+  }
+
   onProject(id: string): void { this.projectId = id; this.load(); }
 
   onDate(which: 'from' | 'to', v: string): void {
@@ -141,7 +153,7 @@ export class ViewTransferredPlotComponent implements OnInit {
     const seq = ++this.seq;
     this.loading = true;
     this.loadError = false;
-    fetchAllPages((p, size) => this.service.plotTransfers({ from: this.from, to: this.to, projectId: this.projectId }, p, size)).subscribe({
+    fetchAllPages((p, size) => this.service.plotTransfers({ from: this.from, to: this.to, projectId: this.projectId, associateId: this.associateId }, p, size)).subscribe({
       next: r => { if (seq === this.seq) { this.page = r; this.loading = false; } },
       error: () => { if (seq === this.seq) { this.loading = false; this.loadError = true; } }
     });

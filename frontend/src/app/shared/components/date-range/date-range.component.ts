@@ -1,6 +1,9 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, inject } from '@angular/core';
+import { NgIf } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { FieldErrorComponent } from '../field-error/field-error.component';
+import { CycleLike, CycleSelectComponent } from '../cycle-select/cycle-select.component';
+import { ReportsService } from '../../../reports/reports.service';
 
 const isoDate = (d: Date): string => {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -17,7 +20,8 @@ export const last30Days = (): DateRange =>
 @Component({
   selector: 'app-date-range',
   standalone: true,
-  imports: [TranslateModule, FieldErrorComponent],
+  encapsulation: ViewEncapsulation.None, // the cycle select is a child component and needs these field styles
+  imports: [NgIf, TranslateModule, FieldErrorComponent, CycleSelectComponent],
   template: `
     <div class="date-range">
       <label class="date-range__field">{{ 'reports.from' | translate }}
@@ -26,6 +30,7 @@ export const last30Days = (): DateRange =>
       <label class="date-range__field">{{ 'reports.to' | translate }}
         <input type="date" name="to" [value]="to" [attr.min]="from || null" (change)="onDate('to', $any($event.target).value)" />
       </label>
+      <app-cycle-select *ngIf="showCycles" fieldClass="date-range__field" [cycles]="cycles" [from]="from" [to]="to" (rangeChange)="onCycle($event)"></app-cycle-select>
     </div>
     <app-field-error [message]="rangeError ? ('plotBookings.dateRangeError' | translate) : ''"></app-field-error>
   `,
@@ -33,16 +38,28 @@ export const last30Days = (): DateRange =>
     .date-range { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; padding: 20px 24px; background: var(--surface-raised); border-radius: var(--radius-sm); }
     .date-range__field { display: flex; flex-direction: column; gap: 6px; min-width: 170px; flex: 1 1 170px; margin: 0;
       font: 500 11px var(--font-sans); letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
-    .date-range__field input { min-height: 44px; width: 100%; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--border-subtle); border-radius: 3px; background: var(--surface-card); font: 14px var(--font-sans); text-transform: none; letter-spacing: 0; color: inherit; }
+    .date-range__field input, .date-range__field select { min-height: 44px; width: 100%; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--border-subtle); border-radius: 3px; background: var(--surface-card); font: 14px var(--font-sans); text-transform: none; letter-spacing: 0; color: inherit; }
     @media (max-width: 767px) { .date-range { padding: 16px; gap: 12px; } .date-range__field { flex-basis: 100%; } }
   `]
 })
-export class DateRangeComponent {
+export class DateRangeComponent implements OnInit {
   @Input() from = '';
   @Input() to = '';
+  @Input() showCycles = false; // adds a Cycle shortcut (the associate's own cycles) that fills from/to
   @Output() rangeChange = new EventEmitter<DateRange>();
 
   rangeError = false;
+  cycles: CycleLike[] = [];
+  private reports = inject(ReportsService);
+
+  ngOnInit(): void {
+    if (this.showCycles) { this.reports.getCycles().subscribe({ next: c => (this.cycles = c), error: () => undefined }); }
+  }
+
+  onCycle(r: DateRange): void {
+    this.from = r.from; this.to = r.to; this.rangeError = false;
+    this.rangeChange.emit(r);
+  }
 
   onDate(which: 'from' | 'to', v: string): void {
     this[which] = v;

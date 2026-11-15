@@ -17,6 +17,7 @@ import { FormIssue } from '../../shared/validation/validation';
 import { ExportColumn, copyTable, exportCsv, exportExcel, printTable } from '../../shared/utils/table-export.util';
 import { formatArea } from '../../shared/utils/plot-grid.util';
 import { fetchAllPages } from '../../shared/utils/fetch-all-pages';
+import { AssociateCycleFilterComponent } from '../../shared/components/associate-cycle-filter/associate-cycle-filter.component';
 
 const round2 = (n: number): number => Math.round(n); // whole rupees
 
@@ -25,7 +26,7 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./add-plot-emi.component.scss'],
-  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent, AssociateCycleFilterComponent],
   template: `
     <div class="add-plot-emi">
       <div class="add-plot-emi__intro">
@@ -53,6 +54,8 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
         <label class="add-plot-emi__field">{{ 'admin.addPlotEmi.to' | translate }}
           <input type="date" name="to" [disabled]="!projectId" [ngModel]="to" [attr.min]="from || null" (ngModelChange)="onDate('to', $event)" />
         </label>
+        <app-associate-cycle-filter [from]="from" [to]="to" [associateId]="associateId"
+          (associateChange)="onAssociate($event)" (rangeChange)="onRange($event)"></app-associate-cycle-filter>
         <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="!projectId" (click)="reset()">{{ 'admin.addPlotEmi.reset' | translate }}</button>
       </div>
       <app-field-error [message]="rangeError ? ('admin.addPlotEmi.rangeError' | translate) : undefined"></app-field-error>
@@ -364,6 +367,15 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
 
   // ---- list -------------------------------------------------------------
 
+  associateId = '';
+
+  onAssociate(id: string): void { this.associateId = id; this.load(); }
+
+  // A cycle is a shortcut for its date range (see CycleSelectComponent).
+  onRange(r: { from: string; to: string }): void {
+    this.from = r.from; this.to = r.to; this.rangeError = false; this.load();
+  }
+
   onProject(id: string): void {
     this.projectId = id;
     this.page = null;
@@ -390,7 +402,7 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
 
 
   private filters(): RegisterFilters {
-    return { status: '', associateId: '', plotId: '', projectId: this.projectId, overdue: false,
+    return { status: '', associateId: this.associateId, plotId: '', projectId: this.projectId, overdue: false,
       bookedFrom: this.from, bookedTo: this.to, q: this.q.trim(), hasPending: true };
   }
 

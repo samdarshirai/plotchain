@@ -21,7 +21,7 @@ describe('ViewTransferredPlotComponent', () => {
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
   });
-  afterEach(() => http.verify());
+  afterEach(() => { http.match(r => r.url === '/api/associates' || r.url === '/api/admin/cycles').forEach(r => r.flush([])); http.verify(); });
 
   it('defaults to first project and a last-month range', () => {
     projects();

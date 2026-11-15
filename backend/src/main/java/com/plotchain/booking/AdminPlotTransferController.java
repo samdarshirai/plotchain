@@ -27,6 +27,7 @@ public class AdminPlotTransferController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) UUID projectId,
+            @RequestParam(required = false) UUID associateId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         if (from != null && to != null && from.isAfter(to)) {
@@ -35,7 +36,7 @@ public class AdminPlotTransferController {
         page = Math.max(page, 0);
         size = Math.min(Math.max(size, 1), 100);
         var result = bookingEventRepository.findPlotTransfers(
-            BookingService.fromInstant(from), BookingService.toInstant(to), projectId,
+            BookingService.fromInstant(from), BookingService.toInstant(to), projectId, associateId,
             org.springframework.data.domain.PageRequest.of(page, size));
         return new PlotTransferPageResponse(result.getContent(), page, size, result.getTotalElements());
     }

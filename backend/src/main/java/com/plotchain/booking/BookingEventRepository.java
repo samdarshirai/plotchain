@@ -27,17 +27,20 @@ public interface BookingEventRepository extends JpaRepository<BookingEvent, UUID
         WHERE e.type = com.plotchain.booking.BookingEventType.PLOT_TRANSFERRED
         AND e.createdAt >= :from AND e.createdAt < :to
         AND (:projectId IS NULL OR np.projectId = :projectId)
+        AND (:associateId IS NULL OR b.associateId = :associateId)
         ORDER BY e.createdAt DESC, e.id DESC
         """,
         countQuery = """
         SELECT COUNT(e)
         FROM BookingEvent e
+        JOIN PlotBooking b ON b.id = e.bookingId
         JOIN Plot np ON np.id = e.newPlotId
         JOIN Plot op ON op.id = e.oldPlotId
         WHERE e.type = com.plotchain.booking.BookingEventType.PLOT_TRANSFERRED
         AND e.createdAt >= :from AND e.createdAt < :to
         AND (:projectId IS NULL OR np.projectId = :projectId)
+        AND (:associateId IS NULL OR b.associateId = :associateId)
         """)
     Page<PlotTransferRow> findPlotTransfers(@Param("from") Instant from, @Param("to") Instant to,
-        @Param("projectId") UUID projectId, Pageable pageable);
+        @Param("projectId") UUID projectId, @Param("associateId") UUID associateId, Pageable pageable);
 }
