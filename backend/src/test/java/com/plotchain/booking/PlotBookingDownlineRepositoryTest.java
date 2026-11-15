@@ -38,7 +38,7 @@ class PlotBookingDownlineRepositoryTest {
     }
 
     @Test
-    void teamIsWholeDownlineAndLegsAreDisjointAndExcludeSelfAndOutsiders() {
+    void teamIsOwnPlusWholeDownlineAndLegsAreDisjointAndExcludeSelfAndOutsiders() {
         BookingRegisterTestData d = new BookingRegisterTestData(associates, projects, plots, repo, installments);
         UUID project = d.project("Downline P");
         UUID root = d.associate();
@@ -55,13 +55,13 @@ class PlotBookingDownlineRepositoryTest {
 
         Page<PlotBooking> team = repo.findByDownline(root, null, java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), PageRequest.of(0, 50));
         assertThat(team.getContent()).extracting(PlotBooking::getId)
-            .containsExactly(br.getId(), bg.getId(), bl.getId());   // newest first, no own, no outsider
-        assertThat(team.getTotalElements()).isEqualTo(3);
+            .containsExactly(br.getId(), bg.getId(), bl.getId(), own.getId());   // newest first, own included, no outsider
+        assertThat(team.getTotalElements()).isEqualTo(4);
 
         assertThat(repo.findByDownline(root, "L", java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), PageRequest.of(0, 50)).getContent())
             .extracting(PlotBooking::getId).containsExactly(bg.getId(), bl.getId());
         assertThat(repo.findByDownline(root, "R", java.time.Instant.EPOCH, java.time.Instant.parse("9999-01-01T00:00:00Z"), PageRequest.of(0, 50)).getContent())
             .extracting(PlotBooking::getId).containsExactly(br.getId());
-        assertThat(own.getId()).isNotIn(team.getContent().stream().map(PlotBooking::getId).toList());
+        // legs exclude own: asserted by the exact L/R lists above
     }
 }

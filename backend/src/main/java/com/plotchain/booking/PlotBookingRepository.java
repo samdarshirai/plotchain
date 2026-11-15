@@ -79,7 +79,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         Pageable pageable);
 
     // Associate "Team / Left / Right plot bookings": bookings made by anyone in the caller's downline.
-    // position null = whole team, 'L'/'R' = that leg only (CTE seeded at the immediate child on that
+    // position null = whole team PLUS the caller's own bookings, 'L'/'R' = that leg only (CTE seeded at the immediate child on that
     // leg, same shape as AssociateRepository.countDownlineByPosition). Order is fixed in SQL, so the
     // Pageable must be UNSORTED.
     @Query(value = """
@@ -89,8 +89,9 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
             UNION ALL
             SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
         )
-        SELECT b.* FROM plot_booking b JOIN downline d ON b.associate_id = d.id
-        WHERE b.booked_at >= :from AND b.booked_at < :to
+        SELECT b.* FROM plot_booking b LEFT JOIN downline d ON b.associate_id = d.id
+        WHERE (d.id IS NOT NULL OR (CAST(:position AS text) IS NULL AND b.associate_id = :associateId))
+          AND b.booked_at >= :from AND b.booked_at < :to
         ORDER BY b.booked_at DESC, b.id DESC
         """,
         countQuery = """
@@ -100,8 +101,9 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
             UNION ALL
             SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
         )
-        SELECT count(*) FROM plot_booking b JOIN downline d ON b.associate_id = d.id
-        WHERE b.booked_at >= :from AND b.booked_at < :to
+        SELECT count(*) FROM plot_booking b LEFT JOIN downline d ON b.associate_id = d.id
+        WHERE (d.id IS NOT NULL OR (CAST(:position AS text) IS NULL AND b.associate_id = :associateId))
+          AND b.booked_at >= :from AND b.booked_at < :to
         """,
         nativeQuery = true)
     Page<PlotBooking> findByDownline(@Param("associateId") UUID associateId, @Param("position") String position,
