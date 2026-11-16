@@ -26,7 +26,7 @@ const isoDate = (d: Date): string => {
   selector: 'app-plot-cancel',
   standalone: true,
   encapsulation: ViewEncapsulation.None,
-  styleUrls: ['../add-plot-emi/add-plot-emi.component.scss'],
+  styleUrls: ['../add-plot-emi/add-plot-emi.component.scss', './plot-cancel.component.scss'],
   imports: [CommonModule, FormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, AssociateCycleFilterComponent],
   template: `
     <div class="add-plot-emi">
@@ -104,8 +104,8 @@ const isoDate = (d: Date): string => {
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.paid' | translate">{{ money(b.paidAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.remaining' | translate">{{ money(b.dueAmount) }}</td>
                 <td class="add-plot-emi__actions add-plot-emi__actions--compact">
-                  <button type="button" class="brand-button add-plot-emi__btn" (click)="open(b)">{{ 'admin.viewBookedPlot.col.detail' | translate }}</button>
-                  <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" (click)="openCancel(b)">{{ 'admin.plotCancel.cancel' | translate }}</button>
+                  <button type="button" class="brand-button plot-cancel__detail add-plot-emi__btn" (click)="open(b)">{{ 'admin.viewBookedPlot.col.detail' | translate }}</button>
+                  <button type="button" class="brand-button plot-cancel__danger add-plot-emi__btn" (click)="openCancel(b)">{{ 'admin.plotCancel.cancel' | translate }}</button>
                 </td>
               </tr>
               <tr *ngIf="!page?.bookings?.length">
@@ -220,7 +220,7 @@ const isoDate = (d: Date): string => {
           <div><dt>{{ 'admin.addPlotEmi.remainingAmount' | translate }}</dt><dd>{{ money(b.dueAmount) }}</dd></div>
         </dl>
 
-        <div class="add-plot-emi__filters">
+        <div class="plot-cancel__form">
           <label class="add-plot-emi__field">{{ 'admin.plotCancel.chargePct' | translate }}
             <input type="number" name="chargePct" min="35" max="100" step="0.01" [(ngModel)]="chargePct" />
             <app-field-error [message]="!pctValid() ? ('admin.plotCancel.chargePctError' | translate) : undefined"></app-field-error>
@@ -233,21 +233,20 @@ const isoDate = (d: Date): string => {
           </label>
           <label class="add-plot-emi__field">{{ 'admin.plotCancel.payMode' | translate }}
             <select name="payMode" [(ngModel)]="payMode">
-              <option value="">—</option>
               <option *ngFor="let m of payModes" [value]="m">{{ 'admin.invoiceExpenses.payModes.' + m | translate }}</option>
             </select>
             <app-field-error [message]="cancelTried && refund() > 0 && !payMode ? ('admin.plotCancel.payModeRequired' | translate) : undefined"></app-field-error>
           </label>
+          <label class="add-plot-emi__field add-plot-emi__field--full">{{ 'admin.addPlotEmi.cancelBooking.reason' | translate }}
+            <textarea name="cancelReason" rows="3" maxlength="255" [(ngModel)]="cancelReason"></textarea>
+            <app-field-error [message]="cancelTried && !cancelReason.trim() ? ('admin.addPlotEmi.cancelBooking.reasonRequired' | translate) : undefined"></app-field-error>
+          </label>
         </div>
-        <label class="add-plot-emi__field">{{ 'admin.addPlotEmi.cancelBooking.reason' | translate }}
-          <textarea name="cancelReason" rows="3" maxlength="255" [(ngModel)]="cancelReason"></textarea>
-          <app-field-error [message]="cancelTried && !cancelReason.trim() ? ('admin.addPlotEmi.cancelBooking.reasonRequired' | translate) : undefined"></app-field-error>
-        </label>
         <p class="add-plot-emi__hint">{{ 'admin.plotCancel.effects' | translate }}</p>
 
         <div class="add-plot-emi__footer">
           <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="saving" (click)="closeCancel()">{{ 'admin.addPlotEmi.cancelBooking.dismiss' | translate }}</button>
-          <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" [disabled]="saving" (click)="confirmCancel()">{{ (saving ? 'admin.addPlotEmi.saving' : 'admin.addPlotEmi.cancelBooking.confirm') | translate }}</button>
+          <button type="button" class="brand-button plot-cancel__danger add-plot-emi__btn" [disabled]="saving" (click)="confirmCancel()">{{ (saving ? 'admin.addPlotEmi.saving' : 'admin.addPlotEmi.cancelBooking.confirm') | translate }}</button>
         </div>
       </div>
     </div>
@@ -281,7 +280,7 @@ export class PlotCancelComponent implements OnInit {
   cancelError = '';
   cancelTried = false;
   chargePct: number | null = this.minPct;
-  payMode: PayMode | '' = '';
+  payMode: PayMode | '' = 'CASH';
   cancelReason = '';
   private seq = 0;
 
@@ -351,7 +350,7 @@ export class PlotCancelComponent implements OnInit {
     this.cancelError = '';
     this.cancelTried = false;
     this.chargePct = this.minPct;
-    this.payMode = '';
+    this.payMode = 'CASH';
     this.cancelReason = '';
   }
 

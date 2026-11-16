@@ -89,12 +89,32 @@ for (const width of [390, 800, 1280]) {
       await open(page, 'plot-cancel');
       await expect(page.getByRole('button', { name: 'Transfer', exact: true })).toHaveCount(0);
 
+      // Cancel is maroon and Detail is a different colour.
+      const bg = (name: string) => page.getByRole('button', { name, exact: true }).evaluate(el => getComputedStyle(el).backgroundColor);
+      expect(await bg('Cancel')).toBe('rgb(128, 0, 0)');
+      expect(await bg('Detail')).not.toBe('rgb(128, 0, 0)');
+
       await page.getByRole('button', { name: 'Cancel', exact: true }).click();
       const modal = page.locator('.add-plot-emi__modal');
       await expect(modal).toBeVisible();
       const charge = modal.locator('input[name=charge]');
       const refund = modal.locator('input[name=refund]');
       await expect(charge).toHaveJSProperty('readOnly', true);
+      await expect(modal.locator('select[name=payMode]')).toHaveValue('CASH');
+      expect(await modal.getByRole('button', { name: 'Yes, cancel booking' }).evaluate(el => getComputedStyle(el).backgroundColor)).toBe('rgb(128, 0, 0)');
+      // Aligned grid: Charge % | Charge and Refund | Pay mode share a top edge (two columns above 640px, one column below).
+      const top = async (sel: string) => (await modal.locator(sel).boundingBox())!;
+      const [pct, chg, ref, mode] = [await top('input[name=chargePct]'), await top('input[name=charge]'), await top('input[name=refund]'), await top('select[name=payMode]')];
+      if (width > 640) {
+        expect(chg.y).toBeCloseTo(pct.y, 0);
+        expect(mode.y).toBeCloseTo(ref.y, 0);
+        expect(chg.x).toBeGreaterThan(pct.x + pct.width - 1);
+        expect(ref.x).toBeCloseTo(pct.x, 0);
+        expect(pct.width).toBeCloseTo(chg.width, 0);
+      } else {
+        expect(chg.x).toBeCloseTo(pct.x, 0);
+        expect(chg.y).toBeGreaterThan(pct.y + pct.height - 1);
+      }
       await expect(modal.locator('input[name=chargePct]')).toHaveValue('35');
       await expect(charge).toHaveValue(/52,500/);
       await expect(refund).toHaveValue(/97,500/);
@@ -113,7 +133,7 @@ for (const width of [390, 800, 1280]) {
       await modal.getByRole('button', { name: 'Yes, cancel booking' }).click();
       expect(posted).toBeNull();
       await modal.locator('textarea[name=cancelReason]').fill('Buyer withdrew');
-      await modal.locator('select[name=payMode]').selectOption('UPI');
+      await modal.locator('select[name=payMode]').selectOption('UPI'); // overrides the Cash default
       await modal.getByRole('button', { name: 'Yes, cancel booking' }).click();
       await expect.poll(() => posted).toEqual({ reason: 'Buyer withdrew', chargePct: 50, payMode: 'UPI' });
       await expect(modal).toBeHidden();

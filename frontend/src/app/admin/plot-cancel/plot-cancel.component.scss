@@ -1,0 +1,18 @@
+// Plot Cancel only. The rest of the screen borrows add-plot-emi.component.scss (see styleUrls).
+.plot-cancel {
+  &__danger.brand-button { background: #800000; color: #fff; border: 1px solid #800000; }
+  &__danger.brand-button:hover:not(:disabled) { background: #660000; opacity: 1; }
+  &__detail.brand-button { background: #1f5f6b; color: #fff; border: 1px solid #1f5f6b; }
+  &__detail.brand-button:hover:not(:disabled) { background: #174a54; opacity: 1; }
+
+  // Two aligned columns: Charge % | Charge, Refund | Pay mode; reason spans both. Fields share one top edge
+  // so a validation message under one never pushes its neighbour out of line.
+  &__form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; align-items: start; margin-bottom: 4px; }
+  &__form .add-plot-emi__field { min-width: 0; flex: none; }
+  &__form .add-plot-emi__field--full { grid-column: 1 / -1; }
+  &__form input[readonly] { background: var(--surface-raised); font-weight: 600; cursor: default; }
+}
+
+@media (max-width: 640px) {
+  .plot-cancel__form { grid-template-columns: minmax(0, 1fr); }
+}

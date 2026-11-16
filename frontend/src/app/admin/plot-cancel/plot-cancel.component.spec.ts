@@ -35,6 +35,7 @@ describe('PlotCancelComponent', () => {
 
     it('starts at the 35% minimum and computes charge and refund from the amount paid', () => {
       expect(component.chargePct).toBe(35);
+      expect(component.payMode).toBe('CASH');
       expect(component.charge()).toBe(52500);
       expect(component.refund()).toBe(97500);
       component.chargePct = 50;
@@ -54,9 +55,11 @@ describe('PlotCancelComponent', () => {
     });
 
     it('requires a reason, and a pay mode while a refund is due', () => {
-      component.confirmCancel();
+      component.confirmCancel();                       // Cash is preset, the reason is missing
       expect(component.cancelTried).toBe(true);
+      http.expectNone('/api/admin/bookings/b1/cancel');
       component.cancelReason = 'changed mind';
+      component.payMode = '';                          // pay mode cleared while 65% is refundable
       component.confirmCancel();
       http.expectNone('/api/admin/bookings/b1/cancel');
     });
@@ -73,11 +76,17 @@ describe('PlotCancelComponent', () => {
       expect(component.flash).toBeTruthy();
     });
 
-    it('needs no pay mode when the charge takes the whole payment', () => {
+    it('defaults the refund pay mode to Cash again each time the popup opens', () => {
+      component.payMode = 'UPI';
+      component.openCancel(booking);
+      expect(component.payMode).toBe('CASH');
+    });
+
+    it('sends Cash by default when the charge takes the whole payment', () => {
       component.chargePct = 100;
       component.cancelReason = 'x';
       component.confirmCancel();
-      expect(http.expectOne('/api/admin/bookings/b1/cancel').request.body.payMode).toBeNull();
+      expect(http.expectOne('/api/admin/bookings/b1/cancel').request.body.payMode).toBe('CASH');
     });
   });
 
