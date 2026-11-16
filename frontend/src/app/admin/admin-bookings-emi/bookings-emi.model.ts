@@ -14,6 +14,7 @@ export interface RegisterFilters {
   cancelledTo?: string;
   q?: string;
   hasPending?: boolean;
+  plotNo?: string;
 }
 
 export interface TopUpRequest { amount: number; paymentMode: PaymentMode; bankName?: string; paymentRef: string; paidAt?: string; receiptNo: string; }

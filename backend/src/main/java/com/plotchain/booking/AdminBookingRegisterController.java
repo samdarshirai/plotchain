@@ -45,6 +45,7 @@ public class AdminBookingRegisterController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate cancelledFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate cancelledTo,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) String plotNo,
             @RequestParam(defaultValue = "false") boolean hasPending,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
@@ -54,7 +55,7 @@ public class AdminBookingRegisterController {
         page = Math.max(page, 0);
         size = Math.min(Math.max(size, 1), 100);   // min 1: PageRequest.of rejects size < 1 (would be a 500)
         return registerService.list(status, associateId, plotId, projectId, overdue, bookedFrom, bookedTo,
-            cancelledFrom, cancelledTo, q, hasPending, page, size);
+            cancelledFrom, cancelledTo, q, plotNo, hasPending, page, size);
     }
 
     private static void checkRange(LocalDate from, LocalDate to) {

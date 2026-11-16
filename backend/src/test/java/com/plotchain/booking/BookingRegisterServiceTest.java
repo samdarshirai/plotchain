@@ -85,6 +85,15 @@ class BookingRegisterServiceTest {
     }
 
     @Test
+    void listTrimsAndLowercasesPlotNoAndBlankMeansNoFilter() {
+        String plotNo = plots.findById(d.b2.getPlotId()).orElseThrow().getPlotNo();
+        assertThat(ids(service.list(null, null, null, d.p1, false, null, null, null, null, null,
+            "  " + plotNo.toUpperCase() + " ", false, 0, 50))).contains(d.b2.getId());
+        assertThat(service.list(null, null, null, d.p1, false, null, null, null, null, null,
+            "   ", false, 0, 50).totalElements()).isEqualTo(4);
+    }
+
+    @Test
     void listTrimsAndLowercasesQAndMapsNullToEmptyString() {
         String userId = associates.findById(d.a1).orElseThrow().getUserId();
         String padded = "  " + userId.substring(3, 15).toUpperCase() + "  ";

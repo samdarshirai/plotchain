@@ -28,6 +28,7 @@ public interface BookingEventRepository extends JpaRepository<BookingEvent, UUID
         AND e.createdAt >= :from AND e.createdAt < :to
         AND (:projectId IS NULL OR np.projectId = :projectId)
         AND (:associateId IS NULL OR b.associateId = :associateId)
+        AND (:plotNo = '' OR LOWER(np.plotNo) = :plotNo OR LOWER(op.plotNo) = :plotNo)
         ORDER BY e.createdAt DESC, e.id DESC
         """,
         countQuery = """
@@ -40,7 +41,9 @@ public interface BookingEventRepository extends JpaRepository<BookingEvent, UUID
         AND e.createdAt >= :from AND e.createdAt < :to
         AND (:projectId IS NULL OR np.projectId = :projectId)
         AND (:associateId IS NULL OR b.associateId = :associateId)
+        AND (:plotNo = '' OR LOWER(np.plotNo) = :plotNo OR LOWER(op.plotNo) = :plotNo)
         """)
     Page<PlotTransferRow> findPlotTransfers(@Param("from") Instant from, @Param("to") Instant to,
-        @Param("projectId") UUID projectId, @Param("associateId") UUID associateId, Pageable pageable);
+        @Param("projectId") UUID projectId, @Param("associateId") UUID associateId,
+        @Param("plotNo") String plotNo, Pageable pageable);
 }

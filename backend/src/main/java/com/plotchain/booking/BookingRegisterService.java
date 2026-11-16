@@ -44,13 +44,13 @@ public class BookingRegisterService {
                                          LocalDate cancelledFrom, LocalDate cancelledTo, String q,
                                          int page, int size) {
         return list(status, associateId, plotId, projectId, overdue, bookedFrom, bookedTo,
-            cancelledFrom, cancelledTo, q, false, page, size);
+            cancelledFrom, cancelledTo, q, null, false, page, size);
     }
 
     @Transactional(readOnly = true)
     public AdminBookingPageResponse list(BookingStatus status, UUID associateId, UUID plotId, UUID projectId,
                                          boolean overdue, LocalDate bookedFrom, LocalDate bookedTo,
-                                         LocalDate cancelledFrom, LocalDate cancelledTo, String q, boolean pendingOnly,
+                                         LocalDate cancelledFrom, LocalDate cancelledTo, String q, String plotNo, boolean pendingOnly,
                                          int page, int size) {
         boolean cancelledFilter = cancelledFrom != null || cancelledTo != null;
         String needle = q == null ? "" : q.trim().toLowerCase(java.util.Locale.ROOT);
@@ -58,7 +58,7 @@ public class BookingRegisterService {
             status, associateId, plotId, projectId, overdue, LocalDate.now(clock),
             BookingService.fromInstant(bookedFrom), BookingService.toInstant(bookedTo),
             cancelledFilter, BookingService.fromInstant(cancelledFrom), BookingService.toInstant(cancelledTo),
-            needle, pendingOnly, PageRequest.of(page, size, NEWEST_FIRST));
+            needle, plotNo == null ? "" : plotNo.trim().toLowerCase(java.util.Locale.ROOT), pendingOnly, PageRequest.of(page, size, NEWEST_FIRST));
 
         return toPage(result, page, size);
     }

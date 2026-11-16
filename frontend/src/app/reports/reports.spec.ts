@@ -73,6 +73,35 @@ describe('Reports screens', () => {
     expect(last.get('cycleId')).toBe('c1');
   });
 
+  it('emi: plot no filter is trimmed and sent as plotNo', () => {
+    const fixture = TestBed.createComponent(EmiReportComponent);
+    fixture.detectChanges();
+    http.expectOne('/api/associates/me/cycles').flush([]);
+    emiReq().flush(page([]));
+    fixture.componentInstance.onPlot(' A-12 ');
+    const reqs = http.match(r => r.url === '/api/associates/me/reports/emi');
+    expect(reqs[reqs.length - 1].request.params.get('plotNo')).toBe('A-12');
+  });
+
+  it('my business: plot no filter keeps only matching rows in both legs', () => {
+    const fixture = TestBed.createComponent(MyBusinessReportComponent);
+    fixture.detectChanges();
+    const row = (plotNumber: string, name: string) =>
+      ({ paymentDate: '2026-06-03T00:00:00Z', confirmDate: null, associateId: 'VP1', name, project: 'G', plotNumber, business: 100 });
+    http.expectOne(r => r.url === '/api/associates/me/reports/business').flush({
+      left: [row('A-1', 'Ravi'), row('B-2', 'Sita')], right: [row('a-1', 'Mohan')]
+    });
+    fixture.detectChanges();
+    const input = fixture.nativeElement.querySelector('input[name=plotNo]') as HTMLInputElement;
+    input.value = 'A-1';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Ravi');
+    expect(text).toContain('Mohan');
+    expect(text).not.toContain('Sita');
+  });
+
   it('emi: empty data renders an explicit empty state inside the table', () => {
     const fixture = TestBed.createComponent(EmiReportComponent);
     fixture.detectChanges();

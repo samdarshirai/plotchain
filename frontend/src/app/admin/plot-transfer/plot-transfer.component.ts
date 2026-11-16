@@ -48,6 +48,10 @@ const isoDate = (d: Date): string => {
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === projectId">{{ p.name }}</option>
           </select>
         </label>
+        <label class="add-plot-emi__field">{{ 'admin.salesRegister.plotNoFilterLabel' | translate }}
+          <input type="text" name="plotNo" [value]="plotNo" [placeholder]="'admin.emiReport.plotIdPlaceholder' | translate"
+            (change)="onPlot($any($event.target).value)" />
+        </label>
         <app-associate-cycle-filter [from]="from" [to]="to" [associateId]="associateId"
           (associateChange)="onAssociate($event)" (rangeChange)="onRange($event)"></app-associate-cycle-filter>
       </div>
@@ -265,6 +269,7 @@ export class PlotTransferComponent implements OnInit {
 
   projects: Project[] = [];
   projectId = '';
+  plotNo = '';
   from = isoDate(new Date(Date.now() - 30 * 864e5));
   to = isoDate(new Date());
   page: BookingPage | null = null;
@@ -300,6 +305,7 @@ export class PlotTransferComponent implements OnInit {
   }
 
   onProject(id: string): void { this.projectId = id; this.load(); }
+  onPlot(v: string): void { this.plotNo = v.trim(); this.load(); }
 
   onDate(which: 'from' | 'to', v: string): void {
     this[which] = v;
@@ -310,7 +316,7 @@ export class PlotTransferComponent implements OnInit {
   private filters(): RegisterFilters {
     // Only ACTIVE bookings can be transferred (BookingService.transferPlot).
     return { status: 'ACTIVE', associateId: this.associateId, plotId: '', projectId: this.projectId, overdue: false,
-      bookedFrom: this.from, bookedTo: this.to, hasPending: false };
+      bookedFrom: this.from, bookedTo: this.to, hasPending: false, plotNo: this.plotNo };
   }
 
   load(): void {

@@ -41,7 +41,7 @@ public class AssociatePendingEmiService {
     // position: null = whole team, "L"/"R" = that leg. code: associate login id, blank = any.
     // cycleId: bookings booked inside that cycle's period (null periodEnd = open-ended).
     @Transactional(readOnly = true)
-    public AssociateBookingPageResponse list(UUID me, String position, String code, UUID cycleId, int page, int size) {
+    public AssociateBookingPageResponse list(UUID me, String position, String code, UUID cycleId, String plotNo, int page, int size) {
         LocalDate from = null;
         LocalDate to = null;
         if (cycleId != null) {
@@ -52,7 +52,7 @@ public class AssociatePendingEmiService {
         }
         String needle = code == null ? "" : code.trim().toLowerCase(Locale.ROOT);
         Page<PlotBooking> result = plotBookingRepository.findPendingByDownline(me, position, needle,
-            BookingService.fromInstant(from), BookingService.toInstant(to), PageRequest.of(page, size, Sort.unsorted()));
+            plotNo == null ? "" : plotNo.trim().toLowerCase(Locale.ROOT), BookingService.fromInstant(from), BookingService.toInstant(to), PageRequest.of(page, size, Sort.unsorted()));
         List<UUID> ids = result.getContent().stream().map(PlotBooking::getId).toList();
         Map<UUID, List<EmiInstallment>> byBooking = ids.isEmpty() ? Map.of()
             : emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(ids).stream()

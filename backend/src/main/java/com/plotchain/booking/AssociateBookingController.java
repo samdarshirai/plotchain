@@ -81,10 +81,11 @@ public class AssociateBookingController {
             @RequestParam(defaultValue = "ALL") String leg,
             @RequestParam(required = false) String associateId,
             @RequestParam(required = false) UUID cycleId,
+            @RequestParam(required = false) String plotNo,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return pendingEmiService.list(me, legToPosition(leg), associateId, cycleId,
+        return pendingEmiService.list(me, legToPosition(leg), associateId, cycleId, plotNo,
             Math.max(page, 0), Math.min(Math.max(size, 1), 100));
     }
 

@@ -66,6 +66,10 @@ const isoDate = (d: Date): string => {
             </option>
           </select>
         </label>
+        <label class="add-plot-emi__field">{{ 'admin.salesRegister.plotNoFilterLabel' | translate }}
+          <input type="text" name="plotNo" [value]="plotNo" [placeholder]="'admin.emiReport.plotIdPlaceholder' | translate"
+            (change)="onPlot($any($event.target).value)" />
+        </label>
       </div>
       <app-field-error [message]="rangeError ? ('admin.addPlotEmi.rangeError' | translate) : undefined"></app-field-error>
 
@@ -229,6 +233,7 @@ export class ViewPlotEmiComponent implements OnInit {
 
   projects: Project[] = [];
   projectId = '';
+  plotNo = '';
   directory: AssociateSummary[] = [];
   associateId = '';
   cycles: CycleSummary[] = [];
@@ -254,6 +259,7 @@ export class ViewPlotEmiComponent implements OnInit {
   }
 
   onProject(id: string): void { this.projectId = id; this.load(); }
+  onPlot(v: string): void { this.plotNo = v.trim(); this.load(); }
 
   onAssociate(a: AssociateSummary | null): void { this.associateId = a?.id ?? ''; this.load(); }
 
@@ -279,7 +285,7 @@ export class ViewPlotEmiComponent implements OnInit {
   private filters(): RegisterFilters {
     // Pending money = ACTIVE bookings with at least one PENDING installment.
     return { status: 'ACTIVE', associateId: this.associateId, plotId: '', projectId: this.projectId, overdue: false,
-      bookedFrom: this.from, bookedTo: this.to, hasPending: true };
+      bookedFrom: this.from, bookedTo: this.to, hasPending: true, plotNo: this.plotNo };
   }
 
   load(): void {

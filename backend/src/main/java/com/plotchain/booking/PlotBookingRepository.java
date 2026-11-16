@@ -58,6 +58,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         AND (:cancelledFilter = false OR (b.cancelledAt >= :cancelledFrom AND b.cancelledAt < :cancelledTo))
         AND (:q = '' OR EXISTS (SELECT 1 FROM Associate qa WHERE qa.id = b.associateId AND LOWER(qa.userId) LIKE CONCAT('%', :q, '%'))
              OR EXISTS (SELECT 1 FROM Plot qp WHERE qp.id = b.plotId AND LOWER(qp.plotNo) LIKE CONCAT('%', :q, '%')))
+        AND (:plotNo = '' OR EXISTS (SELECT 1 FROM Plot np WHERE np.id = b.plotId AND LOWER(np.plotNo) = :plotNo))
         AND (:pendingOnly = false OR (b.status = com.plotchain.booking.BookingStatus.ACTIVE AND EXISTS (SELECT 1 FROM EmiInstallment pi WHERE pi.bookingId = b.id AND pi.status = com.plotchain.booking.InstallmentStatus.PENDING)))
         AND (:overdueOnly = false OR (b.status = com.plotchain.booking.BookingStatus.ACTIVE
         """
@@ -75,6 +76,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         @Param("cancelledFrom") Instant cancelledFrom,
         @Param("cancelledTo") Instant cancelledTo,
         @Param("q") String q,
+        @Param("plotNo") String plotNo,
         @Param("pendingOnly") boolean pendingOnly,
         Pageable pageable);
 
@@ -123,6 +125,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         JOIN associate ba ON ba.id = b.associate_id
         WHERE b.status = 'ACTIVE' AND b.booked_at >= :from AND b.booked_at < :to
           AND (:code = '' OR LOWER(ba.user_id) = :code)
+          AND (:plotNo = '' OR EXISTS (SELECT 1 FROM plot pl WHERE pl.id = b.plot_id AND LOWER(pl.plot_no) = :plotNo))
           AND EXISTS (SELECT 1 FROM emi_installment i WHERE i.booking_id = b.id AND i.status = 'PENDING')
         ORDER BY b.booked_at DESC, b.id DESC
         """,
@@ -137,11 +140,13 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         JOIN associate ba ON ba.id = b.associate_id
         WHERE b.status = 'ACTIVE' AND b.booked_at >= :from AND b.booked_at < :to
           AND (:code = '' OR LOWER(ba.user_id) = :code)
+          AND (:plotNo = '' OR EXISTS (SELECT 1 FROM plot pl WHERE pl.id = b.plot_id AND LOWER(pl.plot_no) = :plotNo))
           AND EXISTS (SELECT 1 FROM emi_installment i WHERE i.booking_id = b.id AND i.status = 'PENDING')
         """,
         nativeQuery = true)
     Page<PlotBooking> findPendingByDownline(@Param("associateId") UUID associateId, @Param("position") String position,
-            @Param("code") String code, @Param("from") Instant from, @Param("to") Instant to, Pageable pageable);
+            @Param("code") String code, @Param("plotNo") String plotNo, @Param("from") Instant from,
+            @Param("to") Instant to, Pageable pageable);
 
     // "My Business Datewise": same downline CTE as findByDownline, restricted to booked_at in [from, to).
     // position is 'L' or 'R'. CANCELLED bookings are not business.

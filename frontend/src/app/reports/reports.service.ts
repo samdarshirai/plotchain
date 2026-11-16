@@ -10,7 +10,7 @@ export interface BusinessReportRow {
 }
 export interface BusinessReport { left: BusinessReportRow[]; right: BusinessReportRow[]; }
 export type Leg = 'ALL' | 'L' | 'R';
-export interface EmiFilters { leg: Leg; associateId: string; cycleId: string; }
+export interface EmiFilters { leg: Leg; associateId: string; cycleId: string; plotNo?: string; }
 export interface EmiPaymentFilters { leg: Leg; associateId: string; plotNo: string; from: string; to: string; }
 export interface CycleOption { id: string; periodStart: string; periodEnd: string | null; status: string; }
 
@@ -35,6 +35,7 @@ export class ReportsService {
     let p = new HttpParams().set('leg', f.leg).set('page', page).set('size', size);
     if (f.associateId) { p = p.set('associateId', f.associateId); }
     if (f.cycleId) { p = p.set('cycleId', f.cycleId); }
+    if (f.plotNo) { p = p.set('plotNo', f.plotNo); }
     return this.http.get<AssociateBookingPage>('/api/associates/me/reports/emi', { params: p });
   }
 

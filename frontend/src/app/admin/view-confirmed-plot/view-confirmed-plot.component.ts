@@ -46,6 +46,10 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === projectId">{{ p.name }}</option>
           </select>
         </label>
+        <label class="add-plot-emi__field">{{ 'admin.salesRegister.plotNoFilterLabel' | translate }}
+          <input type="text" name="plotNo" [value]="plotNo" [placeholder]="'admin.emiReport.plotIdPlaceholder' | translate"
+            (change)="onPlot($any($event.target).value)" />
+        </label>
         <app-associate-cycle-filter [from]="from" [to]="to" [associateId]="associateId"
           (associateChange)="onAssociate($event)" (rangeChange)="onRange($event)"></app-associate-cycle-filter>
       </div>
@@ -177,6 +181,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
 
   projects: Project[] = [];
   projectId = '';
+  plotNo = '';
   from = isoDate(new Date(Date.now() - 30 * 864e5));
   to = isoDate(new Date());
   status: Status = 'ENTERED';
@@ -210,6 +215,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
   }
 
   onProject(id: string): void { this.projectId = id; this.load(); }
+  onPlot(v: string): void { this.plotNo = v.trim(); this.load(); }
 
   onDate(which: 'from' | 'to', v: string): void {
     this[which] = v;
@@ -262,7 +268,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
     this.loadError = false;
     this.selected.clear();
     this.asking = false;
-    fetchAllPages((p, size) => this.service.payments(this.status, { from: this.from, to: this.to, projectId: this.projectId, associateId: this.associateId }, p, size)).subscribe({
+    fetchAllPages((p, size) => this.service.payments(this.status, { from: this.from, to: this.to, projectId: this.projectId, associateId: this.associateId, plotNo: this.plotNo }, p, size)).subscribe({
       next: r => {
         if (seq !== this.seq) { return; }
         this.page = r;

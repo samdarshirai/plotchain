@@ -43,6 +43,10 @@ const isoDate = (d: Date): string => {
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === projectId">{{ p.name }}</option>
           </select>
         </label>
+        <label class="add-plot-emi__field">{{ 'admin.salesRegister.plotNoFilterLabel' | translate }}
+          <input type="text" name="plotNo" [value]="plotNo" [placeholder]="'admin.emiReport.plotIdPlaceholder' | translate"
+            (change)="onPlot($any($event.target).value)" />
+        </label>
         <app-associate-cycle-filter [from]="from" [to]="to" [associateId]="associateId"
           (associateChange)="onAssociate($event)" (rangeChange)="onRange($event)"></app-associate-cycle-filter>
       </div>
@@ -116,6 +120,7 @@ export class ViewTransferredPlotComponent implements OnInit {
 
   projects: Project[] = [];
   projectId = '';
+  plotNo = '';
   from = isoDate(new Date(Date.now() - 30 * 864e5));
   to = isoDate(new Date());
   page: PlotTransferPage | null = null;
@@ -141,6 +146,7 @@ export class ViewTransferredPlotComponent implements OnInit {
   }
 
   onProject(id: string): void { this.projectId = id; this.load(); }
+  onPlot(v: string): void { this.plotNo = v.trim(); this.load(); }
 
   onDate(which: 'from' | 'to', v: string): void {
     this[which] = v;
@@ -153,7 +159,7 @@ export class ViewTransferredPlotComponent implements OnInit {
     const seq = ++this.seq;
     this.loading = true;
     this.loadError = false;
-    fetchAllPages((p, size) => this.service.plotTransfers({ from: this.from, to: this.to, projectId: this.projectId, associateId: this.associateId }, p, size)).subscribe({
+    fetchAllPages((p, size) => this.service.plotTransfers({ from: this.from, to: this.to, projectId: this.projectId, associateId: this.associateId, plotNo: this.plotNo }, p, size)).subscribe({
       next: r => { if (seq === this.seq) { this.page = r; this.loading = false; } },
       error: () => { if (seq === this.seq) { this.loading = false; this.loadError = true; } }
     });

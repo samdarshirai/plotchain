@@ -49,8 +49,17 @@ class PlotTransferRepositoryTest {
     }
 
     @Test
+    void plotNoMatchesNewOrOldPlotExactly() {
+        String newNo = plots.findById(d.b2.getPlotId()).orElseThrow().getPlotNo().toLowerCase();
+        String oldNo = plots.findById(d.b1.getPlotId()).orElseThrow().getPlotNo().toLowerCase();
+        assertThat(events.findPlotTransfers(MIN, MAX, null, null, newNo, PageRequest.of(0, 50)).getContent()).hasSize(1);
+        assertThat(events.findPlotTransfers(MIN, MAX, null, null, oldNo, PageRequest.of(0, 50)).getContent()).hasSize(1);
+        assertThat(events.findPlotTransfers(MIN, MAX, null, null, newNo.substring(1), PageRequest.of(0, 50)).getContent()).isEmpty();
+    }
+
+    @Test
     void listsSnapshotRowsOnly() {
-        var rows = events.findPlotTransfers(MIN, MAX, null, null, PageRequest.of(0, 50));
+        var rows = events.findPlotTransfers(MIN, MAX, null, null, "", PageRequest.of(0, 50));
         assertThat(rows.getContent()).anySatisfy(r -> {
             assertThat(r.paidAmount()).isEqualByComparingTo("1000.00");
             assertThat(r.restAmount()).isEqualByComparingTo("4000.00");
@@ -60,20 +69,20 @@ class PlotTransferRepositoryTest {
 
     @Test
     void dateRangeIsHalfOpenOnTo() {
-        assertThat(events.findPlotTransfers(MIN, Instant.parse("2026-06-10T10:00:00Z"), projectId, null, PageRequest.of(0, 50))
+        assertThat(events.findPlotTransfers(MIN, Instant.parse("2026-06-10T10:00:00Z"), projectId, null, "", PageRequest.of(0, 50))
             .getContent()).isEmpty();
-        assertThat(events.findPlotTransfers(Instant.parse("2026-06-10T10:00:00Z"), MAX, projectId, null, PageRequest.of(0, 50))
+        assertThat(events.findPlotTransfers(Instant.parse("2026-06-10T10:00:00Z"), MAX, projectId, null, "", PageRequest.of(0, 50))
             .getContent()).hasSize(1);
     }
 
     @Test
     void projectFilterExcludesOtherProjects() {
-        assertThat(events.findPlotTransfers(MIN, MAX, UUID.randomUUID(), null, PageRequest.of(0, 50)).getContent()).isEmpty();
+        assertThat(events.findPlotTransfers(MIN, MAX, UUID.randomUUID(), null, "", PageRequest.of(0, 50)).getContent()).isEmpty();
     }
 
     @Test
     void associateFilterKeepsOnlyThatAssociate() {
-        assertThat(events.findPlotTransfers(MIN, MAX, null, d.b1.getAssociateId(), PageRequest.of(0, 50)).getContent()).hasSize(1);
-        assertThat(events.findPlotTransfers(MIN, MAX, null, UUID.randomUUID(), PageRequest.of(0, 50)).getContent()).isEmpty();
+        assertThat(events.findPlotTransfers(MIN, MAX, null, d.b1.getAssociateId(), "", PageRequest.of(0, 50)).getContent()).hasSize(1);
+        assertThat(events.findPlotTransfers(MIN, MAX, null, UUID.randomUUID(), "", PageRequest.of(0, 50)).getContent()).isEmpty();
     }
 }

@@ -44,6 +44,10 @@ const isoDate = (d: Date): string => {
             <option *ngFor="let p of projects" [value]="p.id" [selected]="p.id === projectId">{{ p.name }}</option>
           </select>
         </label>
+        <label class="add-plot-emi__field">{{ 'admin.salesRegister.plotNoFilterLabel' | translate }}
+          <input type="text" name="plotNo" [value]="plotNo" [placeholder]="'admin.emiReport.plotIdPlaceholder' | translate"
+            (change)="onPlot($any($event.target).value)" />
+        </label>
         <app-associate-cycle-filter [from]="from" [to]="to" [associateId]="associateId"
           (associateChange)="onAssociate($event)" (rangeChange)="onRange($event)"></app-associate-cycle-filter>
       </div>
@@ -156,6 +160,7 @@ export class ViewCancelledPlotComponent implements OnInit {
   private seq = 0;
 
   ngOnInit(): void {
+  plotNo = '';
     this.projectsService.listProjects().subscribe({
       next: p => { this.projects = p; this.projectId = p[0]?.id ?? ''; this.load(); },
       error: () => (this.loadError = true)
@@ -181,7 +186,8 @@ export class ViewCancelledPlotComponent implements OnInit {
 
   private filters(): RegisterFilters {
     return { status: 'CANCELLED', associateId: this.associateId, plotId: '', projectId: this.projectId, overdue: false,
-      cancelledFrom: this.from, cancelledTo: this.to };
+  onPlot(v: string): void { this.plotNo = v.trim(); this.load(); }
+      cancelledFrom: this.from, cancelledTo: this.to, plotNo: this.plotNo };
   }
 
   load(): void {

@@ -22,6 +22,10 @@ import { TableToolsComponent } from '../shared/components/table-tools/table-tool
         <label>{{ 'reports.to' | translate }}
           <input type="date" [value]="to" (change)="to = $any($event.target).value; load()">
         </label>
+        <label>{{ 'admin.salesRegister.plotNoFilterLabel' | translate }}
+          <input type="text" name="plotNo" [value]="plotNo" [placeholder]="'reports.emiReport.plotIdPlaceholder' | translate"
+            (input)="plotNo = $any($event.target).value.trim()" />
+        </label>
       </div>
       <app-field-error [message]="rangeError"></app-field-error>
       <app-inline-banner *ngIf="error" tone="danger">
@@ -79,6 +83,7 @@ export class MyBusinessReportComponent {
 
   from = '';
   to = '';
+  plotNo = '';
   report: BusinessReport | null = null;
   loading = false;
   error = false;
@@ -92,7 +97,9 @@ export class MyBusinessReportComponent {
   constructor() { this.load(); }
 
   legs(): { key: 'left' | 'right'; rows: BusinessReportRow[] }[] {
-    return [{ key: 'left', rows: this.report!.left }, { key: 'right', rows: this.report!.right }];
+    const m = (rows: BusinessReportRow[]) => this.plotNo
+      ? rows.filter(r => (r.plotNumber ?? '').toLowerCase() === this.plotNo.toLowerCase()) : rows;
+    return [{ key: 'left', rows: m(this.report!.left) }, { key: 'right', rows: m(this.report!.right) }];
   }
 
   get rangeError(): string | undefined {

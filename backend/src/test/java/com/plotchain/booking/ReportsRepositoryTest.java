@@ -77,17 +77,22 @@ class ReportsRepositoryTest {
 
         Instant from = Instant.EPOCH, to = Instant.parse("9999-01-01T00:00:00Z");
         org.springframework.data.domain.Pageable pg = org.springframework.data.domain.PageRequest.of(0, 50);
-        assertThat(repo.findPendingByDownline(root, null, "", from, to, pg).getContent())
+        assertThat(repo.findPendingByDownline(root, null, "", "", from, to, pg).getContent())
             .extracting(PlotBooking::getId).containsExactly(pendR.getId(), pendL.getId());   // newest first
-        assertThat(repo.findPendingByDownline(root, "L", "", from, to, pg).getContent())
+        assertThat(repo.findPendingByDownline(root, "L", "", "", from, to, pg).getContent())
             .extracting(PlotBooking::getId).containsExactly(pendL.getId());
-        assertThat(repo.findPendingByDownline(root, null, ("u-" + right).toLowerCase(), from, to, pg).getContent())
+        assertThat(repo.findPendingByDownline(root, null, ("u-" + right).toLowerCase(), "", from, to, pg).getContent())
             .extracting(PlotBooking::getId).containsExactly(pendR.getId());
         // code of someone outside the downline never matches
-        assertThat(repo.findPendingByDownline(root, null, ("u-" + outsider).toLowerCase(), from, to, pg).getContent()).isEmpty();
+        assertThat(repo.findPendingByDownline(root, null, ("u-" + outsider).toLowerCase(), "", from, to, pg).getContent()).isEmpty();
         // booked_at bounds (cycle period): booked_at = 2026-06-01 + offset days: pendL 06-02, pendR 06-03
-        assertThat(repo.findPendingByDownline(root, null, "", Instant.parse("2026-06-03T00:00:00Z"),
+        assertThat(repo.findPendingByDownline(root, null, "", "", Instant.parse("2026-06-03T00:00:00Z"),
             Instant.parse("2026-06-04T00:00:00Z"), pg).getContent()).extracting(PlotBooking::getId).containsExactly(pendR.getId());
-        assertThat(repo.findPendingByDownline(left, null, "", from, to, pg).getContent()).isEmpty();
+        assertThat(repo.findPendingByDownline(left, null, "", "", from, to, pg).getContent()).isEmpty();
+        // plotNo: exact, case-insensitive; a prefix never matches
+        String rNo = plots.findById(pendR.getPlotId()).orElseThrow().getPlotNo();
+        assertThat(repo.findPendingByDownline(root, null, "", rNo.toLowerCase(), from, to, pg).getContent())
+            .extracting(PlotBooking::getId).containsExactly(pendR.getId());
+        assertThat(repo.findPendingByDownline(root, null, "", rNo.substring(1).toLowerCase(), from, to, pg).getContent()).isEmpty();
     }
 }

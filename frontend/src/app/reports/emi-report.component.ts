@@ -41,6 +41,10 @@ import { TableToolsComponent } from '../shared/components/table-tools/table-tool
             <option value="R">{{ 'reports.emi.sideRight' | translate }}</option>
           </select>
         </label>
+        <label class="add-plot-emi__field">{{ 'admin.salesRegister.plotNoFilterLabel' | translate }}
+          <input type="text" name="plotNo" [value]="plotNo" [placeholder]="'reports.emiReport.plotIdPlaceholder' | translate"
+            (change)="onPlot($any($event.target).value)" />
+        </label>
       </div>
 
       <app-inline-banner *ngIf="loadError" tone="danger">
@@ -120,6 +124,7 @@ export class EmiReportComponent implements OnInit {
   cycles: CycleOption[] = [];
   cycleId = '';
   associateId = '';
+  plotNo = '';
   leg: Leg = 'ALL';
   page: AssociateBookingPage | null = null;
   loading = false;
@@ -134,13 +139,14 @@ export class EmiReportComponent implements OnInit {
 
   onCycle(id: string): void { this.cycleId = id; this.load(); }
   onAssociate(v: string): void { this.associateId = v.trim(); this.load(); }
+  onPlot(v: string): void { this.plotNo = v.trim(); this.load(); }
   onLeg(v: string): void { this.leg = v as Leg; this.load(); }
 
   load(): void {
     const seq = ++this.seq;
     this.loading = true;
     this.loadError = false;
-    const f = { leg: this.leg, associateId: this.associateId, cycleId: this.cycleId };
+    const f = { leg: this.leg, associateId: this.associateId, cycleId: this.cycleId, plotNo: this.plotNo };
     fetchAllPages((p, size) => this.service.getEmi(f, p, size)).subscribe({
       next: r => { if (seq === this.seq) { this.page = r; this.loading = false; } },
       error: () => { if (seq === this.seq) { this.loading = false; this.loadError = true; } }

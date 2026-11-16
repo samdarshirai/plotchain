@@ -22,6 +22,7 @@ export class BookingsEmiService {
     if (f.cancelledFrom) { params = params.set('cancelledFrom', f.cancelledFrom); }
     if (f.cancelledTo) { params = params.set('cancelledTo', f.cancelledTo); }
     if (f.q) { params = params.set('q', f.q); }
+    if (f.plotNo) { params = params.set('plotNo', f.plotNo); }
     if (f.hasPending) { params = params.set('hasPending', true); }
     return this.http.get<BookingPage>('/api/admin/bookings', { params });
   }
@@ -32,6 +33,7 @@ export class BookingsEmiService {
     if (f.to) { params = params.set('to', f.to); }
     if (f.projectId) { params = params.set('projectId', f.projectId); }
     if (f.associateId) { params = params.set('associateId', f.associateId); }
+    if (f.plotNo) { params = params.set('plotNo', f.plotNo); }
     return this.http.get<PlotTransferPage>('/api/admin/plot-transfers', { params });
   }
 

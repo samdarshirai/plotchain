@@ -43,7 +43,7 @@ class AdminPlotTransferControllerTest {
 
     @Test
     void adminGetsEnvelope() throws Exception {
-        when(bookingEventRepository.findPlotTransfers(any(), any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+        when(bookingEventRepository.findPlotTransfers(any(), any(), any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
         mockMvc.perform(get("/api/admin/plot-transfers").header("Authorization", token(AssociateRole.ADMIN)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.transfers").isEmpty())
