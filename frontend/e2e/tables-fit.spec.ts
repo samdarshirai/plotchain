@@ -1,5 +1,6 @@
 import { expect, test, Page } from '@playwright/test';
 import { ROLES } from './routes';
+import { audit } from './table-audit';
 
 // Project rule (CLAUDE.md): no table scrolls sideways. At every width each visible table must fit its
 // container and the page, no table may sit in a horizontal scroller, and a stacked table must keep its labels.
@@ -17,34 +18,6 @@ async function login(page: Page, request: any, role: (typeof ROLES)[number]) {
     localStorage.setItem(a.p + a.mustChange, 'false');
     localStorage.setItem(a.p + 'role', a.role);
   }, { ...l, p, mustChange });
-}
-
-// Runs in the page. Returns one message per broken rule.
-function audit(): string[] {
-  const bad: string[] = [];
-  const container = (t: Element) => {
-    let el = t.parentElement;
-    while (el && ['inline', 'contents'].includes(getComputedStyle(el).display)) el = el.parentElement;
-    return el;
-  };
-  document.querySelectorAll('table').forEach((t, i) => {
-    if (!(t as HTMLElement).offsetParent) return; // hidden
-    const name = `table#${i}(${t.className || 'plain'})`;
-    const c = container(t);
-    if (c && c.scrollWidth > c.clientWidth + 1) bad.push(`${name}: container ${c.scrollWidth} > ${c.clientWidth}`);
-    for (let el = t.parentElement; el && el !== document.body; el = el.parentElement) {
-      const ox = getComputedStyle(el).overflowX;
-      if ((ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth + 1) bad.push(`${name}: scrolls inside .${el.className}`);
-    }
-    if (t.classList.contains('table--stacked')) {
-      const unlabeled = Array.from(t.querySelectorAll('tbody tr')).some(r =>
-        r.children.length > 1 && Array.from(r.children).some(td => !td.hasAttribute('colspan') && !td.hasAttribute('data-label') && !td.classList.contains('table__sno')) && t.tHead);
-      if (unlabeled) bad.push(`${name}: stacked cell without data-label`);
-    }
-  });
-  const d = document.documentElement;
-  if (d.scrollWidth > d.clientWidth) bad.push(`page ${d.scrollWidth} > ${d.clientWidth}`);
-  return bad;
 }
 
 for (const role of ROLES) for (const width of [390, 800, 1280]) {

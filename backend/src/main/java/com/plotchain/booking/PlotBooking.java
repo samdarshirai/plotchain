@@ -66,6 +66,24 @@ public class PlotBooking {
     @Column(name = "cancel_reason")
     private String cancelReason;
 
+    @Column(name = "cancellation_charge_pct")
+    private BigDecimal cancellationChargePct;
+
+    @Column(name = "cancellation_charge")
+    private BigDecimal cancellationCharge;
+
+    @Column(name = "refund_amount")
+    private BigDecimal refundAmount;
+
+    public BigDecimal getCancellationChargePct() { return cancellationChargePct; }
+    public BigDecimal getCancellationCharge() { return cancellationCharge; }
+    public BigDecimal getRefundAmount() { return refundAmount; }
+    public void setCancellationCharge(BigDecimal pct, BigDecimal charge, BigDecimal refund) {
+        this.cancellationChargePct = pct;
+        this.cancellationCharge = charge;
+        this.refundAmount = refund;
+    }
+
     public BookingStatus getStatus() { return status; }
     public void setStatus(BookingStatus status) { this.status = status; }
     public UUID getBuyerAssociateId() { return buyerAssociateId; }

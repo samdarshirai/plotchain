@@ -48,6 +48,9 @@ public class ExpenseTypeService {
     public ExpenseTypeResponse update(UUID id, ExpenseTypeRequest request, UUID actorId) {
         ExpenseType type = repository.findById(id)
             .orElseThrow(() -> new ExpenseTypeException(HttpStatus.NOT_FOUND, "Expense type not found: " + id));
+        if (type.isSystem()) {
+            throw new ExpenseTypeException(HttpStatus.CONFLICT, "System expense type cannot be changed: " + type.getName());
+        }
         String name = request.name().trim();
         if (repository.existsByNameIgnoreCaseAndIdNot(name, id)) {
             throw new ExpenseTypeException(HttpStatus.CONFLICT, "Expense type already exists: " + name);

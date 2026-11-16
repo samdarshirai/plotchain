@@ -51,6 +51,17 @@ class ExpenseTypeServiceTest {
     }
 
     @Test
+    void updateRejectsSystemType() {
+        UUID id = UUID.randomUUID();
+        ExpenseType system = new ExpenseType(id);
+        system.setName("Plot Cancellation Refund");
+        org.springframework.test.util.ReflectionTestUtils.setField(system, "system", true);
+        when(repository.findById(id)).thenReturn(Optional.of(system));
+        assertThatThrownBy(() -> service.update(id, new ExpenseTypeRequest("Other", ExpenseType.Status.INACTIVE), UUID.randomUUID()))
+            .isInstanceOf(ExpenseTypeException.class).hasMessageContaining("System expense type");
+    }
+
+    @Test
     void updateChangesStatus() {
         UUID id = UUID.randomUUID();
         when(repository.findById(id)).thenReturn(Optional.of(new ExpenseType(id)));

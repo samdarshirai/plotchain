@@ -27,4 +27,18 @@ describe('PlotTransferComponent', () => {
     expect(r.request.params.get('bookedTo')).toBe(component.to);
     r.flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
   });
+
+  it('sends the typed plot name as plotNo, trimmed, and drops it when cleared', () => {
+    http.expectOne('/api/company/projects').flush([{ id: 'p1', name: 'Alpha' }]);
+    http.expectOne(q => q.url === '/api/admin/bookings').flush({ bookings: [], page: 0, size: 100, totalElements: 0 });
+    component.onPlot('  A-12 New1 ');
+    const typed = http.expectOne(q => q.url === '/api/admin/bookings');
+    expect(typed.request.params.get('plotNo')).toBe('A-12 New1');
+    expect(typed.request.params.get('status')).toBe('ACTIVE');
+    typed.flush({ bookings: [], page: 0, size: 100, totalElements: 0 });
+    component.onPlot('');
+    const cleared = http.expectOne(q => q.url === '/api/admin/bookings');
+    expect(cleared.request.params.has('plotNo')).toBe(false);
+    cleared.flush({ bookings: [], page: 0, size: 100, totalElements: 0 });
+  });
 });

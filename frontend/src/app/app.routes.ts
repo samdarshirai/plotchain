@@ -145,6 +145,7 @@ export const routes: Routes = [
       { path: 'add-plot-emi', loadComponent: () => import('./admin/add-plot-emi/add-plot-emi.component').then(m => m.AddPlotEmiComponent), data: { sectionKey: 'addPlotEmi' } },
       { path: 'view-booked-plot', loadComponent: () => import('./admin/view-booked-plot/view-booked-plot.component').then(m => m.ViewBookedPlotComponent), data: { sectionKey: 'viewBookedPlot' } },
       { path: 'plot-transfer', loadComponent: () => import('./admin/plot-transfer/plot-transfer.component').then(m => m.PlotTransferComponent), data: { sectionKey: 'plotTransfer' } },
+      { path: 'plot-cancel', loadComponent: () => import('./admin/plot-cancel/plot-cancel.component').then(m => m.PlotCancelComponent), data: { sectionKey: 'plotCancel' } },
       { path: 'emi-report', loadComponent: () => import('./admin/emi-report/emi-report.component').then(m => m.EmiReportComponent), data: { sectionKey: 'emiReport' } },
       { path: 'view-plot-emi', loadComponent: () => import('./admin/view-plot-emi/view-plot-emi.component').then(m => m.ViewPlotEmiComponent), data: { sectionKey: 'viewPlotEmi' } },
       { path: 'view-cancelled-plot', loadComponent: () => import('./admin/view-cancelled-plot/view-cancelled-plot.component').then(m => m.ViewCancelledPlotComponent), data: { sectionKey: 'viewCancelledPlot' } },

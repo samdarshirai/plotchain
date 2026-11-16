@@ -669,6 +669,7 @@
       "viewBookedPlot": "बुक किए गए प्लॉट देखें",
       "viewConfirmedPlot": "भुगतान पुष्टि",
       "plotTransfer": "प्लॉट ट्रांसफर",
+      "plotCancel": "प्लॉट रद्द करें",
       "viewPlotEmi": "बकाया ईएमआई",
       "emiReport": "ईएमआई रिपोर्ट",
       "viewTransferredPlots": "ट्रांसफर किए गए प्लॉट देखें",
@@ -1129,6 +1130,9 @@
       "col": {
         "buyer": "Buyer",
         "cancelledOn": "Cancelled on",
+        "cancellationChargePct": "शुल्क %",
+        "cancellationCharge": "रद्दीकरण शुल्क",
+        "refundAmount": "रिफंड",
         "cancelReason": "Cancel reason",
         "buyerMobile": "Buyer mobile"
       },
@@ -1315,7 +1319,7 @@
       "eyebrow": "मास्टर डेटा", "title": "Projects", "subtitle": "Projects with their type, location, rate and maps. Suspend a project to stop new plot setup under it.",
       "addAction": "Add Project", "editAction": "Edit", "suspendAction": "Suspend", "activateAction": "Activate", "cancelAction": "Cancel", "saveAction": "Save", "closeAction": "Close",
       "addTitle": "Add Project", "editTitle": "Edit Project", "emptyState": "No projects yet.", "loadError": "Could not load projects.", "saveError": "Could not save project.", "mapError": "Could not load or upload map.",
-      "requiredError": "Required", "invalidError": "Invalid value", "columnSNo": "S No", "columnDetails": "Details", "projectName": "Project Name", "type": "Type", "typePlot": "Plot", "typeApartment": "Apartment",
+      "systemType": "सिस्टम", "requiredError": "Required", "invalidError": "Invalid value", "columnSNo": "S No", "columnDetails": "Details", "projectName": "Project Name", "type": "Type", "typePlot": "Plot", "typeApartment": "Apartment",
       "location": "Location", "city": "City", "state": "State", "cityState": "City/State", "business": "Business Count (%)", "businessPercentage": "Business Count (%)",
       "rate": "Rate (Price per Sqft)", "cornerExtra": "कॉर्नर प्लॉट अतिरिक्त % (डिफ़ॉल्ट)", "parkFacingExtra": "पार्क की ओर वाला प्लॉट अतिरिक्त % (डिफ़ॉल्ट)", "roadSideExtra": "सड़क किनारे वाला प्लॉट अतिरिक्त % (डिफ़ॉल्ट)", "locationMap": "Location Map", "projectMap": "Project Map", "uploaded": "Uploaded", "mapAlt": "Map", "status": "Status", "statusActive": "Active", "statusSuspended": "Suspended"
     },
@@ -1370,6 +1374,15 @@
       "title": "भुगतान पुष्टि", "subtitle": "भुगतान तिथि और प्रोजेक्ट के अनुसार भुगतान। अपुष्ट और पुष्ट के बीच बदलें; अपुष्ट भुगतानों को एक साथ पुष्ट करने के लिए चुनें।",
       "from": "भुगतान से", "to": "भुगतान तक", "pending": "अपुष्ट", "confirmed": "पुष्ट", "emptyPending": "इन फ़िल्टर के लिए कोई अपुष्ट भुगतान नहीं।", "emptyConfirmed": "इन फ़िल्टर के लिए कोई पुष्ट भुगतान नहीं।",
       "col": { "paymentDate": "भुगतान तिथि", "amount": "राशि", "mode": "मोड", "status": "स्थिति", "select": "चुनें" }
+    },
+    "plotCancel": {
+      "title": "प्लॉट रद्द करें", "subtitle": "रद्द की जा सकने वाली सक्रिय बुकिंग। पूरी बुकिंग के लिए विवरण खोलें, या रद्दीकरण शुल्क और रिफंड तय करने के लिए रद्द करें चुनें।",
+      "cancel": "रद्द करें", "modalTitle": "प्लॉट रद्द करें",
+      "chargePct": "रद्दीकरण शुल्क % (न्यूनतम 35)", "chargePctError": "35 से 100 के बीच प्रतिशत दर्ज करें।",
+      "charge": "रद्दीकरण शुल्क", "refund": "एसोसिएट को रिफंड", "payMode": "रिफंड भुगतान माध्यम", "payModeRequired": "रिफंड के भुगतान का माध्यम चुनें।",
+      "effects": "शुल्क जमा राशि का प्रतिशत है। रिफंड व्यय प्रकार Plot Cancellation Refund के अंतर्गत दर्ज होगा, प्लॉट उपलब्ध हो जाएगा और उसके नंबर में \"New\" जुड़ेगा।",
+      "success": "प्लॉट {{plot}} रद्द किया गया।",
+      "col": { "actions": "कार्रवाई" }
     },
     "plotTransfer": {
       "title": "प्लॉट ट्रांसफर", "subtitle": "प्लॉट ट्रांसफर के योग्य सक्रिय बुकिंग। पूरी बुकिंग के लिए विवरण खोलें, या किसी अन्य उपलब्ध प्लॉट पर ले जाने के लिए ट्रांसफर चुनें।", "transfer": "ट्रांसफर",

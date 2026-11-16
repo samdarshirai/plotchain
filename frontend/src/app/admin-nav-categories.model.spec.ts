@@ -22,7 +22,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
       ['epinRegister'],
       ['ledgerRegister', 'salesRegister', 'cycleManagement', 'payoutApproval', 'expenseTypes'],
       ['paymentDetails', 'invoiceExpenses', 'advanceLoans'],
-      ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'viewPlotEmi', 'emiReport', 'viewTransferredPlots', 'viewCancelledPlot'],
+      ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'plotCancel', 'viewPlotEmi', 'emiReport', 'viewTransferredPlots', 'viewCancelledPlot'],
       ['supportTickets', 'news'],
       ['companyProfile', 'branding', 'paymentsKyc', 'compensation'],
       ['auditLog', 'adminStats']

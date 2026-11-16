@@ -8,9 +8,10 @@ export interface ExpenseType {
   id: string;
   name: string;
   status: ExpenseTypeStatus;
+  system?: boolean;
 }
 
-export type ExpenseTypeRequest = Omit<ExpenseType, 'id'>;
+export type ExpenseTypeRequest = Omit<ExpenseType, 'id' | 'system'>;
 
 const BASE = '/api/admin/expense-types';
 

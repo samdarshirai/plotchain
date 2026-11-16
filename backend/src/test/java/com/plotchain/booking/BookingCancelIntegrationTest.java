@@ -232,6 +232,31 @@ class BookingCancelIntegrationTest {
     }
 
     @Test
+    void cancelWithChargeStoresChargeRenamesPlotAndPostsRefundUnderTheSystemExpenseType() {
+        setConfig(true, 4);                       // 4 x 150000.00
+        BookingResponse b = seedBooking();
+        payInstallment(b, 1);
+        String oldPlotNo = jdbc.queryForObject("SELECT plot_no FROM plot WHERE id = ?", String.class, plotId);
+
+        BookingResponse after = bookingService.cancelBooking(b.id(),
+            new CancelBookingRequest("changed mind", new BigDecimal("35"), com.plotchain.expense.PayMode.UPI), associateId);
+
+        assertThat(after.cancellationCharge()).isEqualByComparingTo("52500.00");
+        assertThat(after.refundAmount()).isEqualByComparingTo("97500.00");
+        assertThat(jdbc.queryForObject("SELECT plot_no FROM plot WHERE id = ?", String.class, plotId)).isEqualTo(oldPlotNo + " New1");
+        assertThat(plotStatus()).isEqualTo("AVAILABLE");
+        Map<String, Object> exp = jdbc.queryForMap(
+            "SELECT t.name AS type_name, t.system AS sys, e.amount, e.pay_mode FROM expense e JOIN expense_type t ON t.id = e.expense_type_id "
+                + "WHERE e.remarks LIKE ?", "%booking " + b.id() + "%");
+        assertThat(exp.get("TYPE_NAME")).isEqualTo("Plot Cancellation Refund");
+        assertThat(exp.get("SYS")).isEqualTo(true);
+        assertThat((BigDecimal) exp.get("AMOUNT")).isEqualByComparingTo("97500.00");
+        assertThat(exp.get("PAY_MODE")).isEqualTo("UPI");
+        jdbc.update("DELETE FROM expense WHERE remarks LIKE ?", "%booking " + b.id() + "%");
+        jdbc.update("DELETE FROM settings_audit_log WHERE changed_by_associate_id = ?", associateId); // expense audit row
+    }
+
+    @Test
     void a255CharReasonFitsTheEventDetailColumnEvenWithTheLongestSuffix() {
         setConfig(true, 4);
         BookingResponse b = seedBooking();

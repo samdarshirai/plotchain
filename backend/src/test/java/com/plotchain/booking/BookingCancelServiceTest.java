@@ -1,6 +1,11 @@
 package com.plotchain.booking;
 
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.expense.ExpenseRequest;
+import com.plotchain.expense.ExpenseService;
+import com.plotchain.expense.PayMode;
+import com.plotchain.expensetype.ExpenseType;
+import com.plotchain.expensetype.ExpenseTypeRepository;
 import com.plotchain.payments.BookingEmiConfig;
 import com.plotchain.payments.BookingEmiConfigRepository;
 import com.plotchain.projects.Plot;
@@ -48,6 +53,8 @@ class BookingCancelServiceTest {
     @Mock EmiInstallmentRepository emiInstallmentRepository;
     @Mock BookingEventRepository bookingEventRepository;
     @Mock SaleService saleService;
+    @Mock ExpenseService expenseService;
+    @Mock ExpenseTypeRepository expenseTypeRepository;
 
     private BookingService bookingService;
     private static final UUID PLOT_ID = UUID.randomUUID();
@@ -60,7 +67,8 @@ class BookingCancelServiceTest {
     void setUp() {
         bookingService = new BookingService(
             plotRepository, projectRepository, associateRepository, bookingEmiConfigRepository,
-            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService, clock);
+            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService,
+            expenseService, expenseTypeRepository, clock);
     }
 
     private EmiInstallment inst(int n, String amount, LocalDate due, InstallmentStatus status) {
@@ -293,5 +301,73 @@ class BookingCancelServiceTest {
         bookingService.cancelBooking(b.getId(), req("x"), ACTOR_ID);
 
         verify(plotBookingRepository, never()).findFirstByPlotIdAndIdNotAndStatusIn(any(), any(), any());
+    }
+
+    // ---- Plot Cancel: charge %, refund expense, plot rename ----
+
+    private CancelBookingRequest chargeReq(String pct, PayMode mode) {
+        return new CancelBookingRequest("changed mind", new BigDecimal(pct), mode);
+    }
+
+    @Test
+    void cancelWithChargeStoresChargeAndRefundRenamesPlotAndPostsRefundExpense() {
+        EmiInstallment paid = inst(1, "150000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID);
+        EmiInstallment p2 = inst(2, "450000.00", LocalDate.of(2026, 8, 1), InstallmentStatus.PENDING);
+        PlotBooking b = locked(PlotStatus.BOOKED, paid, p2);
+        Plot plot = plot(PlotStatus.BOOKED);
+        when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(plot));
+        ExpenseType type = new ExpenseType(UUID.randomUUID());
+        type.setName("Plot Cancellation Refund");
+        when(expenseTypeRepository.findByNameIgnoreCase("Plot Cancellation Refund")).thenReturn(Optional.of(type));
+
+        BookingResponse r = bookingService.cancelBooking(b.getId(), chargeReq("35", PayMode.UPI), ACTOR_ID);
+
+        assertThat(b.getCancellationChargePct()).isEqualByComparingTo("35");
+        assertThat(b.getCancellationCharge()).isEqualByComparingTo("52500.00");
+        assertThat(b.getRefundAmount()).isEqualByComparingTo("97500.00");
+        assertThat(r.cancellationCharge()).isEqualByComparingTo("52500.00");
+        assertThat(r.refundAmount()).isEqualByComparingTo("97500.00");
+        assertThat(plot.getPlotNo()).isEqualTo("A-101 New1");
+        assertThat(plot.getStatus()).isEqualTo(PlotStatus.AVAILABLE);
+
+        ArgumentCaptor<ExpenseRequest> ex = ArgumentCaptor.forClass(ExpenseRequest.class);
+        verify(expenseService).create(ex.capture(), org.mockito.ArgumentMatchers.eq(ACTOR_ID));
+        assertThat(ex.getValue().expenseTypeId()).isEqualTo(type.getId());
+        assertThat(ex.getValue().amount()).isEqualByComparingTo("97500.00");
+        assertThat(ex.getValue().payMode()).isEqualTo(PayMode.UPI);
+        assertThat(ex.getValue().expenseDate()).isEqualTo(LocalDate.of(2026, 6, 15));
+    }
+
+    @Test
+    void cancelWithFullChargeLeavesNoRefundAndPostsNoExpense() {
+        EmiInstallment paid = inst(1, "150000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID);
+        PlotBooking b = locked(PlotStatus.BOOKED, paid);
+
+        bookingService.cancelBooking(b.getId(), chargeReq("100", null), ACTOR_ID);
+
+        assertThat(b.getRefundAmount()).isEqualByComparingTo("0");
+        verifyNoInteractions(expenseService);
+    }
+
+    @Test
+    void cancelWithRefundDueButNoPayModeIs400AndWritesNothing() {
+        EmiInstallment paid = inst(1, "150000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID);
+        EmiInstallment p2 = inst(2, "450000.00", LocalDate.of(2026, 8, 1), InstallmentStatus.PENDING);
+        PlotBooking b = locked(PlotStatus.BOOKED, paid, p2);
+
+        assertThatThrownBy(() -> bookingService.cancelBooking(b.getId(), chargeReq("35", null), ACTOR_ID))
+            .isInstanceOf(InvalidCancellationException.class);
+
+        assertThat(p2.getStatus()).isEqualTo(InstallmentStatus.PENDING);
+        assertThat(b.getStatus()).isEqualTo(BookingStatus.ACTIVE);
+        verify(emiInstallmentRepository, never()).saveAll(any());
+        verifyNoInteractions(expenseService);
+    }
+
+    @Test
+    void plotNumberSuffixCountsUpOnEveryCancel() {
+        assertThat(BookingService.bumpCancelSuffix("A-12")).isEqualTo("A-12 New1");
+        assertThat(BookingService.bumpCancelSuffix("A-12 New1")).isEqualTo("A-12 New2");
+        assertThat(BookingService.bumpCancelSuffix("A-12 New9")).isEqualTo("A-12 New10");
     }
 }

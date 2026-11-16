@@ -59,6 +59,11 @@ public class BookingExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(InvalidCancellationException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidCancellation(InvalidCancellationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(InvalidDiscountException.class)
     public ResponseEntity<Map<String, String>> handleInvalidDiscount(InvalidDiscountException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));

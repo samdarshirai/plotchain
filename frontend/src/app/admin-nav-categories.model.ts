@@ -84,6 +84,7 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
       { key: 'viewBookedPlot', labelKey: 'nav.plotBooking.viewBookedPlot', path: '/admin/settings/view-booked-plot' },
       { key: 'viewConfirmedPlot', labelKey: 'nav.plotBooking.viewConfirmedPlot', path: '/admin/settings/view-confirmed-plot' },
       { key: 'plotTransfer', labelKey: 'nav.plotBooking.plotTransfer', path: '/admin/settings/plot-transfer' },
+      { key: 'plotCancel', labelKey: 'nav.plotBooking.plotCancel', path: '/admin/settings/plot-cancel' },
       { key: 'viewPlotEmi', labelKey: 'nav.plotBooking.viewPlotEmi', path: '/admin/settings/view-plot-emi' },
       { key: 'emiReport', labelKey: 'nav.plotBooking.emiReport', path: '/admin/settings/emi-report' },
       { key: 'viewTransferredPlots', labelKey: 'nav.plotBooking.viewTransferredPlots', path: '/admin/settings/view-transferred-plot' },

@@ -47,7 +47,7 @@ class BookingTopUpServiceTest {
     void setUp() {
         bookingService = new BookingService(
             plotRepository, projectRepository, associateRepository, bookingEmiConfigRepository,
-            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService,
+            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService, null, null,
             Clock.fixed(NOW, ZoneOffset.UTC));
     }
 

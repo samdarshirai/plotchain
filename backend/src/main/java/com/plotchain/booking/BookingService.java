@@ -4,6 +4,9 @@ import com.plotchain.common.Money;
 import com.plotchain.associate.Associate;
 import com.plotchain.associate.AssociateNotFoundException;
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.expense.ExpenseRequest;
+import com.plotchain.expense.ExpenseService;
+import com.plotchain.expensetype.ExpenseTypeRepository;
 import com.plotchain.payments.BookingEmiConfig;
 import com.plotchain.payments.BookingEmiConfigRepository;
 import com.plotchain.projects.Plot;
@@ -45,6 +48,8 @@ public class BookingService {
     private final EmiInstallmentRepository emiInstallmentRepository;
     private final BookingEventRepository bookingEventRepository;
     private final SaleService saleService;
+    private final ExpenseService expenseService;
+    private final ExpenseTypeRepository expenseTypeRepository;
     private final Clock clock;
 
     public BookingService(
@@ -56,8 +61,12 @@ public class BookingService {
             EmiInstallmentRepository emiInstallmentRepository,
             BookingEventRepository bookingEventRepository,
             SaleService saleService,
+            ExpenseService expenseService,
+            ExpenseTypeRepository expenseTypeRepository,
             Clock clock) {
         this.saleService = saleService;
+        this.expenseService = expenseService;
+        this.expenseTypeRepository = expenseTypeRepository;
         this.clock = clock;
         this.bookingEventRepository = bookingEventRepository;
         this.plotRepository = plotRepository;
@@ -425,6 +434,17 @@ public class BookingService {
 
         List<EmiInstallment> installments =
             emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId);
+        BigDecimal paidExact = sumByStatus(installments, InstallmentStatus.PAID);
+        BigDecimal chargePct = request.chargePct();
+        BigDecimal charge = null;
+        BigDecimal refund = null;
+        if (chargePct != null) {
+            charge = paidExact.multiply(chargePct).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            refund = paidExact.subtract(charge);
+            if (refund.signum() > 0 && request.payMode() == null) {
+                throw new InvalidCancellationException("Pay mode is required to record the refund");
+            }
+        }
         int voidedEntered = 0;
         for (EmiInstallment installment : installments) {
             if (installment.getStatus() == InstallmentStatus.ENTERED) {
@@ -437,6 +457,7 @@ public class BookingService {
         emiInstallmentRepository.saveAll(installments);
 
         String plotNote = "";
+        boolean plotFreed = false;
         if (plot.getStatus() == PlotStatus.BOOKED) {
             // Stale-booking guard: runs under the booking + plot locks. If the plot drifted and another
             // live booking now holds it, freeing it would double-sell it; keep it and say so.
@@ -447,6 +468,7 @@ public class BookingService {
             } else {
                 plot.setStatus(PlotStatus.AVAILABLE);
                 plotRepository.save(plot);
+                plotFreed = true;
             }
         } else {
             plotNote = "; plot left " + plot.getStatus();
@@ -457,14 +479,58 @@ public class BookingService {
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setCancelledAt(now);
         booking.setCancelReason(reason);
+
+        String chargeNote = "";
+        if (chargePct != null) {
+            booking.setCancellationCharge(chargePct, charge, refund);
+            String oldPlotNo = plot.getPlotNo();
+            // Only a freed plot is renamed: if another live booking still holds it, renaming would mislabel that booking.
+            if (plotFreed) {
+                plot.setPlotNo(nextCancelledPlotNo(plot.getProjectId(), oldPlotNo));
+                plotRepository.save(plot);
+            }
+            chargeNote = "; charge " + chargePct.stripTrailingZeros().toPlainString() + "%: " + charge.toPlainString()
+                + "; refund: " + refund.toPlainString()
+                + (plotFreed ? "; plot renamed " + oldPlotNo + " -> " + plot.getPlotNo() : "");
+            if (refund.signum() > 0) {
+                postRefundExpense(booking, plot, refund, request.payMode(), reason, actorId);
+            }
+        }
         plotBookingRepository.save(booking);
 
-        BigDecimal paid = sumByStatus(installments, InstallmentStatus.PAID).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal paid = paidExact.setScale(0, RoundingMode.HALF_UP);
         bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.CANCELLED, actorId,
             "reason: " + reason + "; paid: " + paid.toPlainString()
-                + "; unconfirmed payments voided: " + voidedEntered + plotNote, now));
+                + "; unconfirmed payments voided: " + voidedEntered + plotNote + chargeNote, now));
 
         return toResponse(booking, installments);
+    }
+
+    static final String REFUND_EXPENSE_TYPE = "Plot Cancellation Refund";
+    private static final java.util.regex.Pattern CANCEL_SUFFIX = java.util.regex.Pattern.compile("^(.*) New(\\d+)$");
+
+    // "A-12" -> "A-12 New1" -> "A-12 New2": the counter goes up on every cancel of the same plot.
+    static String bumpCancelSuffix(String plotNo) {
+        java.util.regex.Matcher m = CANCEL_SUFFIX.matcher(plotNo);
+        return m.matches() ? m.group(1) + " New" + (Integer.parseInt(m.group(2)) + 1) : plotNo + " New1";
+    }
+
+    // Keeps bumping until the name is free in the project (UNIQUE (project_id, plot_no)).
+    private String nextCancelledPlotNo(UUID projectId, String plotNo) {
+        String next = bumpCancelSuffix(plotNo);
+        while (!plotRepository.findAllByProjectIdAndPlotNoIn(projectId, List.of(next)).isEmpty()) {
+            next = bumpCancelSuffix(next);
+        }
+        return next;
+    }
+
+    private void postRefundExpense(PlotBooking booking, Plot plot, BigDecimal refund,
+                                   com.plotchain.expense.PayMode payMode, String reason, UUID actorId) {
+        UUID typeId = expenseTypeRepository.findByNameIgnoreCase(REFUND_EXPENSE_TYPE)
+            .orElseThrow(() -> new IllegalStateException("expense type missing: " + REFUND_EXPENSE_TYPE)).getId();
+        String payTo = associateRepository.findById(booking.getAssociateId()).map(Associate::getName).orElse("Associate");
+        expenseService.create(new ExpenseRequest(LocalDate.now(clock), typeId, plot.getProjectId(), payTo, refund, payMode,
+            null, null, "Plot " + plot.getPlotNo() + " cancelled; booking " + booking.getId() + "; " + reason), actorId);
     }
 
     // Admin moves an ACTIVE booking to another AVAILABLE plot of the same project. Prices come from the
@@ -754,7 +820,8 @@ public class BookingService {
                 booking.getExtraPrice(),
                 associate == null ? null : associate.getPhone(),
                 booking.getCancelReason(),
-                plot == null ? null : plot.getRoadSizeFt());
+                plot == null ? null : plot.getRoadSizeFt(),
+                booking.getCancellationChargePct(), booking.getCancellationCharge(), booking.getRefundAmount());
         }).toList();
     }
 

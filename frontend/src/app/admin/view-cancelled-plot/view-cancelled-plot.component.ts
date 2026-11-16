@@ -83,6 +83,9 @@ const isoDate = (d: Date): string => {
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">account_balance_wallet</span>{{ 'admin.addPlotEmi.col.remaining' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.bookingsEmi.col.cancelledOn' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">notes</span>{{ 'admin.bookingsEmi.col.cancelReason' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">percent</span>{{ 'admin.bookingsEmi.col.cancellationChargePct' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.bookingsEmi.col.cancellationCharge' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">undo</span>{{ 'admin.bookingsEmi.col.refundAmount' | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -106,9 +109,12 @@ const isoDate = (d: Date): string => {
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.remaining' | translate">{{ money(b.dueAmount) }}</td>
                 <td [attr.data-label]="'admin.bookingsEmi.col.cancelledOn' | translate">{{ b.cancelledAt ? (b.cancelledAt | date: 'd MMM y, h:mm:ss a' : '+0530') : '—' }}</td>
                 <td [attr.data-label]="'admin.bookingsEmi.col.cancelReason' | translate">{{ b.cancelReason || '—' }}</td>
+                <td class="add-plot-emi__num" [attr.data-label]="'admin.bookingsEmi.col.cancellationChargePct' | translate">{{ b.cancellationChargePct != null ? b.cancellationChargePct + '%' : '—' }}</td>
+                <td class="add-plot-emi__num" [attr.data-label]="'admin.bookingsEmi.col.cancellationCharge' | translate">{{ b.cancellationCharge != null ? money(b.cancellationCharge) : '—' }}</td>
+                <td class="add-plot-emi__num" [attr.data-label]="'admin.bookingsEmi.col.refundAmount' | translate">{{ b.refundAmount != null ? money(b.refundAmount) : '—' }}</td>
               </tr>
               <tr *ngIf="!page?.bookings?.length">
-                <td class="add-plot-emi__empty-cell" [attr.colspan]="19">{{ 'admin.viewCancelledPlot.empty' | translate }}</td>
+                <td class="add-plot-emi__empty-cell" [attr.colspan]="22">{{ 'admin.viewCancelledPlot.empty' | translate }}</td>
               </tr>
             </tbody>
           <tfoot *ngIf="page?.bookings?.length">
@@ -132,6 +138,9 @@ const isoDate = (d: Date): string => {
               <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.remaining' | translate">{{ money(sumOf('dueAmount')) }}</td>
               <td></td>
               <td></td>
+              <td></td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.bookingsEmi.col.cancellationCharge' | translate">{{ money(sumOf('cancellationCharge')) }}</td>
+              <td class="add-plot-emi__num" [attr.data-label]="'admin.bookingsEmi.col.refundAmount' | translate">{{ money(sumOf('refundAmount')) }}</td>
             </tr>
           </tfoot>
           </table>
@@ -151,6 +160,7 @@ export class ViewCancelledPlotComponent implements OnInit {
 
   projects: Project[] = [];
   projectId = '';
+  plotNo = '';
   from = isoDate(new Date(Date.now() - 30 * 864e5));
   to = isoDate(new Date());
   page: BookingPage | null = null;
@@ -160,7 +170,6 @@ export class ViewCancelledPlotComponent implements OnInit {
   private seq = 0;
 
   ngOnInit(): void {
-  plotNo = '';
     this.projectsService.listProjects().subscribe({
       next: p => { this.projects = p; this.projectId = p[0]?.id ?? ''; this.load(); },
       error: () => (this.loadError = true)
@@ -177,6 +186,7 @@ export class ViewCancelledPlotComponent implements OnInit {
   }
 
   onProject(id: string): void { this.projectId = id; this.load(); }
+  onPlot(v: string): void { this.plotNo = v.trim(); this.load(); }
 
   onDate(which: 'from' | 'to', v: string): void {
     this[which] = v;
@@ -186,7 +196,6 @@ export class ViewCancelledPlotComponent implements OnInit {
 
   private filters(): RegisterFilters {
     return { status: 'CANCELLED', associateId: this.associateId, plotId: '', projectId: this.projectId, overdue: false,
-  onPlot(v: string): void { this.plotNo = v.trim(); this.load(); }
       cancelledFrom: this.from, cancelledTo: this.to, plotNo: this.plotNo };
   }
 

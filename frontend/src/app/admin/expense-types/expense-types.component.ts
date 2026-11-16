@@ -44,7 +44,8 @@ import { TableToolsComponent } from '../../shared/components/table-tools/table-t
       </div>
       <ng-template #actionsTpl let-i="index">
         <div class="expense-types__actions">
-          <button type="button" class="expense-types__edit brand-button" (click)="openModal(items[i])">
+          <span *ngIf="items[i]?.system">{{ 'admin.expenseTypes.systemType' | translate }}</span>
+          <button *ngIf="!items[i]?.system" type="button" class="expense-types__edit brand-button" (click)="openModal(items[i])">
             {{ 'admin.expenseTypes.editAction' | translate }}
           </button>
         </div>

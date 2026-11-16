@@ -65,6 +65,11 @@ export class BookingsEmiService {
     return this.http.post<Booking>(`/api/admin/bookings/${id}/cancel`, { reason });
   }
 
+  // Plot Cancel: chargePct is a % of the amount paid; the server renames the plot and posts the refund expense.
+  cancelWithCharge(id: string, req: { reason: string; chargePct: number; payMode: string | null }): Observable<Booking> {
+    return this.http.post<Booking>(`/api/admin/bookings/${id}/cancel`, req);
+  }
+
   transferPlot(id: string, plotId: string): Observable<Booking> {
     return this.http.post<Booking>(`/api/admin/bookings/${id}/transfer-plot`, { plotId });
   }

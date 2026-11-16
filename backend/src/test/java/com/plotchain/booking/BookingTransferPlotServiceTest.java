@@ -54,7 +54,7 @@ class BookingTransferPlotServiceTest {
     void setUp() {
         bookingService = new BookingService(
             plotRepository, projectRepository, associateRepository, bookingEmiConfigRepository,
-            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService, clock);
+            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService, null, null, clock);
     }
 
     private Plot plot(String no, String price, PlotStatus status, UUID projectId) {

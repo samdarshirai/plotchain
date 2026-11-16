@@ -21,6 +21,8 @@ public class ExpenseType {
     private String name;
     @Enumerated(EnumType.STRING)
     private Status status;
+    @Column(name = "system")
+    private boolean system;
     @Column(name = "created_at")
     private Instant createdAt;
     @Column(name = "updated_at")
@@ -40,6 +42,7 @@ public class ExpenseType {
     public void setName(String name) { this.name = name; }
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
+    public boolean isSystem() { return system; }
     public Instant getCreatedAt() { return createdAt; }
     public void touch() { this.updatedAt = Instant.now(); }
 }

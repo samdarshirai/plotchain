@@ -71,7 +71,7 @@ class BookingServiceTest {
     void setUp() {
         bookingService = new BookingService(
             plotRepository, projectRepository, associateRepository, bookingEmiConfigRepository,
-            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService, clock);
+            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService, null, null, clock);
     }
 
     private PlotBooking bookingWithBuyer() {

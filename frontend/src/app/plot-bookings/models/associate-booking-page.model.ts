@@ -48,6 +48,9 @@ export interface Booking {
   associatePhone?: string | null;
   cancelReason?: string | null;
   roadSizeFt?: number | null;
+  cancellationChargePct?: number | null;
+  cancellationCharge?: number | null;
+  refundAmount?: number | null;
 }
 
 export interface AssociateBookingPage {
