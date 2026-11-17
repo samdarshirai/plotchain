@@ -58,7 +58,7 @@ describe('PlotTransferComponent', () => {
     component.payMode = '';
     expect(component.transferRefundOk()).toBe(false);
     component.payMode = 'CASH';
-    component.chargePct = 20; // below the 35% minimum
+    component.chargePct = -1; // below 0
     expect(component.transferRefundOk()).toBe(false);
   });
 

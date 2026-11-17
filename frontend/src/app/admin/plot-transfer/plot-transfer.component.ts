@@ -252,7 +252,7 @@ const isoDate = (d: Date): string => {
             <p class="add-plot-emi__hint">{{ 'admin.plotTransfer.refund.intro' | translate: { excess: money(transferExcess(b)) } }}</p>
             <div class="plot-cancel__form">
               <label class="add-plot-emi__field">{{ 'admin.plotCancel.chargePct' | translate }}
-                <input type="number" name="trChargePct" min="35" max="100" step="0.01" [(ngModel)]="chargePct" />
+                <input type="number" name="trChargePct" min="0" max="100" step="0.01" [(ngModel)]="chargePct" />
                 <app-field-error [message]="!pctValid() ? ('admin.plotCancel.chargePctError' | translate) : undefined"></app-field-error>
               </label>
               <label class="add-plot-emi__field">{{ 'admin.plotCancel.charge' | translate }}
@@ -327,7 +327,7 @@ const isoDate = (d: Date): string => {
             <ng-container *ngIf="refundRest">
               <div class="plot-cancel__form">
                 <label class="add-plot-emi__field">{{ 'admin.plotCancel.chargePct' | translate }}
-                  <input type="number" name="mvChargePct" min="35" max="100" step="0.01" [(ngModel)]="chargePct" />
+                  <input type="number" name="mvChargePct" min="0" max="100" step="0.01" [(ngModel)]="chargePct" />
                   <app-field-error [message]="!pctValid() ? ('admin.plotCancel.chargePctError' | translate) : undefined"></app-field-error>
                 </label>
                 <label class="add-plot-emi__field">{{ 'admin.plotCancel.charge' | translate }}
@@ -390,8 +390,8 @@ export class PlotTransferComponent implements OnInit {
   plotsLoading = false;
   private seq = 0;
 
-  // Refund popup state shared by the cheaper-plot transfer and the move-money leftover (35% minimum, as in Plot Cancel).
-  readonly minPct = 35;
+  // Refund popup state shared by the cheaper-plot transfer and the move-money leftover.
+  readonly minPct = 0;
   readonly payModes = PAY_MODES;
   chargePct: number | null = this.minPct;
   payMode: PayMode | '' = 'CASH';

@@ -33,20 +33,20 @@ describe('PlotCancelComponent', () => {
       component.openCancel(booking);
     });
 
-    it('starts at the 35% minimum and computes charge and refund from the amount paid', () => {
-      expect(component.chargePct).toBe(35);
+    it('starts at 0% and computes charge and refund from the amount paid', () => {
+      expect(component.chargePct).toBe(0);
       expect(component.payMode).toBe('CASH');
-      expect(component.charge()).toBe(52500);
-      expect(component.refund()).toBe(97500);
+      expect(component.charge()).toBe(0);
+      expect(component.refund()).toBe(150000);
       component.chargePct = 50;
       expect(component.charge()).toBe(75000);
       expect(component.refund()).toBe(75000);
     });
 
-    it('treats a percentage below 35 or above 100 as invalid and sends nothing', () => {
+    it('treats a percentage below 0 or above 100 as invalid and sends nothing', () => {
       component.cancelReason = 'x';
       component.payMode = 'UPI';
-      for (const bad of [34.99, 100.01, null]) {
+      for (const bad of [-0.01, 100.01, null]) {
         component.chargePct = bad;
         expect(component.pctValid()).toBe(false);
         component.confirmCancel();

@@ -222,7 +222,7 @@ const isoDate = (d: Date): string => {
 
         <div class="plot-cancel__form">
           <label class="add-plot-emi__field">{{ 'admin.plotCancel.chargePct' | translate }}
-            <input type="number" name="chargePct" min="35" max="100" step="0.01" [(ngModel)]="chargePct" />
+            <input type="number" name="chargePct" min="0" max="100" step="0.01" [(ngModel)]="chargePct" />
             <app-field-error [message]="!pctValid() ? ('admin.plotCancel.chargePctError' | translate) : undefined"></app-field-error>
           </label>
           <label class="add-plot-emi__field">{{ 'admin.plotCancel.charge' | translate }}
@@ -274,7 +274,7 @@ export class PlotCancelComponent implements OnInit {
   detailError = false;
   flash = '';
   saving = false;
-  readonly minPct = 35;
+  readonly minPct = 0;
   readonly payModes = PAY_MODES;
   cancelFor: Booking | null = null;
   cancelError = '';
