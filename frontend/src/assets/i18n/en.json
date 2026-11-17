@@ -1469,7 +1469,7 @@
     "plotCancel": {
       "title": "Plot Cancel", "subtitle": "Active bookings that can be cancelled. Open Detail for the full booking, or Cancel to set the cancellation charge and refund.",
       "cancel": "Cancel", "modalTitle": "Cancel Plot",
-      "chargePct": "Cancellation charge % (minimum 35)", "chargePctError": "Enter a percentage from 35 to 100.",
+      "chargePct": "Cancellation charge %", "chargePctError": "Enter a percentage from 0 to 100.",
       "charge": "Cancellation charge", "refund": "Refund to associate", "payMode": "Refund pay mode", "payModeRequired": "Choose how the refund is paid.",
       "effects": "The charge is a percentage of the amount paid. The refund is posted under the Plot Cancellation Refund expense type, the plot becomes Available and its number gets a \"New\" suffix.",
       "success": "Plot {{plot}} cancelled.",

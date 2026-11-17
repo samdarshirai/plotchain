@@ -88,6 +88,7 @@ for (const width of [390, 800, 1280]) {
       await expect(amount).toHaveValue('150000'); // min(paid 150000, target due 300000)
       await amount.fill('100000'); // 50000 stays behind: keep or refund
       await modal.locator('input[name=moveRest][type=radio]').nth(1).check(); // refund -> cancel this plot
+      await modal.locator('input[name=mvChargePct]').fill('35');
       await expect(modal.locator('input[name=mvCharge]')).toHaveValue(/17,500/); // 35% of 50000
       await expect(modal.locator('input[name=mvRefund]')).toHaveValue(/32,500/);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
@@ -107,10 +108,12 @@ for (const width of [390, 800, 1280]) {
       await page.getByRole('button', { name: 'Transfer', exact: true }).click();
       const modal = page.locator('.add-plot-emi__modal');
       await modal.locator('.add-plot-emi__plot').first().click();
-      // paid 150000, new total 100000 -> excess 50000: 35% charge 17,500, refund 32,500
+      // paid 150000, new total 100000 -> excess 50000: default 0% charge; 35% gives charge 17,500, refund 32,500
+      await expect(modal.locator('input[name=trChargePct]')).toHaveValue('0');
+      await modal.locator('input[name=trChargePct]').fill('35');
       await expect(modal.locator('input[name=trCharge]')).toHaveValue(/17,500/);
       await expect(modal.locator('input[name=trRefund]')).toHaveValue(/32,500/);
-      await modal.locator('input[name=trChargePct]').fill('20'); // below 35%: Confirm is blocked
+      await modal.locator('input[name=trChargePct]').fill('-1'); // below 0%: Confirm is blocked
       await expect(modal.getByRole('button', { name: 'Confirm transfer', exact: true })).toBeDisabled();
       await modal.locator('input[name=trChargePct]').fill('35');
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
@@ -161,7 +164,8 @@ for (const width of [390, 800, 1280]) {
         expect(chg.x).toBeCloseTo(pct.x, 0);
         expect(chg.y).toBeGreaterThan(pct.y + pct.height - 1);
       }
-      await expect(modal.locator('input[name=chargePct]')).toHaveValue('35');
+      await expect(modal.locator('input[name=chargePct]')).toHaveValue('0');
+      await modal.locator('input[name=chargePct]').fill('35');
       await expect(charge).toHaveValue(/52,500/);
       await expect(refund).toHaveValue(/97,500/);
 
@@ -169,8 +173,8 @@ for (const width of [390, 800, 1280]) {
       expect(await modal.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
-      await modal.locator('input[name=chargePct]').fill('20');
-      await expect(modal).toContainText('35 to 100');
+      await modal.locator('input[name=chargePct]').fill('-1');
+      await expect(modal).toContainText('0 to 100');
       await modal.locator('input[name=chargePct]').fill('50');
       await expect(charge).toHaveValue(/75,000/);
       await expect(refund).toHaveValue(/75,000/);
