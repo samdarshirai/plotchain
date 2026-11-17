@@ -70,8 +70,15 @@ export class BookingsEmiService {
     return this.http.post<Booking>(`/api/admin/bookings/${id}/cancel`, req);
   }
 
-  transferPlot(id: string, plotId: string): Observable<Booking> {
-    return this.http.post<Booking>(`/api/admin/bookings/${id}/transfer-plot`, { plotId });
+  // chargePct/payMode are only needed when the new plot is worth less than the amount paid (excess is refunded).
+  transferPlot(id: string, plotId: string, refund?: { chargePct: number; payMode: string | null }): Observable<Booking> {
+    return this.http.post<Booking>(`/api/admin/bookings/${id}/transfer-plot`, { plotId, ...refund });
+  }
+
+  // Moves paid money to another booking of the same buyer; refundRemainder cancels this booking and refunds the rest.
+  moveMoney(id: string, req: { targetBookingId: string; amount: number; refundRemainder: boolean;
+                               chargePct: number | null; payMode: string | null; reason: string | null }): Observable<Booking> {
+    return this.http.post<Booking>(`/api/admin/bookings/${id}/move-money`, req);
   }
 
 }

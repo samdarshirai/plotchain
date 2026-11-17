@@ -51,7 +51,7 @@ class BookingTransferPlotControllerTest {
         BookingResponse updated = new BookingResponse(bookingId, plotId, UUID.randomUUID(),
             BookingStatus.ACTIVE, "Jane Buyer", new BigDecimal("600000.00"), 1, Instant.now(),
             BigDecimal.ZERO, new BigDecimal("600000.00"), List.of());
-        when(bookingService.transferPlot(bookingId, plotId, adminId)).thenReturn(updated);
+        when(bookingService.transferPlot(bookingId, new TransferPlotRequest(plotId), adminId)).thenReturn(updated);
 
         mockMvc.perform(post("/api/admin/bookings/{id}/transfer-plot", bookingId)
                 .header("Authorization", "Bearer " + tokenFor(adminId, AssociateRole.ADMIN))
@@ -63,7 +63,7 @@ class BookingTransferPlotControllerTest {
     @Test
     void mapsInvalidTransferTo400() throws Exception {
         UUID bookingId = UUID.randomUUID(), plotId = UUID.randomUUID(), adminId = UUID.randomUUID();
-        when(bookingService.transferPlot(bookingId, plotId, adminId))
+        when(bookingService.transferPlot(bookingId, new TransferPlotRequest(plotId), adminId))
             .thenThrow(new InvalidPlotTransferException("Target plot must be in the same project"));
 
         mockMvc.perform(post("/api/admin/bookings/{id}/transfer-plot", bookingId)

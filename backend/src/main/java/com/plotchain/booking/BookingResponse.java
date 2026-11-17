@@ -36,8 +36,24 @@ public record BookingResponse(
     BigDecimal roadSizeFt,
     BigDecimal cancellationChargePct,
     BigDecimal cancellationCharge,
-    BigDecimal refundAmount
+    BigDecimal refundAmount,
+    UUID buyerAssociateId
 ) {
+    // Pre-buyerAssociateId shape, kept so existing callers need no change.
+    public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
+                           BigDecimal totalAmount, int installmentCount, Instant bookedAt,
+                           BigDecimal paidAmount, BigDecimal dueAmount, List<EmiInstallmentResponse> installments,
+                           String plotNo, String projectName, String associateName,
+                           String buyerPhone, BigDecimal listPrice, BigDecimal discount, BigDecimal areaSqft,
+                           BigDecimal rate, Instant cancelledAt, String associateCode, PlotType plotType,
+                           BigDecimal extraPrice, String associatePhone, String cancelReason, BigDecimal roadSizeFt,
+                           BigDecimal cancellationChargePct, BigDecimal cancellationCharge, BigDecimal refundAmount) {
+        this(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
+            paidAmount, dueAmount, installments, plotNo, projectName, associateName, buyerPhone, listPrice,
+            discount, areaSqft, rate, cancelledAt, associateCode, plotType, extraPrice, associatePhone,
+            cancelReason, roadSizeFt, cancellationChargePct, cancellationCharge, refundAmount, null);
+    }
+
     // Pre-cancellation-charge shape, kept so existing callers need no change.
     public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
                            BigDecimal totalAmount, int installmentCount, Instant bookedAt,

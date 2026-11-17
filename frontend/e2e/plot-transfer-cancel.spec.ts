@@ -10,8 +10,10 @@ const booking = {
   id: 'b1', plotId: 'pl1', associateId: 'a1', status: 'ACTIVE', buyerName: 'Buyer With A Longer Display Name', buyerPhone: '9876543210',
   totalAmount: 600000, installmentCount: 4, bookedAt: '2026-10-01T12:00:00Z', paidAmount: 150000, dueAmount: 450000, installments: [],
   plotNo: 'A-101 New1', projectName: 'A Residential Project With A Rather Long Name', associateName: 'Sponsor With A Longer Display Name',
-  associateCode: 'VP00001', associatePhone: '9876543210', plotType: 'NORMAL', areaSqft: 1200, rate: 500, extraPrice: 0, discount: 0
+  associateCode: 'VP00001', associatePhone: '9876543210', plotType: 'NORMAL', areaSqft: 1200, rate: 500, extraPrice: 0, discount: 0,
+  buyerAssociateId: 'u1'
 };
+const sibling = { ...booking, id: 'b2', plotId: 'pl3', plotNo: 'A-102', paidAmount: 700000, dueAmount: 300000, totalAmount: 1000000 };
 const cancelled = {
   ...booking, status: 'CANCELLED', cancelledAt: '2026-10-05T12:00:00Z', cancelReason: 'Buyer changed their mind about the purchase',
   cancellationChargePct: 35, cancellationCharge: 52500, refundAmount: 97500
@@ -71,6 +73,50 @@ for (const width of [390, 800, 1280]) {
       await open(page, 'plot-transfer');
       await expect(page.getByRole('button', { name: 'Transfer', exact: true })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0);
+    });
+
+    test('plot-transfer Move money popup fits, defaults the amount and posts the refund choice', async ({ page }) => {
+      await setup(page, [booking, sibling]);
+      let posted: unknown = null;
+      await page.route('**/api/admin/bookings/b1/move-money', r => { posted = r.request().postDataJSON(); return r.fulfill({ json: {} }); });
+      await page.goto('/admin/settings/plot-transfer', { waitUntil: 'networkidle' });
+      await page.getByRole('button', { name: 'Move money', exact: true }).first().click();
+      const modal = page.locator('.add-plot-emi__modal');
+      await expect(modal).toBeVisible();
+      await modal.locator('.add-plot-emi__plot').first().click();
+      const amount = modal.locator('input[name=moveAmount]');
+      await expect(amount).toHaveValue('150000'); // min(paid 150000, target due 300000)
+      await amount.fill('100000'); // 50000 stays behind: keep or refund
+      await modal.locator('input[name=moveRest][type=radio]').nth(1).check(); // refund -> cancel this plot
+      await expect(modal.locator('input[name=mvCharge]')).toHaveValue(/17,500/); // 35% of 50000
+      await expect(modal.locator('input[name=mvRefund]')).toHaveValue(/32,500/);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      expect(await modal.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+      await modal.locator('textarea[name=mvReason]').fill('Customer asked');
+      await modal.getByRole('button', { name: 'Move money', exact: true }).click();
+      await expect.poll(() => posted).toEqual({ targetBookingId: 'b2', amount: 100000, refundRemainder: true, chargePct: 35, payMode: 'CASH', reason: 'Customer asked' });
+    });
+
+    test('plot-transfer to a cheaper plot shows the refund form, fits and posts charge and pay mode', async ({ page }) => {
+      await setup(page, [booking]);
+      await page.route('**/api/projects/p1/plots/grid', r => r.fulfill({ json: [
+        { plotId: 'pl9', plotNo: 'A-109', type: 'NORMAL', area: 800, price: 100000, extraPrice: 0, status: 'AVAILABLE' }] }));
+      let posted: unknown = null;
+      await page.route('**/api/admin/bookings/b1/transfer-plot', r => { posted = r.request().postDataJSON(); return r.fulfill({ json: {} }); });
+      await open(page, 'plot-transfer');
+      await page.getByRole('button', { name: 'Transfer', exact: true }).click();
+      const modal = page.locator('.add-plot-emi__modal');
+      await modal.locator('.add-plot-emi__plot').first().click();
+      // paid 150000, new total 100000 -> excess 50000: 35% charge 17,500, refund 32,500
+      await expect(modal.locator('input[name=trCharge]')).toHaveValue(/17,500/);
+      await expect(modal.locator('input[name=trRefund]')).toHaveValue(/32,500/);
+      await modal.locator('input[name=trChargePct]').fill('20'); // below 35%: Confirm is blocked
+      await expect(modal.getByRole('button', { name: 'Confirm transfer', exact: true })).toBeDisabled();
+      await modal.locator('input[name=trChargePct]').fill('35');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      expect(await modal.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+      await modal.getByRole('button', { name: 'Confirm transfer', exact: true }).click();
+      await expect.poll(() => posted).toEqual({ plotId: 'pl9', chargePct: 35, payMode: 'CASH' });
     });
 
     test('view-cancelled-plot shows charge %, charge and refund', async ({ page }) => {

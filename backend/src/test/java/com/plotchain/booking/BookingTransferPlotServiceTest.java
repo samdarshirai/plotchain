@@ -1,6 +1,11 @@
 package com.plotchain.booking;
 
 import com.plotchain.associate.AssociateRepository;
+import com.plotchain.expense.ExpenseRequest;
+import com.plotchain.expense.ExpenseService;
+import com.plotchain.expense.PayMode;
+import com.plotchain.expensetype.ExpenseType;
+import com.plotchain.expensetype.ExpenseTypeRepository;
 import com.plotchain.payments.BookingEmiConfigRepository;
 import com.plotchain.projects.Plot;
 import com.plotchain.projects.PlotRepository;
@@ -30,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 // transferPlot: move an ACTIVE booking to another AVAILABLE plot of the same project, recalculating totals.
 @ExtendWith(MockitoExtension.class)
@@ -43,6 +49,8 @@ class BookingTransferPlotServiceTest {
     @Mock EmiInstallmentRepository emiInstallmentRepository;
     @Mock BookingEventRepository bookingEventRepository;
     @Mock SaleService saleService;
+    @Mock ExpenseService expenseService;
+    @Mock ExpenseTypeRepository expenseTypeRepository;
 
     private BookingService bookingService;
     private static final UUID ACTOR_ID = UUID.randomUUID();
@@ -54,7 +62,7 @@ class BookingTransferPlotServiceTest {
     void setUp() {
         bookingService = new BookingService(
             plotRepository, projectRepository, associateRepository, bookingEmiConfigRepository,
-            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService, null, null, clock);
+            plotBookingRepository, emiInstallmentRepository, bookingEventRepository, saleService, expenseService, expenseTypeRepository, clock);
     }
 
     private Plot plot(String no, String price, PlotStatus status, UUID projectId) {
@@ -157,14 +165,87 @@ class BookingTransferPlotServiceTest {
             .isInstanceOf(PlotNotAvailableException.class);
     }
 
+    // PAID 60000 + PENDING 40000 on a 100000 booking.
+    private PlotBooking paidHeavyBooking(Plot onPlot) {
+        PlotBooking b = booking(onPlot, BookingStatus.ACTIVE);
+        lenient().when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(b.getId()))
+            .thenReturn(List.of(inst(1, "60000.00", InstallmentStatus.PAID), inst(2, "40000.00", InstallmentStatus.PENDING)));
+        return b;
+    }
+
+    private void refundTypeExists() {
+        ExpenseType type = new ExpenseType(UUID.randomUUID());
+        type.setName("Plot Transfer Refund");
+        lenient().when(expenseTypeRepository.findByNameIgnoreCase("Plot Transfer Refund")).thenReturn(Optional.of(type));
+    }
+
     @Test
-    void rejectsTargetCheaperThanAlreadyPaid() {
+    void cheaperTargetRefundsExcessAfterChargeAndConfirmsBooking() {
         Plot oldPlot = plot("A-1", "100000.00", PlotStatus.BOOKED, PROJECT_ID);
-        Plot newPlot = plot("A-2", "30000.00", PlotStatus.AVAILABLE, PROJECT_ID);
-        PlotBooking b = booking(oldPlot, BookingStatus.ACTIVE);
+        Plot newPlot = plot("A-2", "40000.00", PlotStatus.AVAILABLE, PROJECT_ID);
+        PlotBooking b = paidHeavyBooking(oldPlot);
+        refundTypeExists();
+
+        BookingResponse r = bookingService.transferPlot(b.getId(),
+            new TransferPlotRequest(newPlot.getId(), new BigDecimal("35"), PayMode.CASH), ACTOR_ID);
+
+        BigDecimal newTotal = b.getTotalAmount();
+        BigDecimal excess = new BigDecimal("60000").subtract(newTotal);
+        BigDecimal refund = excess.subtract(excess.multiply(new BigDecimal("0.35")));
+        ArgumentCaptor<ExpenseRequest> ex = ArgumentCaptor.forClass(ExpenseRequest.class);
+        verify(expenseService).create(ex.capture(), org.mockito.ArgumentMatchers.eq(ACTOR_ID));
+        assertThat(ex.getValue().amount()).isEqualByComparingTo(refund);
+        assertThat(r.installments()).extracting(EmiInstallmentResponse::status)
+            .containsExactly(InstallmentStatus.PAID, InstallmentStatus.VOID);
+        assertThat(r.installments().get(0).amount()).isEqualByComparingTo(newTotal);
+        assertThat(b.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(newPlot.getStatus()).isEqualTo(PlotStatus.SOLD);
+        assertThat(oldPlot.getStatus()).isEqualTo(PlotStatus.AVAILABLE);
+    }
+
+    @Test
+    void cheaperTargetWithoutChargePctIsRejected() {
+        Plot oldPlot = plot("A-1", "100000.00", PlotStatus.BOOKED, PROJECT_ID);
+        Plot newPlot = plot("A-2", "40000.00", PlotStatus.AVAILABLE, PROJECT_ID);
+        PlotBooking b = paidHeavyBooking(oldPlot);
 
         assertThatThrownBy(() -> bookingService.transferPlot(b.getId(), newPlot.getId(), ACTOR_ID))
-            .isInstanceOf(InvalidPlotTransferException.class);
+            .isInstanceOf(InvalidPlotTransferException.class).hasMessageContaining("charge");
         verify(plotBookingRepository, never()).save(any());
+        verifyNoInteractions(expenseService);
+    }
+
+    @Test
+    void cheaperTargetRefundNeedsPayMode() {
+        Plot oldPlot = plot("A-1", "100000.00", PlotStatus.BOOKED, PROJECT_ID);
+        Plot newPlot = plot("A-2", "40000.00", PlotStatus.AVAILABLE, PROJECT_ID);
+        PlotBooking b = paidHeavyBooking(oldPlot);
+
+        assertThatThrownBy(() -> bookingService.transferPlot(b.getId(),
+            new TransferPlotRequest(newPlot.getId(), new BigDecimal("35"), null), ACTOR_ID))
+            .isInstanceOf(InvalidPlotTransferException.class).hasMessageContaining("Pay mode");
+    }
+
+    @Test
+    void targetEqualToPaidNeedsNoRefundAndConfirmsBooking() {
+        Plot oldPlot = plot("A-1", "100000.00", PlotStatus.BOOKED, PROJECT_ID);
+        Plot newPlot = plot("A-2", "60000.00", PlotStatus.AVAILABLE, PROJECT_ID);
+        PlotBooking b = paidHeavyBooking(oldPlot);
+
+        bookingService.transferPlot(b.getId(), newPlot.getId(), ACTOR_ID);
+
+        assertThat(b.getTotalAmount()).isEqualByComparingTo("60000.00");
+        assertThat(b.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        verifyNoInteractions(expenseService);
+    }
+
+    @Test
+    void unconfirmedPaymentsAboveCheaperTargetAreRejected() {
+        Plot oldPlot = plot("A-1", "100000.00", PlotStatus.BOOKED, PROJECT_ID);
+        Plot newPlot = plot("A-2", "20000.00", PlotStatus.AVAILABLE, PROJECT_ID);
+        PlotBooking b = booking(oldPlot, BookingStatus.ACTIVE); // PAID 10000 + ENTERED 20000
+
+        assertThatThrownBy(() -> bookingService.transferPlot(b.getId(), newPlot.getId(), ACTOR_ID))
+            .isInstanceOf(InvalidPlotTransferException.class).hasMessageContaining("unconfirmed");
     }
 }

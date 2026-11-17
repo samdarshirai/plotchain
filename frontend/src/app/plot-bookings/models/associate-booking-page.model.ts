@@ -51,6 +51,7 @@ export interface Booking {
   cancellationChargePct?: number | null;
   cancellationCharge?: number | null;
   refundAmount?: number | null;
+  buyerAssociateId?: string | null;
 }
 
 export interface AssociateBookingPage {

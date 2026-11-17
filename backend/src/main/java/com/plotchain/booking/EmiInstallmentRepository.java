@@ -91,6 +91,7 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
         JOIN PlotBooking b ON b.id = i.bookingId
         WHERE i.status = com.plotchain.booking.InstallmentStatus.PAID
         AND b.status <> com.plotchain.booking.BookingStatus.CONFIRMED
+        AND i.movedIn = false
         AND NOT EXISTS (SELECT 1 FROM Sale s WHERE s.emiInstallmentId = i.id)
         """)
     List<UUID> findBookingIdsWithUncreditedPayments();
@@ -98,6 +99,7 @@ public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, 
     @Query("""
         SELECT i FROM EmiInstallment i
         WHERE i.bookingId = :bookingId AND i.status = com.plotchain.booking.InstallmentStatus.PAID
+        AND i.movedIn = false
         AND NOT EXISTS (SELECT 1 FROM Sale s WHERE s.emiInstallmentId = i.id)
         ORDER BY i.installmentNumber ASC
         """)

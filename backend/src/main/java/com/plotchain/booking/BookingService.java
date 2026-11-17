@@ -526,19 +526,60 @@ public class BookingService {
 
     private void postRefundExpense(PlotBooking booking, Plot plot, BigDecimal refund,
                                    com.plotchain.expense.PayMode payMode, String reason, UUID actorId) {
-        UUID typeId = expenseTypeRepository.findByNameIgnoreCase(REFUND_EXPENSE_TYPE)
-            .orElseThrow(() -> new IllegalStateException("expense type missing: " + REFUND_EXPENSE_TYPE)).getId();
+        postRefundExpense(REFUND_EXPENSE_TYPE, booking, plot, refund, payMode,
+            "Plot " + plot.getPlotNo() + " cancelled; booking " + booking.getId() + "; " + reason, actorId);
+    }
+
+    private void postRefundExpense(String typeName, PlotBooking booking, Plot plot, BigDecimal refund,
+                                   com.plotchain.expense.PayMode payMode, String note, UUID actorId) {
+        UUID typeId = expenseTypeRepository.findByNameIgnoreCase(typeName)
+            .orElseThrow(() -> new IllegalStateException("expense type missing: " + typeName)).getId();
         String payTo = associateRepository.findById(booking.getAssociateId()).map(Associate::getName).orElse("Associate");
         expenseService.create(new ExpenseRequest(LocalDate.now(clock), typeId, plot.getProjectId(), payTo, refund, payMode,
-            null, null, "Plot " + plot.getPlotNo() + " cancelled; booking " + booking.getId() + "; " + reason), actorId);
+            null, null, note), actorId);
+    }
+
+    static final String TRANSFER_REFUND_EXPENSE_TYPE = "Plot Transfer Refund";
+
+    private static BigDecimal pct(BigDecimal amount, BigDecimal chargePct) {
+        return amount.multiply(chargePct).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
+
+    // Takes `amount` out of the PAID rows, latest first (fully taken -> VOID, partly -> reduced). The Sale/income
+    // already credited for those rows is NOT reversed (decision: no income reversal on transfer/move).
+    private static void takePaid(List<EmiInstallment> installments, BigDecimal amount) {
+        BigDecimal left = amount;
+        for (int k = installments.size() - 1; k >= 0 && left.signum() > 0; k--) {
+            EmiInstallment i = installments.get(k);
+            if (i.getStatus() != InstallmentStatus.PAID) { continue; }
+            if (left.compareTo(i.getAmount()) >= 0) {
+                left = left.subtract(i.getAmount());
+                i.setStatus(InstallmentStatus.VOID);
+            } else {
+                i.setAmount(i.getAmount().subtract(left));
+                left = BigDecimal.ZERO;
+            }
+        }
+    }
+
+    private static boolean fullyPaid(List<EmiInstallment> installments) {
+        List<EmiInstallment> live = installments.stream().filter(i -> i.getStatus() != InstallmentStatus.VOID).toList();
+        return !live.isEmpty() && live.stream().allMatch(i -> i.getStatus() == InstallmentStatus.PAID);
     }
 
     // Admin moves an ACTIVE booking to another AVAILABLE plot of the same project. Prices come from the
     // new plot (booking discount is kept); PAID/ENTERED money stays, PENDING rows become VOID and the new
     // balance is re-split over as many instalments, on the same due dates. Lock order: booking, then both
     // plots by ascending id so two crossing transfers cannot deadlock. Every 4xx precedes the first write.
-    @Transactional
     public BookingResponse transferPlot(UUID bookingId, UUID newPlotId, UUID actorId) {
+        return transferPlot(bookingId, new TransferPlotRequest(newPlotId), actorId);
+    }
+
+    // A target worth less than the PAID money is allowed: the excess is charged chargePct% and the rest refunded
+    // as a "Plot Transfer Refund" expense; the booking is then fully paid on the new plot (CONFIRMED, plot SOLD).
+    @Transactional
+    public BookingResponse transferPlot(UUID bookingId, TransferPlotRequest request, UUID actorId) {
+        UUID newPlotId = request.plotId();
         PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
             .orElseThrow(() -> new BookingNotFoundException(bookingId));
         if (booking.getStatus() != BookingStatus.ACTIVE) {
@@ -575,24 +616,40 @@ public class BookingService {
 
         List<EmiInstallment> installments = new ArrayList<>(
             emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
-        BigDecimal committed = sumByStatus(installments, InstallmentStatus.PAID)
-            .add(sumByStatus(installments, InstallmentStatus.ENTERED));
-        BigDecimal balance = newTotal.subtract(committed).setScale(0, RoundingMode.HALF_UP);
-        if (balance.signum() <= 0) {
+        BigDecimal paid = sumByStatus(installments, InstallmentStatus.PAID);
+        BigDecimal entered = sumByStatus(installments, InstallmentStatus.ENTERED);
+        BigDecimal excess = paid.subtract(newTotal).max(BigDecimal.ZERO);
+        BigDecimal charge = null;
+        BigDecimal refund = null;
+        if (excess.signum() > 0) {
+            if (request.chargePct() == null) {
+                throw new InvalidPlotTransferException("New plot total " + newTotal.toPlainString()
+                    + " is below the amount already paid " + paid.toPlainString() + ": a cancellation charge % is required");
+            }
+            charge = pct(excess, request.chargePct());
+            refund = excess.subtract(charge);
+            if (refund.signum() > 0 && request.payMode() == null) {
+                throw new InvalidPlotTransferException("Pay mode is required to record the refund");
+            }
+        } else if (paid.add(entered).compareTo(newTotal) > 0) {
             throw new InvalidPlotTransferException("New plot total " + newTotal.toPlainString()
-                + " does not exceed the amount already paid " + committed.toPlainString());
+                + " is below paid + unconfirmed payments " + paid.add(entered).toPlainString()
+                + ": confirm or void the unconfirmed payments first");
         }
+        BigDecimal committed = paid.subtract(excess).add(excess.signum() > 0 ? BigDecimal.ZERO : entered);
+        BigDecimal balance = newTotal.subtract(committed).setScale(0, RoundingMode.HALF_UP);
 
         List<LocalDate> dueDates = new ArrayList<>();
         for (EmiInstallment i : installments) {
-            if (i.getStatus() == InstallmentStatus.PENDING) {
+            if (i.getStatus() == InstallmentStatus.PENDING || (excess.signum() > 0 && i.getStatus() == InstallmentStatus.ENTERED)) {
+                if (i.getStatus() == InstallmentStatus.PENDING) { dueDates.add(i.getDueDate()); }
                 i.setStatus(InstallmentStatus.VOID);
-                dueDates.add(i.getDueDate());
             }
         }
+        takePaid(installments, excess);
         if (dueDates.isEmpty()) { dueDates.add(LocalDate.now(clock)); }
-        int count = dueDates.size();
-        BigDecimal base = balance.divide(BigDecimal.valueOf(count), 0, RoundingMode.DOWN);
+        int count = balance.signum() > 0 ? dueDates.size() : 0;
+        BigDecimal base = count == 0 ? BigDecimal.ZERO : balance.divide(BigDecimal.valueOf(count), 0, RoundingMode.DOWN);
         int nextNumber = installments.stream().mapToInt(EmiInstallment::getInstallmentNumber).max().orElse(0) + 1;
         BigDecimal running = BigDecimal.ZERO;
         for (int k = 0; k < count; k++) {
@@ -618,8 +675,15 @@ public class BookingService {
             .filter(i -> i.getStatus() != InstallmentStatus.VOID).count());
         plotBookingRepository.save(booking);
 
-        newPlot.setStatus(PlotStatus.BOOKED);
+        Instant now = clock.instant();
+        boolean completed = fullyPaid(installments);
+        newPlot.setStatus(completed ? PlotStatus.SOLD : PlotStatus.BOOKED);
         plotRepository.save(newPlot);
+        if (completed) {
+            booking.setStatus(BookingStatus.CONFIRMED);
+            booking.setConfirmedAt(now);
+            plotBookingRepository.save(booking);
+        }
         // Same stale-booking guard as cancel: never free a plot another live booking holds.
         String plotNote = "";
         if (oldPlot.getStatus() == PlotStatus.BOOKED) {
@@ -633,12 +697,176 @@ public class BookingService {
             }
         }
 
+        String refundNote = "";
+        if (refund != null) {
+            refundNote = "; charge " + request.chargePct().stripTrailingZeros().toPlainString() + "%: " + charge.toPlainString()
+                + "; refund: " + refund.toPlainString();
+            if (refund.signum() > 0) {
+                postRefundExpense(TRANSFER_REFUND_EXPENSE_TYPE, booking, newPlot, refund, request.payMode(),
+                    "Plot " + oldPlot.getPlotNo() + " transferred to " + newPlot.getPlotNo() + "; booking " + bookingId,
+                    actorId);
+            }
+        }
         bookingEventRepository.save(BookingEvent.plotTransfer(bookingId, actorId,
             "from " + oldPlot.getPlotNo() + " to " + newPlot.getPlotNo() + "; total " + oldTotal.toPlainString()
-                + " -> " + newTotal.toPlainString() + plotNote, clock.instant(),
-            oldPlotId, newPlotId, committed, balance));
+                + " -> " + newTotal.toPlainString() + refundNote + plotNote, now,
+            oldPlotId, newPlotId, paid.add(entered), balance));
+        if (completed) {
+            bookingEventRepository.save(BookingEvent.of(bookingId, BookingEventType.CONFIRMED, actorId,
+                "fully paid, amount " + newTotal.toPlainString(), now));
+        }
 
         return toResponse(booking, installments);
+    }
+
+    // Moves PAID money between two ACTIVE bookings of the same buyer. Target: a moved-in PAID row consumes its
+    // oldest PENDING rows (like top-up); a fully paid target becomes CONFIRMED and its plot SOLD. No new income
+    // (the source's payments were credited when confirmed). Source leftover: kept, or (refundRemainder) charged
+    // chargePct% and refunded as "Plot Transfer Refund" with the source cancelled. Nothing left -> source cancelled
+    // with no charge. Locks: both bookings by ascending id, then plots by ascending id.
+    @Transactional
+    public BookingResponse moveMoney(UUID sourceId, MoveMoneyRequest request, UUID actorId) {
+        UUID targetId = request.targetBookingId();
+        if (sourceId.equals(targetId)) {
+            throw new InvalidPlotTransferException("Source and target booking must differ");
+        }
+        boolean sourceFirst = sourceId.compareTo(targetId) < 0;
+        PlotBooking a = plotBookingRepository.findByIdForUpdate(sourceFirst ? sourceId : targetId)
+            .orElseThrow(() -> new BookingNotFoundException(sourceFirst ? sourceId : targetId));
+        PlotBooking b = plotBookingRepository.findByIdForUpdate(sourceFirst ? targetId : sourceId)
+            .orElseThrow(() -> new BookingNotFoundException(sourceFirst ? targetId : sourceId));
+        PlotBooking source = sourceFirst ? a : b;
+        PlotBooking target = sourceFirst ? b : a;
+        for (PlotBooking x : List.of(source, target)) {
+            if (x.getStatus() != BookingStatus.ACTIVE) { throw new BookingNotActiveException(x.getId()); }
+        }
+        if (source.getBuyerAssociateId() == null || !source.getBuyerAssociateId().equals(target.getBuyerAssociateId())) {
+            throw new InvalidPlotTransferException("Both bookings must belong to the same buyer");
+        }
+        Plot sourcePlot;
+        Plot targetPlot;
+        if (source.getPlotId().compareTo(target.getPlotId()) < 0) {
+            sourcePlot = plotRepository.findByIdForUpdate(source.getPlotId()).orElseThrow(() -> missingPlot(source));
+            targetPlot = plotRepository.findByIdForUpdate(target.getPlotId()).orElseThrow(() -> missingPlot(target));
+        } else {
+            targetPlot = plotRepository.findByIdForUpdate(target.getPlotId()).orElseThrow(() -> missingPlot(target));
+            sourcePlot = plotRepository.findByIdForUpdate(source.getPlotId()).orElseThrow(() -> missingPlot(source));
+        }
+
+        List<EmiInstallment> src = new ArrayList<>(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(sourceId));
+        List<EmiInstallment> tgt = new ArrayList<>(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(targetId));
+        BigDecimal srcPaid = sumByStatus(src, InstallmentStatus.PAID);
+        BigDecimal tgtPending = sumByStatus(tgt, InstallmentStatus.PENDING);
+        BigDecimal amount = request.amount().setScale(0, RoundingMode.HALF_UP);
+        if (amount.signum() <= 0 || amount.compareTo(srcPaid) > 0) {
+            throw new InvalidPlotTransferException("Amount must be between 1 and the source's paid amount " + srcPaid.toPlainString());
+        }
+        if (amount.compareTo(tgtPending) > 0) {
+            throw new InvalidPlotTransferException("Amount exceeds the target's remaining balance " + tgtPending.toPlainString());
+        }
+        BigDecimal leftover = srcPaid.subtract(amount);
+        boolean refunding = leftover.signum() > 0 && request.refundRemainder();
+        BigDecimal charge = null;
+        BigDecimal refund = null;
+        if (refunding) {
+            if (request.chargePct() == null) {
+                throw new InvalidPlotTransferException("Cancellation charge % is required to refund the remainder");
+            }
+            charge = pct(leftover, request.chargePct());
+            refund = leftover.subtract(charge);
+            if (refund.signum() > 0 && request.payMode() == null) {
+                throw new InvalidPlotTransferException("Pay mode is required to record the refund");
+            }
+        }
+        if (refunding && (request.reason() == null || request.reason().isBlank())) {
+            throw new InvalidPlotTransferException("Reason is required when the source plot is cancelled");
+        }
+
+        Instant now = clock.instant();
+        // target: consume PENDING oldest first, add the moved-in PAID row
+        BigDecimal left = amount;
+        for (EmiInstallment i : tgt) {
+            if (i.getStatus() != InstallmentStatus.PENDING || left.signum() == 0) { continue; }
+            if (left.compareTo(i.getAmount()) >= 0) {
+                left = left.subtract(i.getAmount());
+                i.setStatus(InstallmentStatus.VOID);
+            } else {
+                i.setAmount(i.getAmount().subtract(left));
+                left = BigDecimal.ZERO;
+            }
+        }
+        EmiInstallment moved = new EmiInstallment();
+        moved.setId(UUID.randomUUID());
+        moved.setBookingId(targetId);
+        moved.setInstallmentNumber(tgt.stream().mapToInt(EmiInstallment::getInstallmentNumber).max().orElse(0) + 1);
+        moved.setDueDate(LocalDate.now(clock));
+        moved.setAmount(amount);
+        moved.setStatus(InstallmentStatus.PAID);
+        moved.setMovedIn(true);
+        moved.setPaidAt(now);
+        moved.setRecordedBy(actorId);
+        moved.setRecordedAt(now);
+        moved.setConfirmedAt(now);
+        moved.setConfirmedBy(actorId);
+        tgt.add(moved);
+        emiInstallmentRepository.saveAll(tgt);
+        target.setInstallmentCount((int) tgt.stream().filter(i -> i.getStatus() != InstallmentStatus.VOID).count());
+        boolean targetDone = fullyPaid(tgt);
+        if (targetDone) {
+            target.setStatus(BookingStatus.CONFIRMED);
+            target.setConfirmedAt(now);
+            targetPlot.setStatus(PlotStatus.SOLD);
+            plotRepository.save(targetPlot);
+            bookingEventRepository.save(BookingEvent.of(targetId, BookingEventType.CONFIRMED, actorId,
+                "fully paid, amount " + target.getTotalAmount().toPlainString(), now));
+        }
+        plotBookingRepository.save(target);
+
+        // source: take the paid money out
+        takePaid(src, amount.add(refunding ? leftover : BigDecimal.ZERO));
+        String detail = "moved " + amount.toPlainString() + " from plot " + sourcePlot.getPlotNo() + " to plot " + targetPlot.getPlotNo();
+        boolean cancelSource = leftover.signum() == 0 || refunding;
+        if (cancelSource) {
+            for (EmiInstallment i : src) {
+                if (i.getStatus() == InstallmentStatus.PENDING || i.getStatus() == InstallmentStatus.ENTERED) {
+                    i.setStatus(InstallmentStatus.VOID);
+                }
+            }
+            source.setStatus(BookingStatus.CANCELLED);
+            source.setCancelledAt(now);
+            source.setCancelReason(refunding ? request.reason().trim() : "Money moved to plot " + targetPlot.getPlotNo());
+            String freed = "";
+            if (sourcePlot.getStatus() == PlotStatus.BOOKED
+                    && plotBookingRepository.findFirstByPlotIdAndIdNotAndStatusIn(sourcePlot.getId(), sourceId,
+                        List.of(BookingStatus.ACTIVE, BookingStatus.CONFIRMED)).isEmpty()) {
+                sourcePlot.setStatus(PlotStatus.AVAILABLE);
+                freed = "; plot freed";
+            }
+            if (refunding) {
+                source.setCancellationCharge(request.chargePct(), charge, refund);
+                if (!freed.isEmpty()) {
+                    String old = sourcePlot.getPlotNo();
+                    sourcePlot.setPlotNo(nextCancelledPlotNo(sourcePlot.getProjectId(), old));
+                    freed += "; plot renamed " + old + " -> " + sourcePlot.getPlotNo();
+                }
+                detail += "; charge " + request.chargePct().stripTrailingZeros().toPlainString() + "%: " + charge.toPlainString()
+                    + "; refund: " + refund.toPlainString();
+                if (refund.signum() > 0) {
+                    postRefundExpense(TRANSFER_REFUND_EXPENSE_TYPE, source, sourcePlot, refund, request.payMode(),
+                        "Plot " + sourcePlot.getPlotNo() + " cancelled after moving money to " + targetPlot.getPlotNo()
+                            + "; booking " + sourceId, actorId);
+                }
+            }
+            plotRepository.save(sourcePlot);
+            detail += "; source cancelled" + freed;
+        } else {
+            detail += "; " + leftover.toPlainString() + " kept on source";
+        }
+        emiInstallmentRepository.saveAll(src);
+        plotBookingRepository.save(source);
+        bookingEventRepository.save(BookingEvent.of(sourceId, BookingEventType.MONEY_MOVED, actorId, detail, now));
+        bookingEventRepository.save(BookingEvent.of(targetId, BookingEventType.MONEY_MOVED, actorId, detail, now));
+        return toResponse(source, src);
     }
 
     // Plot-booking unit 14a: admin reads one booking (any status) with installments and derived overdue.
@@ -821,7 +1049,8 @@ public class BookingService {
                 associate == null ? null : associate.getPhone(),
                 booking.getCancelReason(),
                 plot == null ? null : plot.getRoadSizeFt(),
-                booking.getCancellationChargePct(), booking.getCancellationCharge(), booking.getRefundAmount());
+                booking.getCancellationChargePct(), booking.getCancellationCharge(), booking.getRefundAmount(),
+                booking.getBuyerAssociateId());
         }).toList();
     }
 

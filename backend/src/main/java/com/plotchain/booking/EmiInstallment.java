@@ -63,6 +63,12 @@ public class EmiInstallment {
     @Column(name = "receipt_no")
     private String receiptNo;
 
+    @Column(name = "moved_in", nullable = false)
+    private boolean movedIn;
+
+    public boolean isMovedIn() { return movedIn; }
+    public void setMovedIn(boolean movedIn) { this.movedIn = movedIn; }
+
     public String getReceiptNo() { return receiptNo; }
     public void setReceiptNo(String receiptNo) { this.receiptNo = receiptNo; }
 

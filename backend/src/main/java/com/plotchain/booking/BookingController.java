@@ -51,6 +51,13 @@ public class BookingController {
     @PostMapping("/{id}/transfer-plot")
     public BookingResponse transferPlot(@PathVariable UUID id, @Valid @RequestBody TransferPlotRequest request,
                                         @AuthenticationPrincipal UUID actorId) {
-        return bookingService.transferPlot(id, request.plotId(), actorId);
+        return bookingService.transferPlot(id, request, actorId);
+    }
+
+    // Admin moves PAID money from this booking to another ACTIVE booking of the same buyer. Returns the source booking (200).
+    @PostMapping("/{id}/move-money")
+    public BookingResponse moveMoney(@PathVariable UUID id, @Valid @RequestBody MoveMoneyRequest request,
+                                     @AuthenticationPrincipal UUID actorId) {
+        return bookingService.moveMoney(id, request, actorId);
     }
 }
