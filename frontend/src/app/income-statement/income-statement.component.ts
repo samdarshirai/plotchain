@@ -98,6 +98,17 @@ const DATE_FORMAT = 'dd MMM yyyy';
       </div>
 
       <div class="income-statement__filters" *ngIf="activeIncomeType === 'ALL'">
+        <div class="income-statement__filter-field">
+          <label>
+            {{ 'incomeStatement.cycleFilterLabel' | translate }}
+            <select (change)="onSummaryCycleChange($any($event.target).value)">
+              <option value="">{{ 'incomeStatement.cycleFilterAllOption' | translate }}</option>
+              <option *ngFor="let cycle of summaryCycles" [value]="cycle.cycleId" [selected]="cycle.cycleId === summaryCycleId">
+                {{ formatDate(cycle.cyclePeriodStart) }} – {{ formatEndDate(cycle.cyclePeriodEnd) }}
+              </option>
+            </select>
+          </label>
+        </div>
         <app-date-range [from]="dateFrom" [to]="dateTo" (rangeChange)="onDateRangeChange($event)"></app-date-range>
       </div>
 
@@ -207,6 +218,9 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   downlineCycles: CycleOption[] = [];
   downlineCycleId = '';
   private downlineAll: IncomeSummaryRow[] = [];
+  summaryCycles: CycleOption[] = [];
+  summaryCycleId = '';
+  private summaryAll: IncomeSummaryRow[] = [];
 
   get tabs(): TabDefinition[] {
     return TAB_ROUTES.filter(t => t.id !== 'DOWNLINE').map(t => ({ id: t.id, label: this.translate.instant(t.labelKey) }));
@@ -290,7 +304,13 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       });
   }
 
-  private updateSummaryRows(rows: IncomeSummaryRow[]): void {
+  onSummaryCycleChange(value: string): void {
+    this.summaryCycleId = value;
+    this.updateSummaryRows();
+  }
+
+  private updateSummaryRows(): void {
+    const rows = this.summaryAll.filter(r => !this.summaryCycleId || r.cycleId === this.summaryCycleId);
     const money = ['direct', 'matching', 'sponsor', 'royalty', 'totalIncome', 'tds', 'processing', 'payable'] as const;
     const totals: Record<string, number> = Object.fromEntries(money.map(k => [k, 0]));
     const out: Record<string, string>[] = rows.map(r => {
@@ -577,7 +597,14 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     if (this.activeIncomeType === 'ALL') {
       this.page = null;
       this.incomeStatementService.summary(this.dateFrom, this.dateTo).subscribe({
-        next: rows => this.updateSummaryRows(rows),
+        next: rows => {
+          this.summaryAll = rows;
+          this.summaryCycles = rows.filter(r => r.cyclePeriodStart)
+            .map(r => ({ cycleId: r.cycleId, cyclePeriodStart: r.cyclePeriodStart!, cyclePeriodEnd: r.cyclePeriodEnd }))
+            .sort((a, b) => b.cyclePeriodStart.localeCompare(a.cyclePeriodStart));
+          if (!this.summaryCycles.some(c => c.cycleId === this.summaryCycleId)) this.summaryCycleId = '';
+          this.updateSummaryRows();
+        },
         error: () => (this.loadError = true)
       });
       return;

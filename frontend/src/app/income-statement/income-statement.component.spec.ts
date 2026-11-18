@@ -194,6 +194,23 @@ describe('IncomeStatementComponent', () => {
     });
   });
 
+  it('All tab cycle filter defaults to all cycles and narrows rows to one cycle', () => {
+    flushInitialRequests(undefined, [
+      summaryRow(),
+      summaryRow({ cycleId: 'c2', cyclePeriodStart: '2026-01-16', cyclePeriodEnd: null, gross: { DIRECT: 1000 }, totalGross: 1000,
+        tds: 20, adminCharges: 50, totalNet: 930, entryCount: 2, paidCount: 0, paidAt: null })
+    ]);
+    const c = fixture.componentInstance;
+    expect(c.summaryCycleId).toBe('');
+    expect(c.summaryCycles.map(x => x.cycleId)).toEqual(['c2', 'c1']);
+    expect(c.statementRows.length).toBe(3); // 2 periods + Total
+    c.onSummaryCycleChange('c1');
+    expect(c.statementRows.length).toBe(2); // 1 period + Total
+    expect(c.statementRows[0]['totalIncome']).toBe('₹13,800');
+    c.onSummaryCycleChange('');
+    expect(c.statementRows.length).toBe(3);
+  });
+
   describe('My Downline Income Report', () => {
     const DOWNLINE_URL = '/api/associates/me/downline-income';
     const downlineRows = [
@@ -293,10 +310,10 @@ describe('IncomeStatementComponent', () => {
     expect(fixture.componentInstance.statementRows[0]['paidStatus']).toBe('Partially Paid');
   });
 
-  it('All tab hides the cycle/status filters, cards and pagination', () => {
+  it('All tab shows only the cycle filter (no status), and hides cards and pagination', () => {
     flushInitialRequests();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.income-statement__filters select')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.income-statement__filters select').length).toBe(1);
     expect(fixture.nativeElement.querySelector('.income-statement__cards--summary')).toBeNull();
     expect(fixture.nativeElement.querySelector('.income-statement__pagination')).toBeNull();
   });
