@@ -56,7 +56,7 @@ class AssociateIdCardControllerTest {
         associate.setName("Priya Nair");
         associate.setRankId(rankId);
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
-        when(designationService.designationOf(associateId)).thenReturn("Sales Manager");
+        when(designationService.closedDesignationOf(associateId)).thenReturn("Sales Manager");
 
         mockMvc.perform(get("/api/associates/me/id-card")
                 .header("Authorization", "Bearer " + token))

@@ -116,6 +116,7 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         AND (:status IS NULL OR l.status = :status)
         AND (CAST(:from AS timestamp) IS NULL OR l.createdAt >= :from)
         AND (CAST(:toExclusive AS timestamp) IS NULL OR l.createdAt < :toExclusive)
+        AND (:closedOnly = false OR l.cycleId IN (SELECT c.id FROM Cycle c WHERE c.status = com.plotchain.cycle.CycleStatus.CLOSED))
         ORDER BY l.createdAt DESC
         """)
     Page<LedgerEntry> search(
@@ -125,7 +126,15 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         @Param("status") LedgerEntryStatus status,
         @Param("from") Instant from,
         @Param("toExclusive") Instant toExclusive,
+        @Param("closedOnly") boolean closedOnly,
         Pageable pageable);
+
+    // Admin view: live (OPEN-cycle) rows included.
+    default Page<LedgerEntry> search(
+            UUID associateId, IncomeType incomeType, UUID cycleId, LedgerEntryStatus status,
+            Instant from, Instant toExclusive, Pageable pageable) {
+        return search(associateId, incomeType, cycleId, status, from, toExclusive, false, pageable);
+    }
 
     // Same as search(), restricted to a set of associates (admin text filter; caller
     // short-circuits an empty set).
@@ -158,6 +167,7 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         AND (:status IS NULL OR l.status = :status)
         AND (CAST(:from AS timestamp) IS NULL OR l.createdAt >= :from)
         AND (CAST(:toExclusive AS timestamp) IS NULL OR l.createdAt < :toExclusive)
+        AND (:closedOnly = false OR l.cycleId IN (SELECT c.id FROM Cycle c WHERE c.status = com.plotchain.cycle.CycleStatus.CLOSED))
         """)
     BigDecimal sumGrossAmount(
         @Param("associateId") UUID associateId,
@@ -165,7 +175,14 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         @Param("cycleId") UUID cycleId,
         @Param("status") LedgerEntryStatus status,
         @Param("from") Instant from,
-        @Param("toExclusive") Instant toExclusive);
+        @Param("toExclusive") Instant toExclusive,
+        @Param("closedOnly") boolean closedOnly);
+
+    default BigDecimal sumGrossAmount(
+            UUID associateId, IncomeType incomeType, UUID cycleId, LedgerEntryStatus status,
+            Instant from, Instant toExclusive) {
+        return sumGrossAmount(associateId, incomeType, cycleId, status, from, toExclusive, false);
+    }
 
     // Admin Summary tab: gross income per type, plus gross/TDS/admin/net totals, one row per associate x cycle. Unpaged on purpose
     // (ponytail: rows = associates x cycles; LedgerService pages in memory -- push paging into SQL
@@ -185,12 +202,18 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         AND (:cycleId IS NULL OR l.cycleId = :cycleId)
         AND (CAST(:from AS timestamp) IS NULL OR l.createdAt >= :from)
         AND (CAST(:toExclusive AS timestamp) IS NULL OR l.createdAt < :toExclusive)
+        AND (:closedOnly = false OR l.cycleId IN (SELECT c.id FROM Cycle c WHERE c.status = com.plotchain.cycle.CycleStatus.CLOSED))
         GROUP BY l.associateId, l.cycleId
         """)
     List<LedgerSummaryRow> summarise(
         @Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId,
         @Param("from") Instant from,
-        @Param("toExclusive") Instant toExclusive);
+        @Param("toExclusive") Instant toExclusive,
+        @Param("closedOnly") boolean closedOnly);
+
+    default List<LedgerSummaryRow> summarise(UUID associateId, UUID cycleId, Instant from, Instant toExclusive) {
+        return summarise(associateId, cycleId, from, toExclusive, false);
+    }
 
     // Associate "My Downline Income Report": same per associate x cycle rows as summarise, but for
     // a set of associates and DIRECT, MATCHING, ROYALTY and REWARD entries. Totals, deductions
@@ -211,6 +234,7 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
           com.plotchain.income.IncomeType.ROYALTY, com.plotchain.income.IncomeType.REWARD)
         AND (CAST(:from AS timestamp) IS NULL OR l.createdAt >= :from)
         AND (CAST(:toExclusive AS timestamp) IS NULL OR l.createdAt < :toExclusive)
+        AND l.cycleId IN (SELECT c.id FROM Cycle c WHERE c.status = com.plotchain.cycle.CycleStatus.CLOSED)
         GROUP BY l.associateId, l.cycleId
         """)
     List<LedgerSummaryRow> summariseDownline(
@@ -242,6 +266,25 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         AND l.associateId IN :associateIds
         """)
     List<AwardedRewardLevelRow> findAwardedRewardLevels(@Param("associateIds") Collection<UUID> associateIds);
+
+    // Associate-facing: only levels awarded in a CLOSED cycle (live rows are admin-only).
+    @Query("""
+        SELECT l.associateId AS associateId, l.tierLevel AS tierLevel
+        FROM LedgerEntry l
+        WHERE l.incomeType = com.plotchain.income.IncomeType.REWARD AND l.tierLevel IS NOT NULL
+        AND l.associateId IN :associateIds
+        AND l.cycleId IN (SELECT c.id FROM Cycle c WHERE c.status = com.plotchain.cycle.CycleStatus.CLOSED)
+        """)
+    List<AwardedRewardLevelRow> findClosedAwardedRewardLevels(@Param("associateIds") Collection<UUID> associateIds);
+
+    // Associate-facing lifetime sum, CLOSED cycles only.
+    @Query("SELECT COALESCE(SUM(l.netAmount), 0) FROM LedgerEntry l WHERE l.associateId = :associateId AND l.incomeType = :type "
+        + "AND l.cycleId IN (SELECT c.id FROM Cycle c WHERE c.status = com.plotchain.cycle.CycleStatus.CLOSED)")
+    BigDecimal sumClosedNetAmountByAssociateAndType(@Param("associateId") UUID associateId, @Param("type") IncomeType type);
+
+    @Query("SELECT l FROM LedgerEntry l WHERE l.associateId = :associateId AND l.incomeType = :type "
+        + "AND l.cycleId IN (SELECT c.id FROM Cycle c WHERE c.status = com.plotchain.cycle.CycleStatus.CLOSED)")
+    List<LedgerEntry> findClosedByAssociateIdAndIncomeType(@Param("associateId") UUID associateId, @Param("type") IncomeType type);
 
     // Every awarded reward level across all associates; RewardPerkExpenseService reconciles perk expenses against it.
     @Query("""

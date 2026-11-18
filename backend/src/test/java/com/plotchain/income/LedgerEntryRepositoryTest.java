@@ -227,6 +227,58 @@ class LedgerEntryRepositoryTest {
         assertThat(unfiltered.getTotalElements()).isEqualTo(3);
     }
 
+    private Cycle seedOpenCycle() {
+        Cycle cycle = new Cycle();
+        cycle.setId(UUID.randomUUID());
+        cycle.setPeriodStart(LocalDate.of(2026, 8, 1));
+        cycle.setPeriodEnd(null);
+        cycle.setStatus(CycleStatus.OPEN);
+        entityManager.persist(cycle);
+        return cycle;
+    }
+
+    // Associates see CLOSED-cycle income only; the OPEN cycle's live rows are admin-only.
+    @Test
+    void closedOnlyHidesOpenCycleRowsFromEveryAssociateFacingQueryWhileAdminSeesThem() {
+        Associate a = seedAssociate();
+        Cycle closed = seedCycle();
+        Cycle open = seedOpenCycle();
+        LedgerEntry closedRow = ledgerEntryRepository.saveAndFlush(newEntry(a.getId(), closed.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+        LedgerEntry liveReward = newEntry(a.getId(), open.getId(), IncomeType.REWARD, UUID.randomUUID());
+        liveReward.setTierLevel(1);
+        ledgerEntryRepository.saveAndFlush(liveReward);
+        ledgerEntryRepository.saveAndFlush(newEntry(a.getId(), open.getId(), IncomeType.MATCHING, UUID.randomUUID()));
+
+        Page<LedgerEntry> mine = ledgerEntryRepository.search(a.getId(), null, null, null, null, null, true, PageRequest.of(0, 20));
+        assertThat(mine.getContent()).extracting(LedgerEntry::getId).containsExactly(closedRow.getId());
+        assertThat(ledgerEntryRepository.search(a.getId(), null, null, null, null, null, PageRequest.of(0, 20)).getTotalElements()).isEqualTo(3);
+
+        assertThat(ledgerEntryRepository.sumGrossAmount(a.getId(), null, null, null, null, null, true)).isEqualByComparingTo("100.00");
+        assertThat(ledgerEntryRepository.sumGrossAmount(a.getId(), null, null, null, null, null)).isEqualByComparingTo("300.00");
+
+        assertThat(ledgerEntryRepository.summarise(a.getId(), null, null, null, true))
+            .extracting(LedgerSummaryRow::getCycleId).containsExactly(closed.getId());
+        assertThat(ledgerEntryRepository.summarise(a.getId(), null, null, null)).hasSize(2);
+
+        assertThat(ledgerEntryRepository.findClosedAwardedRewardLevels(List.of(a.getId()))).isEmpty();
+        assertThat(ledgerEntryRepository.findAwardedRewardLevels(List.of(a.getId()))).hasSize(1);
+        assertThat(ledgerEntryRepository.sumClosedNetAmountByAssociateAndType(a.getId(), IncomeType.MATCHING)).isEqualByComparingTo("0");
+        assertThat(ledgerEntryRepository.sumNetAmountByAssociateAndType(a.getId(), IncomeType.MATCHING)).isEqualByComparingTo("91.00");
+        assertThat(ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(a.getId(), IncomeType.REWARD)).isEmpty();
+    }
+
+    @Test
+    void summariseDownlineSkipsOpenCycleRows() {
+        Associate a = seedAssociate();
+        Cycle closed = seedCycle();
+        Cycle open = seedOpenCycle();
+        ledgerEntryRepository.saveAndFlush(newEntry(a.getId(), closed.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+        ledgerEntryRepository.saveAndFlush(newEntry(a.getId(), open.getId(), IncomeType.DIRECT, UUID.randomUUID()));
+
+        assertThat(ledgerEntryRepository.summariseDownline(List.of(a.getId()), null, null))
+            .extracting(LedgerSummaryRow::getCycleId).containsExactly(closed.getId());
+    }
+
     @Test
     void sumGrossAmountHonoursEachFilterAndIsZeroWhenNothingMatches() {
         Associate associateA = seedAssociate();

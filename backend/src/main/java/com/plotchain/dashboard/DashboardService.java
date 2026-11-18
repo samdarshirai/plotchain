@@ -81,13 +81,13 @@ public class DashboardService {
         Optional<Cycle> openCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN);
         UUID openCycleId = openCycle.map(Cycle::getId).orElse(null);
 
-        BigDecimal direct = cycleIncome(associateId, openCycleId, IncomeType.DIRECT);
-        BigDecimal matching = cycleIncome(associateId, openCycleId, IncomeType.MATCHING);
-        BigDecimal sponsorMatching = cycleIncome(associateId, openCycleId, IncomeType.SPONSOR_MATCHING);
-        BigDecimal total = openCycle
-            .map(c -> ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, c.getId()))
-            .orElse(BigDecimal.ZERO);
-        BigDecimal royaltyBonus = cycleIncome(associateId, openCycleId, IncomeType.ROYALTY);
+        // Associates see closed-cycle income only: the open cycle's live income is admin-only, so the
+        // current-cycle figures are zero (cycleIncome(null) = ZERO) until the cycle closes.
+        BigDecimal direct = cycleIncome(associateId, null, IncomeType.DIRECT);
+        BigDecimal matching = cycleIncome(associateId, null, IncomeType.MATCHING);
+        BigDecimal sponsorMatching = cycleIncome(associateId, null, IncomeType.SPONSOR_MATCHING);
+        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal royaltyBonus = cycleIncome(associateId, null, IncomeType.ROYALTY);
 
         // leg_volume rows are only written at cycle close (CycleService#rollUpSubtree), so the leg
         // panel and the royalty slab are computed live the way close will: each leg is this cycle's
@@ -96,8 +96,9 @@ public class DashboardService {
         Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
         Optional<LegVolume> latestLegVolume = latestClosedCycle
             .flatMap(closed -> legVolumeRepository.findByAssociateIdAndCycleId(associateId, closed.getId()));
-        BigDecimal newLeftBusiness = saleRepository.sumOpenCycleLegBusiness(associateId, "L");
-        BigDecimal newRightBusiness = saleRepository.sumOpenCycleLegBusiness(associateId, "R");
+        // Closed-cycle carry only: no live open-cycle leg sales for associates.
+        BigDecimal newLeftBusiness = BigDecimal.ZERO;
+        BigDecimal newRightBusiness = BigDecimal.ZERO;
         BigDecimal leftLegVolume = newLeftBusiness
             .add(latestLegVolume.map(LegVolume::getCarriedForwardLeft).orElse(BigDecimal.ZERO));
         BigDecimal rightLegVolume = newRightBusiness
@@ -120,8 +121,8 @@ public class DashboardService {
             .map(closed -> ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, closed.getId()))
             .orElse(BigDecimal.ZERO);
 
-        BigDecimal matchingIncomeLifetime = ledgerEntryRepository.sumNetAmountByAssociateAndType(associateId, IncomeType.MATCHING);
-        BigDecimal sponsorMatchingIncomeLifetime = ledgerEntryRepository.sumNetAmountByAssociateAndType(associateId, IncomeType.SPONSOR_MATCHING);
+        BigDecimal matchingIncomeLifetime = ledgerEntryRepository.sumClosedNetAmountByAssociateAndType(associateId, IncomeType.MATCHING);
+        BigDecimal sponsorMatchingIncomeLifetime = ledgerEntryRepository.sumClosedNetAmountByAssociateAndType(associateId, IncomeType.SPONSOR_MATCHING);
 
         // Seal Card sparkline plots the last 8 cycles, oldest first -- findAllByOrderByPeriodStartDesc
         // comes back newest-first, so it's reversed here.
@@ -130,6 +131,7 @@ public class DashboardService {
         Collections.reverse(lastCycles);
 
         List<BigDecimal> incomeTrend = lastCycles.stream()
+            .filter(c -> c.getStatus() == CycleStatus.CLOSED)
             .map(c -> ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, c.getId()))
             .toList();
 
@@ -183,7 +185,7 @@ public class DashboardService {
 
         return new DashboardResponse(
             new DashboardResponse.AssociateSummary(
-                associate.getUserId(), associate.getName(), designationService.designationOf(associateId),
+                associate.getUserId(), associate.getName(), designationService.closedDesignationOf(associateId),
                 associate.getPhone(), associate.getJoinedAt(),
                 sponsor.map(Associate::getUserId).orElse(null), sponsor.map(Associate::getName).orElse(null),
                 associate.getPreviousLoginAt()),

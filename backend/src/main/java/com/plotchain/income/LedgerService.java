@@ -105,8 +105,14 @@ public class LedgerService {
     // then associate id; paged in memory (see LedgerEntryRepository#summarise).
     public AdminLedgerSummaryPageResponse adminSummary(
             UUID associateId, UUID cycleId, LocalDate fromDate, LocalDate toDate, int page, int size, String search) {
+        return summary(associateId, cycleId, fromDate, toDate, page, size, search, false);
+    }
+
+    private AdminLedgerSummaryPageResponse summary(
+            UUID associateId, UUID cycleId, LocalDate fromDate, LocalDate toDate, int page, int size, String search,
+            boolean closedOnly) {
         List<AdminLedgerSummaryRow> rows = toSummaryRows(
-            ledgerEntryRepository.summarise(associateId, cycleId, startOf(fromDate), endExclusive(toDate)));
+            ledgerEntryRepository.summarise(associateId, cycleId, startOf(fromDate), endExclusive(toDate), closedOnly));
         if (associateId == null && search != null) {
             // ponytail: filtered in memory, the summary is already paged in memory
             Set<UUID> matchIds = new HashSet<>(associateRepository.findIdsBySearch(search));
@@ -165,7 +171,7 @@ public class LedgerService {
     // Associate Income Statement "All" tab: the caller's own per-cycle summary, every cycle,
     // newest first. Same rows as the admin Summary tab, scoped to one associate.
     public List<AdminLedgerSummaryRow> mySummary(UUID associateId, LocalDate from, LocalDate to) {
-        return adminSummary(associateId, null, from, to, 0, Integer.MAX_VALUE, null).rows();
+        return summary(associateId, null, from, to, 0, Integer.MAX_VALUE, null, true).rows();
     }
 
     // Flow "Associate own ledger" (same spec doc, steps 1-6): associateId is always the caller's
@@ -176,8 +182,9 @@ public class LedgerService {
     public AssociateLedgerPageResponse myList(
             UUID associateId, IncomeType incomeType, UUID cycleId, LedgerEntryStatus status,
             LocalDate from, LocalDate to, int page, int size) {
+        // Associates see CLOSED-cycle income only; live (OPEN-cycle) rows are admin-only.
         Page<LedgerEntry> result = ledgerEntryRepository.search(
-            associateId, incomeType, cycleId, status, startOf(from), endExclusive(to), PageRequest.of(page, size));
+            associateId, incomeType, cycleId, status, startOf(from), endExclusive(to), true, PageRequest.of(page, size));
 
         List<LedgerEntry> content = result.getContent();
         Map<UUID, Cycle> cyclesById = cyclesById(content);
@@ -206,7 +213,7 @@ public class LedgerService {
             })
             .toList();
         BigDecimal totalGross = ledgerEntryRepository.sumGrossAmount(
-            associateId, incomeType, cycleId, status, startOf(from), endExclusive(to));
+            associateId, incomeType, cycleId, status, startOf(from), endExclusive(to), true);
         return new AssociateLedgerPageResponse(entries, page, size, result.getTotalElements(), totalGross);
     }
 
@@ -365,8 +372,9 @@ public class LedgerService {
     public List<AssociateRewardTierRow> myRewardTiers(UUID associateId) {
         Map<Integer, LedgerEntry> byLevel = rewardEntriesByTierLevel(associateId);
         LegVolumeRepository.LegBusinessTotals closed = legVolumeRepository.totalBusiness(associateId);
-        BigDecimal openLeft = saleRepository.sumOpenCycleLegBusiness(associateId, "L");
-        BigDecimal openRight = saleRepository.sumOpenCycleLegBusiness(associateId, "R");
+        // Associates see closed-cycle business only (no live open-cycle sales).
+        BigDecimal openLeft = BigDecimal.ZERO;
+        BigDecimal openRight = BigDecimal.ZERO;
         BigDecimal left = closed.left().add(openLeft);
         BigDecimal right = closed.right().add(openRight);
         BigDecimal matched = RewardTierRule.lifetimeMatched(closed, openLeft, openRight);
@@ -407,8 +415,8 @@ public class LedgerService {
 
     public AssociateRewardBusiness myRewardBusiness(UUID associateId) {
         LegVolumeRepository.LegBusinessTotals closed = legVolumeRepository.totalBusiness(associateId);
-        BigDecimal newLeft = saleRepository.sumOpenCycleLegBusiness(associateId, "L");
-        BigDecimal newRight = saleRepository.sumOpenCycleLegBusiness(associateId, "R");
+        BigDecimal newLeft = BigDecimal.ZERO; // closed cycles only for associates
+        BigDecimal newRight = BigDecimal.ZERO;
         return new AssociateRewardBusiness(
             closed.left().add(newLeft), closed.right().add(newRight),
             closed.left(), closed.right(),
@@ -486,7 +494,7 @@ public class LedgerService {
     // original award.
     private Map<Integer, LedgerEntry> rewardEntriesByTierLevel(UUID associateId) {
         Map<Integer, LedgerEntry> byLevel = new HashMap<>();
-        for (LedgerEntry e : ledgerEntryRepository.findByAssociateIdAndIncomeType(associateId, IncomeType.REWARD)) {
+        for (LedgerEntry e : ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(associateId, IncomeType.REWARD)) {
             if (e.getTierLevel() != null) {
                 byLevel.merge(e.getTierLevel(), e, (a, b) -> b.getCreatedAt().isBefore(a.getCreatedAt()) ? b : a);
             }

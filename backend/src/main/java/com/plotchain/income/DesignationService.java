@@ -39,12 +39,27 @@ public class DesignationService {
     }
 
     public Map<UUID, String> designationsOf(Collection<UUID> associateIds) {
+        return designationsOf(associateIds, false);
+    }
+
+    // Associate-facing: only rewards from CLOSED cycles count (live rewards are admin-only).
+    public String closedDesignationOf(UUID associateId) {
+        return designationsOf(List.of(associateId), true).get(associateId);
+    }
+
+    public Map<UUID, String> closedDesignationsOf(Collection<UUID> associateIds) {
+        return designationsOf(associateIds, true);
+    }
+
+    private Map<UUID, String> designationsOf(Collection<UUID> associateIds, boolean closedOnly) {
         if (associateIds.isEmpty()) {
             return Map.of();
         }
         Map<Integer, String> designationByLevel = currentDesignationsByLevel();
         Map<UUID, Integer> highestLevel = new HashMap<>();
-        for (LedgerEntryRepository.AwardedRewardLevelRow row : ledgerEntryRepository.findAwardedRewardLevels(associateIds)) {
+        for (LedgerEntryRepository.AwardedRewardLevelRow row : closedOnly
+                ? ledgerEntryRepository.findClosedAwardedRewardLevels(associateIds)
+                : ledgerEntryRepository.findAwardedRewardLevels(associateIds)) {
             if (designationByLevel.containsKey(row.getTierLevel())) {
                 highestLevel.merge(row.getAssociateId(), row.getTierLevel(), Math::max);
             }

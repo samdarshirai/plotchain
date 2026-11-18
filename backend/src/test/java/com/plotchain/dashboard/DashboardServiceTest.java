@@ -96,7 +96,7 @@ class DashboardServiceTest {
         lenient().when(saleRepository.sumOpenCycleLegBusiness(any(), any())).thenReturn(BigDecimal.ZERO);
         lenient().when(saleRepository.sumTopUpBusiness(any(), any())).thenReturn(BigDecimal.ZERO);
         lenient().when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
-        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateAndType(any(), any())).thenReturn(BigDecimal.ZERO);
+        lenient().when(ledgerEntryRepository.sumClosedNetAmountByAssociateAndType(any(), any())).thenReturn(BigDecimal.ZERO);
     }
 
     @Test
@@ -140,7 +140,7 @@ class DashboardServiceTest {
         closedCycle.setPeriodEnd(LocalDate.now().minusDays(6));
 
         LegVolume legVolume = new LegVolume(UUID.randomUUID(), associateId, closedCycleId,
-            new BigDecimal("300000"), new BigDecimal("200000"), new BigDecimal("100000"), BigDecimal.ZERO);
+            new BigDecimal("300000"), new BigDecimal("200000"), new BigDecimal("100000"), new BigDecimal("20000"));
 
         when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
         when(associateRepository.findById(sponsorId)).thenReturn(Optional.of(sponsor));
@@ -148,17 +148,18 @@ class DashboardServiceTest {
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(closedCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, closedCycleId)).thenReturn(Optional.of(legVolume));
 
-        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.DIRECT)).thenReturn(BigDecimal.valueOf(1000));
-        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.MATCHING)).thenReturn(BigDecimal.valueOf(500));
-        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.valueOf(300));
-        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.ROYALTY)).thenReturn(BigDecimal.valueOf(400));
-        when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycleId)).thenReturn(BigDecimal.valueOf(2400));
+        // live open-cycle income exists but must stay hidden from associates
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.DIRECT)).thenReturn(BigDecimal.valueOf(1000));
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.MATCHING)).thenReturn(BigDecimal.valueOf(500));
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.valueOf(300));
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.ROYALTY)).thenReturn(BigDecimal.valueOf(400));
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycleId)).thenReturn(BigDecimal.valueOf(2400));
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, closedCycleId)).thenReturn(BigDecimal.valueOf(1800));
 
         CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any())).thenReturn(Optional.of(planVersion));
-        // matchedVolume = min(140000, 10000) = 10000 > 0, exercises the real slab lookup.
-        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), new BigDecimal("10000")))
+        // matchedVolume = min(100000, 20000) = 20000 > 0 (closed carry only), exercises the real slab lookup.
+        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), new BigDecimal("20000")))
             .thenReturn(Optional.of(new RoyaltyBonusRate(UUID.randomUUID(), planVersion.getId(), BigDecimal.ZERO, new BigDecimal("3.00"))));
 
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
@@ -183,17 +184,15 @@ class DashboardServiceTest {
         when(saleRepository.sumSelfBusiness(associateId, cycleId)).thenReturn(new BigDecimal("300000"));
         when(saleRepository.sumTopUpBusiness(associateId, null)).thenReturn(new BigDecimal("700000"));
         when(saleRepository.sumTopUpBusiness(associateId, cycleId)).thenReturn(new BigDecimal("200000"));
-        when(saleRepository.sumOpenCycleLegBusiness(associateId, "L")).thenReturn(new BigDecimal("40000"));
-        when(saleRepository.sumOpenCycleLegBusiness(associateId, "R")).thenReturn(new BigDecimal("10000"));
         when(saleRepository.sumPlotAreaSqftByAssociateIdAndCycleIdAndStatus(associateId, cycleId, SaleStatus.RECORDED)).thenReturn(new BigDecimal("1200"));
 
         when(associateRepository.countDownlineByPosition(associateId, "L")).thenReturn(7L);
         when(associateRepository.countDownlineByPosition(associateId, "R")).thenReturn(5L);
 
-        when(ledgerEntryRepository.sumNetAmountByAssociateAndType(associateId, IncomeType.MATCHING)).thenReturn(new BigDecimal("126000"));
-        when(ledgerEntryRepository.sumNetAmountByAssociateAndType(associateId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.ZERO);
+        when(ledgerEntryRepository.sumClosedNetAmountByAssociateAndType(associateId, IncomeType.MATCHING)).thenReturn(new BigDecimal("126000"));
+        when(ledgerEntryRepository.sumClosedNetAmountByAssociateAndType(associateId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.ZERO);
 
-        when(designationService.designationOf(associateId)).thenReturn("Sales Manager");
+        when(designationService.closedDesignationOf(associateId)).thenReturn("Sales Manager");
         DashboardResponse response = dashboardService.getDashboard(associateId);
 
         assertThat(response.kycPendingBannerVisible()).isTrue();
@@ -203,13 +202,14 @@ class DashboardServiceTest {
         assertThat(response.associate().lastLoginAt()).isEqualTo(lastLoginAt);
         assertThat(response.associate().sponsorAssociateId()).isEqualTo("SDI100001");
         assertThat(response.associate().sponsorName()).isEqualTo("Head Office Sponsor");
-        assertThat(response.cycleIncome().directIncome()).isEqualByComparingTo("1000");
-        assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("300");
-        assertThat(response.cycleIncome().royaltyBonus()).isEqualByComparingTo("400");
+        // Associates see closed-cycle income only: the open cycle's live income is hidden (zero).
+        assertThat(response.cycleIncome().directIncome()).isZero();
+        assertThat(response.cycleIncome().sponsorMatchingIncome()).isZero();
+        assertThat(response.cycleIncome().royaltyBonus()).isZero();
         assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("3.00");
-        assertThat(response.cycleIncome().totalIncome()).isEqualByComparingTo("2400");
+        assertThat(response.cycleIncome().totalIncome()).isZero();
         assertThat(response.cycleIncome().previousCycleTotalIncome()).isEqualByComparingTo("1800");
-        assertThat(response.cycleIncome().incomeTrend()).hasSize(2);
+        assertThat(response.cycleIncome().incomeTrend()).hasSize(1); // closed cycles only
         assertThat(response.cycleIncome().matchingIncomeLifetime()).isEqualByComparingTo("126000");
         assertThat(response.cycleIncome().sponsorMatchingIncomeLifetime()).isEqualByComparingTo("0");
         assertThat(response.wallet().balance()).isEqualByComparingTo("0");
@@ -225,14 +225,14 @@ class DashboardServiceTest {
         assertThat(response.networkSummary().directCount()).isEqualTo(8L);
         assertThat(response.networkSummary().leftAssociateCount()).isEqualTo(7L);
         assertThat(response.networkSummary().rightAssociateCount()).isEqualTo(5L);
-        // live legs = this cycle's subtree sales (40000 / 10000) + the latest closed row's carry (100000 / 0)
-        assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("140000");
-        assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("10000");
-        assertThat(response.legVolumeSummary().newLeftBusiness()).isEqualByComparingTo("40000");
-        assertThat(response.legVolumeSummary().newRightBusiness()).isEqualByComparingTo("10000");
-        assertThat(response.legVolumeSummary().newMatchingBusiness()).isEqualByComparingTo("10000");
-        assertThat(response.legVolumeSummary().totalLeftBusiness()).isEqualByComparingTo("340000");
-        assertThat(response.legVolumeSummary().totalRightBusiness()).isEqualByComparingTo("210000");
+        // closed carry only (100000 / 20000); no live open-cycle leg sales for associates
+        assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("100000");
+        assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("20000");
+        assertThat(response.legVolumeSummary().newLeftBusiness()).isZero();
+        assertThat(response.legVolumeSummary().newRightBusiness()).isZero();
+        assertThat(response.legVolumeSummary().newMatchingBusiness()).isEqualByComparingTo("20000"); // matchedVolume = min(closed carries)
+        assertThat(response.legVolumeSummary().totalLeftBusiness()).isEqualByComparingTo("300000");
+        assertThat(response.legVolumeSummary().totalRightBusiness()).isEqualByComparingTo("200000");
         assertThat(response.legVolumeSummary().totalSelfBusiness()).isEqualByComparingTo("500000");
         assertThat(response.legVolumeSummary().cycleSelfBusiness()).isEqualByComparingTo("300000");
         assertThat(response.legVolumeSummary().cycleTopUpBusiness()).isEqualByComparingTo("200000");
@@ -266,8 +266,7 @@ class DashboardServiceTest {
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(cycle));
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
 
-        when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(any(), any(), any())).thenReturn(BigDecimal.ZERO);
-        when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any())).thenReturn(BigDecimal.ZERO);
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any())).thenReturn(BigDecimal.ZERO);
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(compensationPlanVersion(new BigDecimal("7.00"))));
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));

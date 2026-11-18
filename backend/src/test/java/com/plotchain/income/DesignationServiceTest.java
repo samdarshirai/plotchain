@@ -20,6 +20,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,5 +73,16 @@ class DesignationServiceTest {
         Map<UUID, String> result = service.designationsOf(List.of(me, other));
 
         assertThat(result).containsEntry(me, "Sales Executive").doesNotContainKey(other);
+    }
+
+    @Test
+    void closedDesignationUsesOnlyRewardsFromClosedCycles() {
+        UUID me = UUID.randomUUID();
+        stubCurrentPlan(tier(1, "Sales Executive"), tier(2, "Sr. Sales Executive"));
+        // The live (open-cycle) level 2 row is invisible to the closed-only query.
+        when(ledgerEntryRepository.findClosedAwardedRewardLevels(any())).thenReturn(List.of(row(me, 1)));
+
+        assertThat(service.closedDesignationOf(me)).isEqualTo("Sales Executive");
+        verify(ledgerEntryRepository, never()).findAwardedRewardLevels(any());
     }
 }

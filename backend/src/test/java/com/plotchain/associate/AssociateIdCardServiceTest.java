@@ -42,7 +42,7 @@ class AssociateIdCardServiceTest {
     @Test
     void returnsIdCardWithIdNumberNameDesignationAndQrPayload() {
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithRank()));
-        when(designationService.designationOf(ASSOCIATE_ID)).thenReturn("Sales Manager");
+        when(designationService.closedDesignationOf(ASSOCIATE_ID)).thenReturn("Sales Manager");
 
         AssociateIdCardResponse response = service.getMyIdCard(ASSOCIATE_ID);
 

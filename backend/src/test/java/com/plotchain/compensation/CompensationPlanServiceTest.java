@@ -133,8 +133,6 @@ class CompensationPlanServiceTest {
         when(associateRepository.existsById(associateId)).thenReturn(true);
         when(legVolumeRepository.totalBusiness(associateId)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal(closedLeft), new BigDecimal(closedRight)));
-        when(saleRepository.sumOpenCycleLegBusiness(associateId, "L")).thenReturn(new BigDecimal(openLeft));
-        when(saleRepository.sumOpenCycleLegBusiness(associateId, "R")).thenReturn(new BigDecimal(openRight));
     }
 
     @Test
@@ -147,7 +145,7 @@ class CompensationPlanServiceTest {
         RewardTier unreachedTier = new RewardTier(
             UUID.randomUUID(), version.getId(), 2, new BigDecimal("10000"), new BigDecimal("500"), "Tier 2", "Area Manager");
 
-        when(designationService.designationOf(associateId)).thenReturn("Sales Manager");
+        when(designationService.closedDesignationOf(associateId)).thenReturn("Sales Manager");
         stubLifetimeLegs(associateId, "4000", "4000", "0", "0");
         when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(version));
@@ -191,14 +189,14 @@ class CompensationPlanServiceTest {
     }
 
     @Test
-    void getMyRankProgressCountsTheOpenCyclesLiveSalesBeforeClose() {
+    void getMyRankProgressIgnoresTheOpenCyclesLiveSalesUntilClose() {
         UUID associateId = UUID.randomUUID();
 
         CompensationPlanVersion version = seedVersion();
         RewardTier tier = new RewardTier(
             UUID.randomUUID(), version.getId(), 1, new BigDecimal("10000"), new BigDecimal("500"), "Tier 1", "Sales Manager");
 
-        // closed 1000/1000 plus open-cycle sales 4000 left / 3000 right: matched = min(5000, 4000) = 4000
+        // closed 1000/1000; open-cycle sales (live) are ignored for associates: matched = 1000
         stubLifetimeLegs(associateId, "1000", "1000", "4000", "3000");
         when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(version));
@@ -206,9 +204,9 @@ class CompensationPlanServiceTest {
 
         AssociateRankProgressResponse response = compensationPlanService.getMyRankProgress(associateId);
 
-        assertThat(response.cumulativeMatchedVolume()).isEqualByComparingTo("4000");
-        assertThat(response.progressPercent()).isEqualTo(40);
-        assertThat(response.volumeToNext()).isEqualByComparingTo("6000");
+        assertThat(response.cumulativeMatchedVolume()).isEqualByComparingTo("1000");
+        assertThat(response.progressPercent()).isEqualTo(10);
+        assertThat(response.volumeToNext()).isEqualByComparingTo("9000");
     }
 
     @Test

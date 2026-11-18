@@ -90,8 +90,7 @@ public class CompensationPlanService {
         }
         BigDecimal cumulative = RewardTierRule.lifetimeMatched(
             legVolumeRepository.totalBusiness(associateId),
-            saleRepository.sumOpenCycleLegBusiness(associateId, "L"),
-            saleRepository.sumOpenCycleLegBusiness(associateId, "R"));
+            BigDecimal.ZERO, BigDecimal.ZERO); // associates see closed cycles only
 
         CompensationPlanVersion version = currentVersion();
         List<RewardTier> tiers = rewardTierRepository.findAllByPlanVersionIdOrderByTierLevel(version.getId());
@@ -122,7 +121,7 @@ public class CompensationPlanService {
         }
 
         return new AssociateRankProgressResponse(
-            designationService.designationOf(associateId),
+            designationService.closedDesignationOf(associateId),
             nextTier == null ? null : nextTier.getDesignation(),
             progressPercent,
             cumulative,

@@ -217,10 +217,10 @@ class LedgerServiceTest {
         LedgerEntry entry = newEntry(entryId, associateId, cycleId, sourceRef);
         Cycle cycle = newCycle(cycleId, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 15));
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(true), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(entry), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of(cycle));
-        when(ledgerEntryRepository.sumGrossAmount(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull()))
+        when(ledgerEntryRepository.sumGrossAmount(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(true)))
             .thenReturn(new BigDecimal("250.00"));
 
         AssociateLedgerPageResponse response = service.myList(associateId, null, null, null, null, null, 0, 20);
@@ -251,7 +251,7 @@ class LedgerServiceTest {
         LedgerEntry sm = newEntry(UUID.randomUUID(), associateId, cycleId, matching.getId());
         sm.setIncomeType(IncomeType.SPONSOR_MATCHING);
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(true), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(sm), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId)))
             .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
@@ -276,7 +276,7 @@ class LedgerServiceTest {
         sale.setAssociateId(sellerId);
         sale.setAmount(new BigDecimal("1000000.00"));
 
-        when(ledgerEntryRepository.search(eq(sponsorId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(sponsorId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(true), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(direct), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId)))
             .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
@@ -297,7 +297,7 @@ class LedgerServiceTest {
         LedgerEntry direct = newEntry(UUID.randomUUID(), sponsorId, cycleId, saleId);
         direct.setIncomeType(IncomeType.DIRECT);
 
-        when(ledgerEntryRepository.search(eq(sponsorId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(sponsorId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(true), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(direct), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId)))
             .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
@@ -323,7 +323,7 @@ class LedgerServiceTest {
         LedgerEntry e2 = newEntry(UUID.randomUUID(), associateId, c2, lv2.getId());
         e2.setIncomeType(IncomeType.MATCHING);
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(true), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(e2), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(c2)))
             .thenReturn(List.of(newCycle(c2, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
@@ -351,7 +351,7 @@ class LedgerServiceTest {
         LedgerEntry e1 = newEntry(UUID.randomUUID(), associateId, c1, lv1.getId());
         e1.setIncomeType(IncomeType.ROYALTY);
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(true), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(e1), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(c1)))
             .thenReturn(List.of(newCycle(c1, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
@@ -377,7 +377,7 @@ class LedgerServiceTest {
         LedgerEntry live = newEntry(UUID.randomUUID(), associateId, open, UUID.randomUUID());
         live.setIncomeType(IncomeType.MATCHING);
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(true), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(live), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(open)))
             .thenReturn(List.of(newCycle(open, LocalDate.of(2026, 10, 16), LocalDate.of(2026, 10, 31))));
@@ -408,14 +408,14 @@ class LedgerServiceTest {
         UUID cycleId = UUID.randomUUID();
         when(ledgerEntryRepository.search(
             eq(associateId), eq(IncomeType.MATCHING), eq(cycleId), eq(LedgerEntryStatus.PENDING),
-            isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            isNull(), isNull(), eq(true), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
         service.myList(associateId, IncomeType.MATCHING, cycleId, LedgerEntryStatus.PENDING, null, null, 0, 20);
 
         verify(ledgerEntryRepository).search(
             eq(associateId), eq(IncomeType.MATCHING), eq(cycleId), eq(LedgerEntryStatus.PENDING),
-            isNull(), isNull(), eq(PageRequest.of(0, 20)));
+            isNull(), isNull(), eq(true), eq(PageRequest.of(0, 20)));
     }
 
     @Test
@@ -425,7 +425,7 @@ class LedgerServiceTest {
         UUID cycleId = UUID.randomUUID();
         LedgerEntry entry = newEntry(entryId, associateId, cycleId, null);
 
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(true), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(entry), PageRequest.of(0, 20), 1));
         when(cycleRepository.findAllById(List.of(cycleId))).thenReturn(List.of());
 
@@ -439,7 +439,7 @@ class LedgerServiceTest {
     @Test
     void myListReturnsAnEmptyPageWhenSearchFindsNothing() {
         UUID associateId = UUID.randomUUID();
-        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+        when(ledgerEntryRepository.search(eq(associateId), isNull(), isNull(), isNull(), isNull(), isNull(), eq(true), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
         AssociateLedgerPageResponse response = service.myList(associateId, null, null, null, null, null, 0, 20);
@@ -456,11 +456,9 @@ class LedgerServiceTest {
             new com.plotchain.compensation.RewardTier(UUID.randomUUID(), planId, 1, new BigDecimal("1000000"), new BigDecimal("1"), null),
             new com.plotchain.compensation.RewardTier(UUID.randomUUID(), planId, 2, new BigDecimal("2000000"), new BigDecimal("2"), null),
             new com.plotchain.compensation.RewardTier(UUID.randomUUID(), planId, 3, new BigDecimal("3000000"), new BigDecimal("3"), null)));
-        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of());
+        when(ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of());
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("4500000"), new BigDecimal("1200000")));
-        when(saleRepository.sumOpenCycleLegBusiness(me, "L")).thenReturn(BigDecimal.ZERO);
-        when(saleRepository.sumOpenCycleLegBusiness(me, "R")).thenReturn(BigDecimal.ZERO);
 
         List<AssociateRewardTierRow> rows = service.myRewardTiers(me);
 
@@ -474,21 +472,20 @@ class LedgerServiceTest {
     }
 
     @Test
-    void myRewardBusiness_splitsPaidClosedAndNewOpenPerLeg() {
+    void myRewardBusiness_countsClosedCyclesOnly() {
         UUID me = UUID.randomUUID();
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("1000000"), new BigDecimal("200000")));
-        when(saleRepository.sumOpenCycleLegBusiness(me, "L")).thenReturn(new BigDecimal("300000"));
-        when(saleRepository.sumOpenCycleLegBusiness(me, "R")).thenReturn(new BigDecimal("100000"));
 
         AssociateRewardBusiness b = service.myRewardBusiness(me);
 
         assertThat(b.paidLeft()).isEqualByComparingTo("1000000");
         assertThat(b.paidRight()).isEqualByComparingTo("200000");
-        assertThat(b.newLeft()).isEqualByComparingTo("300000");
-        assertThat(b.newRight()).isEqualByComparingTo("100000");
-        assertThat(b.totalLeft()).isEqualByComparingTo("1300000");
-        assertThat(b.totalRight()).isEqualByComparingTo("300000");
+        // Associates see closed cycles only: open-cycle sales never count.
+        assertThat(b.newLeft()).isZero();
+        assertThat(b.newRight()).isZero();
+        assertThat(b.totalLeft()).isEqualByComparingTo("1000000");
+        assertThat(b.totalRight()).isEqualByComparingTo("200000");
     }
 
     @Test
@@ -503,12 +500,9 @@ class LedgerServiceTest {
         LedgerEntry e = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), t1);
         e.setIncomeType(IncomeType.REWARD);
         e.setTierLevel(1);
-        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(e));
+        when(ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(e));
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("1600000"), new BigDecimal("300000")));
-        // Open-cycle leg sales count immediately, not only after close.
-        when(saleRepository.sumOpenCycleLegBusiness(me, "L")).thenReturn(BigDecimal.ZERO);
-        when(saleRepository.sumOpenCycleLegBusiness(me, "R")).thenReturn(new BigDecimal("100000"));
 
         List<AssociateRewardTierRow> rows = service.myRewardTiers(me);
 
@@ -516,8 +510,8 @@ class LedgerServiceTest {
         assertThat(rows.get(0).status()).isEqualTo(LedgerEntryStatus.PAID);
         assertThat(rows.get(0).achievedDate()).isEqualTo(Instant.parse("2026-01-15T00:00:00Z"));
         assertThat(rows.get(0).requiredLeftBusiness()).isZero();
-        assertThat(rows.get(0).requiredRightBusiness()).isEqualByComparingTo("100000");
-        // Matched is 4L (right leg 3L + 1L open), short of Level 1, so Level 2 hasn't started:
+        assertThat(rows.get(0).requiredRightBusiness()).isEqualByComparingTo("200000");
+        // Matched is 3L (right leg, closed cycles only), short of Level 1, so Level 2 hasn't started:
         // it shows its full 15L per leg, not reduced by the left leg's surplus.
         assertThat(rows.get(1).requiredLeftBusiness()).isEqualByComparingTo("1500000");
         assertThat(rows.get(1).requiredRightBusiness()).isEqualByComparingTo("1500000");
@@ -546,11 +540,9 @@ class LedgerServiceTest {
         LedgerEntry r2 = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), oldT2);
         r2.setIncomeType(IncomeType.REWARD);
         r2.setTierLevel(2);
-        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(r1, r2));
+        when(ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(r1, r2));
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("6300000"), new BigDecimal("5700000")));
-        when(saleRepository.sumOpenCycleLegBusiness(me, "L")).thenReturn(BigDecimal.ZERO);
-        when(saleRepository.sumOpenCycleLegBusiness(me, "R")).thenReturn(BigDecimal.ZERO);
 
         List<AssociateRewardTierRow> tiers = service.myRewardTiers(me);
 
@@ -570,8 +562,6 @@ class LedgerServiceTest {
                 new BigDecimal("500000"), new BigDecimal("15000"), "+ Smart Watch", "Sales Associate")));
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(BigDecimal.ZERO, BigDecimal.ZERO));
-        when(saleRepository.sumOpenCycleLegBusiness(me, "L")).thenReturn(BigDecimal.ZERO);
-        when(saleRepository.sumOpenCycleLegBusiness(me, "R")).thenReturn(BigDecimal.ZERO);
 
         AssociateRewardTierRow row = service.myRewardTiers(me).get(0);
 
@@ -594,7 +584,7 @@ class LedgerServiceTest {
         paid.setTierLevel(1);
         paid.setFulfilledAt(Instant.parse("2026-06-20T00:00:00Z"));
         paid.setFulfilmentRemark("Watch couriered");
-        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(paid));
+        when(ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(paid));
 
         List<AssociateRewardAchievedRow> rows = service.myRewardsAchieved(me, null, null);
 

@@ -275,6 +275,26 @@ class LiveIncomeIntegrationTest {
     }
 
     @Test
+    void liveRowsAreAdminOnlyAndBecomeVisibleToTheAssociateOnceTheCycleCloses() {
+        seedTree();
+        seedSale(leftId, cycleId, plotId, new BigDecimal("10000"));
+        seedSale(rightId, cycleId, plotId, new BigDecimal("6000"));
+        cycleService.refreshLiveIncome(cycleId);
+
+        // Live (OPEN cycle): admin queries see the row, associate-facing (closedOnly) queries do not.
+        assertThat(ledgerEntryRepository.summarise(sponseeId, null, null, null)).hasSize(1);
+        assertThat(ledgerEntryRepository.summarise(sponseeId, null, null, null, true)).isEmpty();
+        assertThat(ledgerEntryRepository.search(sponseeId, null, null, null, null, null, true,
+            org.springframework.data.domain.PageRequest.of(0, 20)).getTotalElements()).isZero();
+        assertThat(ledgerEntryRepository.sumGrossAmount(sponseeId, null, null, null, null, null, true)).isEqualByComparingTo("0");
+
+        cycleService.close(cycleId, java.time.LocalDate.now());
+
+        assertThat(ledgerEntryRepository.summarise(sponseeId, null, null, null, true)).hasSize(1);
+        assertThat(ledgerEntryRepository.sumGrossAmount(sponseeId, null, null, null, null, null, true)).isEqualByComparingTo("420");
+    }
+
+    @Test
     void refreshIsANoOpOnceTheCycleHasClosed() {
         seedTree();
         seedSale(leftId, cycleId, plotId, new BigDecimal("10000"));
