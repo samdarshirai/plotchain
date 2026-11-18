@@ -69,7 +69,7 @@ const isoDate = (d: Date): string => {
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.addPlotEmi.col.associate' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">call</span>{{ 'admin.addPlotEmi.col.mobile' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">apartment</span>{{ 'admin.addPlotEmi.col.project' | translate }}</th>
-                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.addPlotEmi.col.plot' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.viewTransferredPlot.col.newPlot' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.viewTransferredPlot.col.oldPlot' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.viewTransferredPlot.col.paid' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">account_balance_wallet</span>{{ 'admin.viewTransferredPlot.col.rest' | translate }}</th>
@@ -83,7 +83,7 @@ const isoDate = (d: Date): string => {
                 <td class="editable-table__cell--bold" [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ r.associateName || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.mobile' | translate">{{ r.associatePhone || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.project' | translate">{{ r.projectName || '—' }}</td>
-                <td [attr.data-label]="'admin.addPlotEmi.col.plot' | translate">{{ r.plotNo || '—' }}</td>
+                <td [attr.data-label]="'admin.viewTransferredPlot.col.newPlot' | translate">{{ r.plotNo || '—' }}</td>
                 <td [attr.data-label]="'admin.viewTransferredPlot.col.oldPlot' | translate">{{ r.oldPlotNo || '—' }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.viewTransferredPlot.col.paid' | translate">{{ money(r.paidAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.viewTransferredPlot.col.rest' | translate">{{ money(r.restAmount) }}</td>
