@@ -42,13 +42,6 @@ for (const screen of ['sales-register', 'associate-directory']) for (const width
       });
       expect(aligned).toBeTruthy();
     }
-    if (screen === 'sales-register') {
-      if (width > 768) {
-        expect(await table.locator('tbody td:nth-child(12) > span').evaluate(el => el.scrollWidth <= el.clientWidth)).toBeTruthy();
-      }
-      await table.locator('input').fill('Review reason');
-      await expect(table.locator('input')).toHaveValue('Review reason');
-    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
 }

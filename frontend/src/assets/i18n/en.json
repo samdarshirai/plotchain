@@ -702,7 +702,8 @@
       "viewPlotEmi": "Pending EMI",
       "emiReport": "EMI Report",
       "viewTransferredPlots": "View Transferred Plots",
-      "viewCancelledPlot": "View Cancelled Plots"
+      "viewCancelledPlot": "View Cancelled Plots",
+      "salesRegister": "Direct Sponsor Sales"
     },
     "reports": "Reports",
     "myBusinessDatewise": "My Business Datewise",
@@ -956,7 +957,7 @@
       "emptyState": "No entries in this status."
     },
     "salesRegister": {
-      "title": "Sales Register",
+      "title": "Direct Sponsor Sales",
       "associateFilterLabel": "Associate",
       "statusFilterLabel": "Status",
       "statusFilterAllOption": "All statuses",
@@ -980,13 +981,8 @@
       "columnNote": "Note",
       "columnStatus": "Status",
       "columnRecordedAt": "Recorded At",
-      "columnActions": "Actions",
       "loadError": "Something went wrong loading the sales register. Please try again.",
-      "actionError": "Could not save that action. Please try again.",
-      "emptyState": "No sales match these filters.",
-      "voidReasonPlaceholder": "Reason for voiding",
-      "voidAction": "Void",
-      "voidedTag": "Voided"
+      "emptyState": "No sales match these filters."
     },
     "cycleManagement": {
       "grossIncomeNote": "Income figures are shown before TDS and admin deductions.",
@@ -2014,7 +2010,7 @@
       "kycQueue": "KYC Review Queue",
       "auditLog": "Audit Log",
       "adminStats": "Admin Stats",
-      "salesRegister": "Sales Register",
+      "salesRegister": "Direct Sponsor Sales",
       "cycleManagement": "Closing Report",
       "ledgerRegister": "Income Statement",
       "epinRegister": "e-Pin Register",

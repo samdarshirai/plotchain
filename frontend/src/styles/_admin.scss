@@ -813,45 +813,6 @@
   font-size: 0.8125rem;
 }
 
-// Actions column (13th) -- lays out the inline void-reason input + Void button (or the
-// Voided tag) in a row without needing to restructure the component's markup.
-.sales-register__actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-width: 0;
-  flex-wrap: wrap;
-}
-
-.sales-register__void-reason-input {
-  width: 100%;
-  min-width: 0;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8125rem;
-}
-
-.sales-register__void-action {
-  padding: 0.5rem 0.875rem;
-  font-size: 0.8125rem;
-  border-radius: var(--radius-sm);
-}
-
-.sales-register__voided-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.625rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--status-danger) 16%, var(--surface-card));
-  color: var(--status-danger);
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 .sales-register .editable-table__empty {
   padding: 3rem 1.5rem;
 }
@@ -860,21 +821,20 @@
     table-layout: fixed;
 
     thead th, tbody td { padding: 8px 6px; text-align: center; }
-    // 13 columns: S No, Project, Plot No, Sponsor ID, Sponsor Name, Associate ID, Associate Name, Placement ID,
-    // Phone, Amount, Status, Recorded At, Actions. Sum 100%.
+    // 12 columns: S No, Project, Plot No, Sponsor ID, Sponsor Name, Associate ID, Associate Name, Placement ID,
+    // Phone, Amount, Status, Recorded At. Sum 100%.
     th:nth-child(1) { width: 3%; }
-    th:nth-child(2) { width: 7%; }
-    th:nth-child(3) { width: 5%; }
-    th:nth-child(4) { width: 8%; }
-    th:nth-child(5) { width: 8%; }
-    th:nth-child(6) { width: 8%; }
-    th:nth-child(7) { width: 8%; }
-    th:nth-child(8) { width: 7%; }
-    th:nth-child(9) { width: 8%; }
+    th:nth-child(2) { width: 9%; }
+    th:nth-child(3) { width: 6%; }
+    th:nth-child(4) { width: 9%; }
+    th:nth-child(5) { width: 10%; }
+    th:nth-child(6) { width: 9%; }
+    th:nth-child(7) { width: 10%; }
+    th:nth-child(8) { width: 8%; }
+    th:nth-child(9) { width: 9%; }
     th:nth-child(10) { width: 11%; }
-    th:nth-child(11) { width: 6%; }
+    th:nth-child(11) { width: 7%; }
     th:nth-child(12) { width: 9%; }
-    th:nth-child(13) { width: 12%; }
 
     // Text wraps (between words, or anywhere for long IDs) up to 2 lines, keeping rows compact.
     td > span {
@@ -904,14 +864,6 @@
     label {
       min-width: 0;
     }
-  }
-
-  .sales-register__void-reason-input {
-    width: 100%;
-  }
-
-  .sales-register__void-action {
-    min-height: 44px;
   }
 }
 

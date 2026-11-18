@@ -58,7 +58,6 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     icon: 'point_of_sale',
     items: [
       { key: 'ledgerRegister', labelKey: 'settings.sections.ledgerRegister', path: '/admin/settings/ledger-register' },
-      { key: 'salesRegister', labelKey: 'settings.sections.salesRegister', path: '/admin/settings/sales-register' },
       { key: 'cycleManagement', labelKey: 'settings.sections.cycleManagement', path: '/admin/settings/cycle-management' },
       { key: 'payoutApproval', labelKey: 'settings.sections.payoutApproval', path: '/admin/settings/payout-approval' },
       { key: 'expenseTypes', labelKey: 'settings.sections.expenseTypes', path: '/admin/settings/expense-types' }
@@ -88,7 +87,8 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
       { key: 'viewPlotEmi', labelKey: 'nav.plotBooking.viewPlotEmi', path: '/admin/settings/view-plot-emi' },
       { key: 'emiReport', labelKey: 'nav.plotBooking.emiReport', path: '/admin/settings/emi-report' },
       { key: 'viewTransferredPlots', labelKey: 'nav.plotBooking.viewTransferredPlots', path: '/admin/settings/view-transferred-plot' },
-      { key: 'viewCancelledPlot', labelKey: 'nav.plotBooking.viewCancelledPlot', path: '/admin/settings/view-cancelled-plot' }
+      { key: 'viewCancelledPlot', labelKey: 'nav.plotBooking.viewCancelledPlot', path: '/admin/settings/view-cancelled-plot' },
+      { key: 'salesRegister', labelKey: 'nav.plotBooking.salesRegister', path: '/admin/settings/sales-register' }
     ]
   },
   {

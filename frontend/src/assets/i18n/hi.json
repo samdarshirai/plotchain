@@ -673,7 +673,8 @@
       "viewPlotEmi": "बकाया ईएमआई",
       "emiReport": "ईएमआई रिपोर्ट",
       "viewTransferredPlots": "ट्रांसफर किए गए प्लॉट देखें",
-      "viewCancelledPlot": "रद्द प्लॉट देखें"
+      "viewCancelledPlot": "रद्द प्लॉट देखें",
+      "salesRegister": "Direct Sponsor Sales"
     },
     "reports": "रिपोर्ट",
     "myBusinessDatewise": "मेरा व्यवसाय (तिथि अनुसार)",
@@ -926,7 +927,7 @@
       "emptyState": "No entries in this status."
     },
     "salesRegister": {
-      "title": "Sales Register",
+      "title": "Direct Sponsor Sales",
       "associateFilterLabel": "Associate",
       "statusFilterLabel": "Status",
       "statusFilterAllOption": "All statuses",
@@ -950,13 +951,8 @@
       "columnNote": "Note",
       "columnStatus": "Status",
       "columnRecordedAt": "Recorded At",
-      "columnActions": "Actions",
       "loadError": "Something went wrong loading the sales register. Please try again.",
-      "actionError": "Could not save that action. Please try again.",
-      "emptyState": "No sales match these filters.",
-      "voidReasonPlaceholder": "Reason for voiding",
-      "voidAction": "Void",
-      "voidedTag": "Voided"
+      "emptyState": "No sales match these filters."
     },
     "cycleManagement": {
       "grossIncomeNote": "आय के आंकड़े टीडीएस और प्रशासनिक कटौतियों से पहले के हैं।",
@@ -1923,7 +1919,7 @@
       "kycQueue": "KYC Review Queue",
       "auditLog": "ऑडिट लॉग",
       "adminStats": "एडमिन आँकड़े",
-      "salesRegister": "बिक्री रजिस्टर",
+      "salesRegister": "Direct Sponsor Sales",
       "cycleManagement": "Closing Report",
       "ledgerRegister": "Income Statement",
       "payoutApproval": "Payout Approval",
