@@ -54,11 +54,17 @@ describe('EPinRegisterComponent', () => {
     expect(text).toContain('9');
   });
 
-  it('renders a row per pin with the holder shown by userId', () => {
-    flushInitial([pin()]);
+  it('renders a row per pin with assigned and activated associate in separate columns', () => {
+    flushInitial([pin(), pin({ id: 'p2', code: 'CODE-2', status: 'USED', redeemedTo: 'a1' })]);
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('CODE-1');
-    expect(text).toContain('VP00001');
+    const rows = fixture.nativeElement.querySelectorAll('.epin-register__row');
+    const assigned = (r: Element) => r.querySelector('[data-label="admin.epinRegister.colAssignedAssociateId"]')!.textContent!.trim();
+    const activated = (r: Element) => r.querySelector('[data-label="admin.epinRegister.colActivatedAssociateId"]')!.textContent!.trim();
+    expect(assigned(rows[0])).toBe('VP00001');
+    expect(activated(rows[0])).toBe('—');
+    expect(assigned(rows[1])).toBe('VP00001');
+    expect(activated(rows[1])).toBe('VP00001');
   });
 
   it('shows the expired chip key and class for an expired pin', () => {

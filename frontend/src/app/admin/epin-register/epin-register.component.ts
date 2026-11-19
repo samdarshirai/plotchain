@@ -249,7 +249,8 @@ type Panel =
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">pin</span>{{ 'admin.epinRegister.colCode' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.epinRegister.colAmount' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.epinRegister.colCreated' | translate }}</th>
-                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.epinRegister.colAssociateId' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.epinRegister.colAssignedAssociateId' | translate }}</th>
+                  <th><span class="material-symbols-outlined th-icon" aria-hidden="true">how_to_reg</span>{{ 'admin.epinRegister.colActivatedAssociateId' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -260,10 +261,11 @@ type Panel =
                   <td class="epin-register__code" [attr.data-label]="'admin.epinRegister.colCode' | translate">{{ p.code }}</td>
                   <td class="epin-register__amount" [attr.data-label]="'admin.epinRegister.colAmount' | translate">{{ amount(p) | currency:'INR':'symbol':'1.0-0' }}</td>
                   <td [attr.data-label]="'admin.epinRegister.colCreated' | translate">{{ datePipe.transform(p.generatedAt, 'd MMM y, h:mm:ss a', '+0530') }}</td>
-                  <td class="editable-table__cell--bold" [attr.data-label]="'admin.epinRegister.colAssociateId' | translate">{{ userId(p.redeemedTo ?? p.allocatedTo) }}</td>
+                  <td class="editable-table__cell--bold" [attr.data-label]="'admin.epinRegister.colAssignedAssociateId' | translate">{{ userId(p.allocatedTo) }}</td>
+                  <td class="editable-table__cell--bold" [attr.data-label]="'admin.epinRegister.colActivatedAssociateId' | translate">{{ userId(p.redeemedTo) }}</td>
                 </tr>
                 <tr *ngIf="!page?.epins?.length">
-                  <td colspan="6">{{ 'admin.epinRegister.emptyState' | translate }}</td>
+                  <td colspan="7">{{ 'admin.epinRegister.emptyState' | translate }}</td>
                 </tr>
               </tbody>
             </table>
