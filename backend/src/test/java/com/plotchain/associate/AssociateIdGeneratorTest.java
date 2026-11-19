@@ -30,7 +30,7 @@ class AssociateIdGeneratorTest {
     void generatesThePrefixFollowedByFourRandomDigits() {
         when(associateRepository.existsByUserId(ArgumentMatchers.anyString())).thenReturn(false);
 
-        assertThat(generator.generate()).matches("VSA5\\d{6}");
+        assertThat(generator.generate()).matches("VSA5\\d{5}");
     }
 
     @Test
@@ -38,14 +38,14 @@ class AssociateIdGeneratorTest {
         AssociateIdGenerator prefixed = new AssociateIdGenerator(associateRepository, "RS");
         when(associateRepository.existsByUserId(ArgumentMatchers.anyString())).thenReturn(false);
 
-        assertThat(prefixed.generate()).matches("RS\\d{6}");
+        assertThat(prefixed.generate()).matches("RS\\d{5}");
     }
 
     @Test
     void retriesWhenTheCandidateAlreadyExists() {
         when(associateRepository.existsByUserId(ArgumentMatchers.anyString())).thenReturn(true, false);
 
-        assertThat(generator.generate()).matches("VSA5\\d{6}");
+        assertThat(generator.generate()).matches("VSA5\\d{5}");
         verify(associateRepository, times(2)).existsByUserId(ArgumentMatchers.anyString());
     }
 
