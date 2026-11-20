@@ -101,6 +101,28 @@ class AssociateControllerTest {
     }
 
     @Test
+    void listIncludesEachAssociatesSponsor() throws Exception {
+        Associate sponsor = new Associate();
+        sponsor.setId(UUID.randomUUID());
+        sponsor.setUserId("VP00001");
+        sponsor.setName("Sponsor");
+        Associate child = new Associate();
+        child.setId(UUID.randomUUID());
+        child.setUserId("VP00002");
+        child.setName("Child");
+        child.setSponsorId(sponsor.getId());
+        when(associateRepository.findAllByOrderByUserIdAsc()).thenReturn(List.of(sponsor, child));
+
+        mockMvc.perform(get("/api/associates")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].sponsorId").doesNotExist())
+            .andExpect(jsonPath("$[1].sponsorId").value(sponsor.getId().toString()))
+            .andExpect(jsonPath("$[1].sponsorUserId").value("VP00001"))
+            .andExpect(jsonPath("$[1].sponsorName").value("Sponsor"));
+    }
+
+    @Test
     void listIsForbiddenForAnAssociateToken() throws Exception {
         mockMvc.perform(get("/api/associates")
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))

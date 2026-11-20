@@ -66,9 +66,9 @@ import { PAYMENT_MODES } from '../../plot-bookings/models/associate-booking-page
       <h3 class="book-form__section">{{ 'admin.projectsPlots.referralHeading' | translate }}</h3>
       <div class="book-form__grid">
         <label>{{ 'admin.projectsPlots.associateIdLabel' | translate }}
-          <input type="text" name="associateUserId" autocomplete="off" [disabled]="busy" [(ngModel)]="associateUserId" (ngModelChange)="lookupAssociate()"
-            [attr.aria-invalid]="associateError || (tried && !associateId) ? 'true' : null" />
-          <app-field-error [message]="(associateError ? 'admin.projectsPlots.associateNotFound' : tried && !associateId ? 'admin.projectsPlots.associateRequired' : '') | translate"></app-field-error>
+          <input type="text" name="associateUserId" autocomplete="off" readonly [value]="associateUserId"
+            [attr.aria-invalid]="tried && !associateId ? 'true' : null" />
+          <app-field-error [message]="(tried && !associateId ? 'admin.projectsPlots.associateRequired' : '') | translate"></app-field-error>
         </label>
         <label>{{ 'admin.projectsPlots.associateNameLabel' | translate }}
           <input type="text" name="associateName" readonly tabindex="-1" [value]="associateName" />
@@ -144,7 +144,6 @@ export class BookPlotFormComponent implements OnInit {
   associateId = '';
   associateUserId = '';
   associateName = '';
-  associateError = false;
   firstInstallmentAmount: number | null = null;
   paymentModes = PAYMENT_MODES;
   paymentMode = '';
@@ -168,21 +167,16 @@ export class BookPlotFormComponent implements OnInit {
     this.extraPercentRaw = extraPercent || (extraPrice && price ? roundPct(extraPrice / price * 100) : 0);
   }
 
-  // Associate is looked up client-side by its ID against the already-loaded list.
-  lookupAssociate(): void {
-    const id = this.associateUserId.trim().toLowerCase();
-    const found = id ? this.associates.find(a => a.userId.toLowerCase() === id) : undefined;
-    this.associateId = found?.id ?? '';
-    this.associateName = found?.name ?? '';
-    this.associateError = !!id && !found;
-  }
-
   // Buyer must be an existing associate with an e-PIN (server enforces it too).
   lookupBuyer(): void {
     const id = this.buyerUserId.trim().toLowerCase();
     const found = id ? this.associates.find(a => a.userId.toLowerCase() === id) : undefined;
     this.buyerAssociateId = found?.id ?? '';
     this.buyerName = found?.name ?? '';
+    // Sponsor is always the buyer's own sponsor; not editable.
+    this.associateId = found?.sponsorId ?? '';
+    this.associateUserId = found?.sponsorUserId ?? '';
+    this.associateName = found?.sponsorName ?? '';
     this.buyerNotFound = !!id && !found;
     this.buyerNoEpin = !!found && !found.hasEpin;
   }
@@ -218,7 +212,7 @@ export class BookPlotFormComponent implements OnInit {
     if (this.discountError) { add('discount', 'Discount', this.discountError === 'negative' ? 'Discount cannot be negative. Enter 0 or more.' : 'Discount must be less than the total price. Enter a smaller amount.'); }
     if (this.firstError) { add('firstInstallmentAmount', 'First installment', 'First installment must be above 0 and within the balance after the booking amount.'); }
     if (this.tokenError) { add('tokenAmount', 'Booking amount', this.tokenError === 'required' ? 'Booking amount is required. Enter an amount above 0.' : 'Booking amount must be less than the net total. Enter a smaller amount.'); }
-    if (!this.associateId) { add('associateUserId', 'Sponsor ID', this.associateError ? 'Sponsor ID was not found. Check the ID and retype it.' : "Sponsor ID is required. Enter the sponsor's ID."); }
+    if (!this.associateId) { add('associateUserId', 'Sponsor ID', 'The selected buyer has no sponsor, so a plot cannot be booked for them.'); }
     if (!this.paymentMode) { add('paymentMode', 'Payment mode', 'Payment mode is required. Choose one from the list.'); }
     if (!this.txnNo.trim()) { add('txnNo', 'Transaction number', 'Transaction number is required. Please fill it in.'); }
     if (!this.receiptNo.trim()) { add('receiptNo', 'Receipt number', 'Receipt number is required. Please fill it in.'); }

@@ -7,4 +7,7 @@ export interface AssociateSummary {
   hasFreeSlot: boolean;
   hasEpin: boolean;
   freeLegs?: string[];
+  sponsorId?: string | null;
+  sponsorUserId?: string | null;
+  sponsorName?: string | null;
 }

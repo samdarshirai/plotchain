@@ -8,8 +8,9 @@ describe('BookPlotFormComponent', () => {
   let fixture: ComponentFixture<BookPlotFormComponent>;
   const el = () => fixture.nativeElement as HTMLElement;
   const associates = [
-    { id: 'a1', userId: 'VP00001', name: 'Jane', role: 'ASSOCIATE' as const, hasFreeSlot: true, hasEpin: true },
-    { id: 'a2', userId: 'VP00002', name: 'Noepin', role: 'ASSOCIATE' as const, hasFreeSlot: true, hasEpin: false }
+    { id: 'a1', userId: 'VP00001', name: 'Jane', role: 'ASSOCIATE' as const, hasFreeSlot: true, hasEpin: true, sponsorId: 's1', sponsorUserId: 'VP00009', sponsorName: 'Sam Sponsor' },
+    { id: 'a2', userId: 'VP00002', name: 'Noepin', role: 'ASSOCIATE' as const, hasFreeSlot: true, hasEpin: false, sponsorId: null, sponsorUserId: null, sponsorName: null },
+    { id: 'a3', userId: 'VP00003', name: 'Root', role: 'ASSOCIATE' as const, hasFreeSlot: true, hasEpin: true, sponsorId: null, sponsorUserId: null, sponsorName: null }
   ];
   const plot = { plotId: 'x', plotNo: 'A-12', type: 'NORMAL' as const, area: 1800, price: 5130000, status: 'AVAILABLE' as const };
 
@@ -69,7 +70,7 @@ describe('BookPlotFormComponent', () => {
     const out: BookingFormValue[] = [];
     fixture.componentInstance.submitted.subscribe(v => out.push(v));
     await fixture.whenStable();
-    typeInto('buyerUserId', 'VP00001');
+    typeInto('buyerUserId', 'VP00003');
     submitForm();
     fixture.detectChanges();
     expect(out.length).toBe(0);
@@ -86,7 +87,7 @@ describe('BookPlotFormComponent', () => {
     typeInto('buyerPhone', ' 9876543210 ');
     typeInto('tokenAmount', '100000');
     submitForm();
-    expect(out).toEqual([{ associateId: 'a1', buyerAssociateId: 'a1', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0, extraPrice: 0, extraPercent: 0, ...pay }]);
+    expect(out).toEqual([{ associateId: 's1', buyerAssociateId: 'a1', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0, extraPrice: 0, extraPercent: 0, ...pay }]);
   });
 
   it('blocks submit without a receipt no and flags the field', async () => {
@@ -322,21 +323,25 @@ describe('BookPlotFormComponent', () => {
       const out = await ready();
       typeInto('discount', '130000'); typeInto('tokenAmount', '100000');
       submitForm();
-      expect(out).toEqual([{ associateId: 'a1', buyerAssociateId: 'a1', buyerPhone: '', tokenAmount: 100000, discount: 130000, extraPrice: 0, extraPercent: 0, ...pay }]);
+      expect(out).toEqual([{ associateId: 's1', buyerAssociateId: 'a1', buyerPhone: '', tokenAmount: 100000, discount: 130000, extraPrice: 0, extraPercent: 0, ...pay }]);
     });
   });
 
-  it('fills the associate name from a typed ID and flags an unknown ID', async () => {
+  it('fills a read-only sponsor from the selected buyer and clears it with the buyer', async () => {
     setup();
     await fixture.whenStable();
-    typeInto('associateUserId', 'vp00001');
+    typeInto('buyerUserId', 'VP00001');
     fixture.detectChanges();
-    expect(fixture.componentInstance.associateId).toBe('a1');
-    expect(el().querySelector<HTMLInputElement>('[name="associateName"]')!.value).toBe('Jane');
-    typeInto('associateUserId', 'nope');
+    const c = fixture.componentInstance;
+    expect(c.associateId).toBe('s1');
+    const id = el().querySelector<HTMLInputElement>('[name="associateUserId"]')!;
+    expect(id.value).toBe('VP00009');
+    expect(id.readOnly).toBe(true);
+    expect(el().querySelector<HTMLInputElement>('[name="associateName"]')!.value).toBe('Sam Sponsor');
+    typeInto('buyerUserId', 'nope');
     fixture.detectChanges();
-    expect(fixture.componentInstance.associateId).toBe('');
-    expect(el().textContent).toContain('admin.projectsPlots.associateNotFound');
+    expect(c.associateId).toBe('');
+    expect(c.associateName).toBe('');
   });
 
   it('requires a bank name for bank transfer and cheque but not cash', async () => {
