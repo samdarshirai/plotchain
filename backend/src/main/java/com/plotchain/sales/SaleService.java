@@ -101,7 +101,8 @@ public class SaleService {
         sale.setBookingId(bookingId);
         sale.setEmiInstallmentId(installmentId);
         sale.setCycleId(cycle.getId());
-        sale.setLegCredited(sponsor.getPosition());
+        // root sponsor has no placement parent, so no position; "L" matches the rest of the codebase (null is not "R")
+        sale.setLegCredited(sponsor.getPosition() != null ? sponsor.getPosition() : "L");
         sale.setStatus(SaleStatus.RECORDED);
         sale.setRecordedAt(Instant.now());
         sale = saleRepository.save(sale);
