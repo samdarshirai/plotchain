@@ -90,7 +90,7 @@ for (const width of [1280, 1366, 1440]) {
       await page.route('**/api/company/setup-state', r => r.fulfill({ json: { launchedAt: '2026-01-01T00:00:00Z' } }));
       await page.route('**/api/associates/me/downline?*', r => r.fulfill({ json: {
         associates: [{ id: 'a1', userId: 'VP00001', name: 'Associate With A Longer Display Name', phone: '9876543210',
-          sponsorUserId: 'VP00002', position: 'L', status: 'ACTIVE', kycStatus: 'VERIFIED',
+          sponsorUserId: 'VP00002', sponsorName: 'Sponsor With A Longer Display Name', position: 'L', status: 'ACTIVE', kycStatus: 'VERIFIED',
           role: 'ASSOCIATE', plotBuyer: true, joinedAt: '2026-10-01T12:00:00Z' }],
         page: 0, size: 100, totalElements: 1 } }));
       await page.goto('/my-tree/team', { waitUntil: 'networkidle' });

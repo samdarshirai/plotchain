@@ -99,6 +99,7 @@ export class MyTeamComponent implements OnInit {
       { key: 'name', label: t('columnName'), type: 'text', bold: true },
       { key: 'phone', label: t('columnPhone'), type: 'text' },
       { key: 'sponsorUserId', label: t('columnSponsorId'), type: 'text' },
+      { key: 'sponsorName', label: t('columnSponsorName'), type: 'text' },
       { key: 'parentUserId', label: t('columnParentId'), type: 'text' },
       { key: 'position', label: t('columnPosition'), type: 'text' },
       { key: 'status', label: t('columnStatus'), type: 'badge', badgeTone: v => this.statusTone(v) },
@@ -149,6 +150,7 @@ export class MyTeamComponent implements OnInit {
           // Server blanks phone for anyone this associate did not sponsor.
           phone: a.phone ?? '—',
           sponsorUserId: a.sponsorUserId ?? '—',
+          sponsorName: a.sponsorName ?? '—',
           parentUserId: a.parentUserId ?? '—',
           position: a.position ?? '—',
           status: titleCase(a.status),

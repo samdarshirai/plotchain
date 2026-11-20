@@ -243,6 +243,7 @@
     "columnUserId": "एसोसिएट ID",
     "columnMobile": "मोबाइल",
     "columnSponsorId": "स्पॉन्सर ID",
+    "columnSponsorName": "स्पॉन्सर नाम",
     "columnPosition": "पोज़िशन",
     "columnRegistrationDate": "पंजीकरण तिथि",
     "columnActivationDate": "सक्रियण तिथि"
@@ -800,6 +801,7 @@
       "columnPhone": "मोबाइल",
       "columnEmail": "ईमेल",
       "columnSponsorId": "Sponsor ID",
+      "columnSponsorName": "स्पॉन्सर नाम",
       "columnParentId": "Placement ID",
       "columnDesignation": "Designation",
       "columnKyc": "KYC Status",
@@ -941,6 +943,7 @@
       "columnBuyerAssociateId": "Associate ID",
       "columnBuyerName": "Associate Name",
       "columnPlotNo": "Plot No",
+      "columnSponsorName": "Sponsor Name",
       "columnPlacementId": "Placement ID",
       "cycleFilterLabel": "Cycle",
       "allCycles": "All cycles",

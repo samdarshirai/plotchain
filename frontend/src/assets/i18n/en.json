@@ -231,6 +231,7 @@
     "columnUserId": "Associate ID",
     "columnMobile": "Mobile",
     "columnSponsorId": "Sponsor ID",
+    "columnSponsorName": "Sponsor Name",
     "columnPosition": "Position",
     "columnRegistrationDate": "Registration Date",
     "columnActivationDate": "Activation Date"
@@ -830,6 +831,7 @@
       "columnPhone": "Mobile",
       "columnEmail": "Email",
       "columnSponsorId": "Sponsor ID",
+      "columnSponsorName": "Sponsor Name",
       "columnParentId": "Placement ID",
       "columnDesignation": "Designation",
       "columnKyc": "KYC Status",
@@ -971,6 +973,7 @@
       "columnBuyerAssociateId": "Associate ID",
       "columnBuyerName": "Associate Name",
       "columnPlotNo": "Plot No",
+      "columnSponsorName": "Sponsor Name",
       "columnPlacementId": "Placement ID",
       "cycleFilterLabel": "Cycle",
       "allCycles": "All cycles",
