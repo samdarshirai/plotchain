@@ -194,21 +194,25 @@ class BookingServiceTest {
     }
 
     @Test
-    void getTeamBookingsShowsAssociatePhoneOnlyWhenCallerSponsoredThem() {
+    void getTeamBookingsShowsAssociatePhoneOnlyForCallerAndTheirSponsorees() {
         PlotBooking booking = richBooking();
         Associate a = associateWithId(ASSOCIATE_ID);
         a.setUserId("VP00042");
         a.setPhone("8888888888");
         when(associateRepository.findAllById(any())).thenReturn(List.of(a));
-        when(plotBookingRepository.findByDownline(eq(ASSOCIATE_ID), eq(null), any(), any(), any()))
+        when(plotBookingRepository.findByDownline(any(), eq(null), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
         when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any()))
             .thenReturn(forBooking(booking, List.of()));
+        UUID otherCaller = UUID.randomUUID();
 
-        assertThat(bookingService.getTeamBookings(ASSOCIATE_ID, null, null, null, 0, 20).bookings().get(0).associatePhone()).isNull();
-
-        a.setSponsorId(ASSOCIATE_ID);
+        // seller is neither the caller nor sponsored by them
+        assertThat(bookingService.getTeamBookings(otherCaller, null, null, null, 0, 20).bookings().get(0).associatePhone()).isNull();
+        // the caller's own booking
         assertThat(bookingService.getTeamBookings(ASSOCIATE_ID, null, null, null, 0, 20).bookings().get(0).associatePhone()).isEqualTo("8888888888");
+        // seller directly sponsored by the caller
+        a.setSponsorId(otherCaller);
+        assertThat(bookingService.getTeamBookings(otherCaller, null, null, null, 0, 20).bookings().get(0).associatePhone()).isEqualTo("8888888888");
     }
 
     @Test

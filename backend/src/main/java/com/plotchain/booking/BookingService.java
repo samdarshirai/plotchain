@@ -1054,10 +1054,10 @@ public class BookingService {
                 result.getContent().stream().map(PlotBooking::getId).toList()).stream()
             .collect(java.util.stream.Collectors.groupingBy(EmiInstallment::getBookingId)))
             ;
-        // Associate phone is shown only for associates the caller sponsored (at any depth in the tree).
+        // Associate phone is shown only for the caller themself and the associates they directly sponsored.
         Set<UUID> sponsored = new HashSet<>();
         associateRepository.findAllById(bookings.stream().map(BookingResponse::associateId).distinct().toList())
-            .forEach(a -> { if (associateId.equals(a.getSponsorId())) sponsored.add(a.getId()); });
+            .forEach(a -> { if (associateId.equals(a.getSponsorId()) || associateId.equals(a.getId())) sponsored.add(a.getId()); });
         bookings = bookings.stream().map(b -> b.withoutBuyerPhone(sponsored.contains(b.associateId()))).toList();
         return new AssociateBookingPageResponse(bookings, page, size, result.getTotalElements());
     }
