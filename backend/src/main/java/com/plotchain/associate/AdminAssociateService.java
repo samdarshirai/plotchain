@@ -117,7 +117,7 @@ public class AdminAssociateService {
         List<AdminAssociateSummaryResponse> rows = page.associates().stream()
             .map(r -> sponsored.contains(r.id()) ? r : new AdminAssociateSummaryResponse(
                 r.id(), r.userId(), r.name(), r.designation(), r.kycStatus(), r.status(), r.joinedAt(),
-                r.lastActiveAt(), r.sponsorUserId(), r.position(), r.role(), r.loginPassword(),
+                r.lastActiveAt(), r.sponsorUserId(), r.sponsorName(), r.position(), r.role(), r.loginPassword(),
                 r.transactionPassword(), null, r.email(), r.activatedAt(), r.plotBuyer(), r.parentUserId()))
             .toList();
         return new AdminAssociatePageResponse(rows, page.page(), page.size(), page.totalElements());
@@ -338,8 +338,11 @@ public class AdminAssociateService {
     private List<AdminAssociateSummaryResponse> toSummaries(List<Associate> page) {
         Set<UUID> sponsorIds = page.stream().map(Associate::getSponsorId).filter(Objects::nonNull)
             .collect(Collectors.toSet());
-        Map<UUID, String> sponsorUserIds = associateRepository.findAllById(sponsorIds).stream()
+        List<Associate> sponsors = associateRepository.findAllById(sponsorIds);
+        Map<UUID, String> sponsorUserIds = sponsors.stream()
             .collect(Collectors.toMap(Associate::getId, Associate::getUserId));
+        Map<UUID, String> sponsorNames = sponsors.stream()
+            .filter(s -> s.getName() != null).collect(Collectors.toMap(Associate::getId, Associate::getName));
         Map<UUID, String> designations = designationService.designationsOf(page.stream().map(Associate::getId).toList());
         // Activation date = when the e-PIN that activated the associate was redeemed (no own column).
         Map<UUID, Instant> activatedAt = new java.util.HashMap<>();
@@ -354,15 +357,15 @@ public class AdminAssociateService {
             .collect(Collectors.toSet());
         Map<UUID, String> parentUserIds = associateRepository.findAllById(parentIds).stream()
             .collect(Collectors.toMap(Associate::getId, Associate::getUserId));
-        return page.stream().map(a -> toSummary(a, designations.get(a.getId()), sponsorUserIds.get(a.getSponsorId()), activatedAt.get(a.getId()), plotBuyers.contains(a.getId()),
+        return page.stream().map(a -> toSummary(a, designations.get(a.getId()), sponsorUserIds.get(a.getSponsorId()), sponsorNames.get(a.getSponsorId()), activatedAt.get(a.getId()), plotBuyers.contains(a.getId()),
             parentUserIds.get(a.getParentId()))).toList();
     }
 
-    private AdminAssociateSummaryResponse toSummary(Associate a, String designation, String sponsorUserId, Instant activatedAt, boolean plotBuyer,
+    private AdminAssociateSummaryResponse toSummary(Associate a, String designation, String sponsorUserId, String sponsorName, Instant activatedAt, boolean plotBuyer,
                                                     String parentUserId) {
         return new AdminAssociateSummaryResponse(
             a.getId(), a.getUserId(), a.getName(), designation,
-            a.getKycStatus(), a.getStatus(), a.getJoinedAt(), a.getLastActiveAt(), sponsorUserId,
+            a.getKycStatus(), a.getStatus(), a.getJoinedAt(), a.getLastActiveAt(), sponsorUserId, sponsorName,
             a.getPosition(), a.getRole(), a.getLoginPasswordPlain(), a.getTransactionPasswordPlain(),
             a.getPhone(), a.getEmail(), activatedAt, plotBuyer,
             parentUserId);

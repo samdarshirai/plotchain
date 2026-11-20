@@ -93,6 +93,7 @@ export class AssociateDownlineComponent implements OnInit {
       { key: 'userId', label: t('columnUserId'), type: 'text', bold: true },
       { key: 'phone', label: t('columnMobile'), type: 'text' },
       { key: 'sponsorUserId', label: t('columnSponsorId'), type: 'text' },
+      { key: 'sponsorName', label: t('columnSponsorName'), type: 'text' },
       { key: 'position', label: t('columnPosition'), type: 'text' },
       { key: 'joinedAt', label: t('columnRegistrationDate'), type: 'text' },
       { key: 'activatedAt', label: t('columnActivationDate'), type: 'text' }
@@ -112,6 +113,7 @@ export class AssociateDownlineComponent implements OnInit {
           userId: a.userId,
           phone: a.phone ?? '—',
           sponsorUserId: a.sponsorUserId ?? '—',
+          sponsorName: a.sponsorName ?? '—',
           position: a.position === 'L' ? 'Left' : a.position === 'R' ? 'Right' : '—',
           joinedAt: dateTime(a.joinedAt),
           activatedAt: a.activatedAt ? dateTime(a.activatedAt) : '—'

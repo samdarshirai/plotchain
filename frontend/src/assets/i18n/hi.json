@@ -243,6 +243,7 @@
     "columnUserId": "एसोसिएट ID",
     "columnMobile": "मोबाइल",
     "columnSponsorId": "स्पॉन्सर ID",
+    "columnSponsorName": "स्पॉन्सर नाम",
     "columnPosition": "पोज़िशन",
     "columnRegistrationDate": "पंजीकरण तिथि",
     "columnActivationDate": "सक्रियण तिथि"

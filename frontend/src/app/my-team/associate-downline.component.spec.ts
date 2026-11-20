@@ -7,7 +7,7 @@ import { MyTeamService } from './my-team.service';
 import { fitTable } from '../shared/utils/table-fit';
 
 describe('AssociateDownlineComponent', () => {
-  const row = (userId: string, extra = {}) => ({ id: userId, userId, name: 'Kid ' + userId, designation: null, kycStatus: 'VERIFIED', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: 'VP1', position: 'L', phone: '9999999999', activatedAt: '2026-01-05T00:00:00Z', ...extra });
+  const row = (userId: string, extra = {}) => ({ id: userId, userId, name: 'Kid ' + userId, designation: null, kycStatus: 'VERIFIED', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: 'VP1', sponsorName: 'Vee Pee', position: 'L', phone: '9999999999', activatedAt: '2026-01-05T00:00:00Z', ...extra });
   let listFor: jasmine.Spy;
 
   function setup(scope: 'me' | 'admin', result: any) {
@@ -24,10 +24,10 @@ describe('AssociateDownlineComponent', () => {
     return c;
   }
 
-  it('maps the eight columns, with dashes for missing mobile and activation date', () => {
+  it('maps the nine columns, with dashes for missing mobile and activation date', () => {
     const c = setup('me', of({ associates: [row('VP2', { phone: null, activatedAt: null, position: 'R' })], page: 0, size: 20, totalElements: 1 }));
-    expect(c.componentInstance.columns.length).toBe(8);
-    expect(c.componentInstance.rows[0]).toEqual(jasmine.objectContaining({ userId: 'VP2', phone: '—', activatedAt: '—', position: 'Right' }));
+    expect(c.componentInstance.columns.length).toBe(9);
+    expect(c.componentInstance.rows[0]).toEqual(jasmine.objectContaining({ userId: 'VP2', sponsorName: 'Vee Pee', phone: '—', activatedAt: '—', position: 'Right' }));
     expect(c.componentInstance.rows[0]['joinedAt']).toMatch(/2026, \d{2}:\d{2}:\d{2}$/);
   });
 

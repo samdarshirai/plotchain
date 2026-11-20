@@ -7,6 +7,7 @@ export interface AdminAssociateSummary {
   status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
   joinedAt: string;
   sponsorUserId: string | null;
+  sponsorName?: string | null;
   position: 'L' | 'R' | null;
   lastActiveAt: string | null;
   role: 'ADMIN' | 'MANAGER' | 'ASSOCIATE';
