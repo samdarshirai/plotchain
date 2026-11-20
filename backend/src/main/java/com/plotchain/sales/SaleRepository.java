@@ -151,7 +151,7 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
             SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
         )
         SELECT COALESCE(SUM(s.amount), 0) FROM sale s
-        JOIN downline d ON d.id = s.sponsor_id
+        JOIN downline d ON d.id = s.associate_id
         JOIN cycle c ON c.id = s.cycle_id
         WHERE s.status = 'RECORDED' AND c.status = 'OPEN'
         """, nativeQuery = true)
@@ -175,7 +175,7 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
             SELECT d.root_id, d.position, a.id FROM associate a JOIN downline d ON a.parent_id = d.id
         )
         SELECT CAST(d.root_id AS VARCHAR(36)) AS "associateKey", d.position AS "position", SUM(s.amount) AS "amount"
-        FROM downline d JOIN sale s ON s.sponsor_id = d.id
+        FROM downline d JOIN sale s ON s.associate_id = d.id
         JOIN cycle c ON c.id = s.cycle_id
         WHERE s.status = 'RECORDED' AND c.status = 'OPEN'
         GROUP BY d.root_id, d.position
