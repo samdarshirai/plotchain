@@ -1375,7 +1375,7 @@
       "from": "भुगतान से", "to": "भुगतान तक", "pending": "अपुष्ट", "confirmed": "पुष्ट", "emptyPending": "इन फ़िल्टर के लिए कोई अपुष्ट भुगतान नहीं।", "emptyConfirmed": "इन फ़िल्टर के लिए कोई पुष्ट भुगतान नहीं।",
       "col": { "paymentDate": "भुगतान तिथि", "amount": "राशि", "mode": "मोड", "status": "स्थिति", "select": "चुनें", "actions": "Actions" },
       "err": { "generic": "Could not save the change. Refresh and try again." },
-      "detailTitle": "Payment Detail"
+      "detailTitle": "Payment Detail", "editAction": "संपादित करें"
     },
     "plotCancel": {
       "title": "प्लॉट रद्द करें", "subtitle": "रद्द की जा सकने वाली सक्रिय बुकिंग। पूरी बुकिंग के लिए विवरण खोलें, या रद्दीकरण शुल्क और रिफंड तय करने के लिए रद्द करें चुनें।",

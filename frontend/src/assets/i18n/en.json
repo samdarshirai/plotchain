@@ -1466,7 +1466,7 @@
       "from": "Payment from", "to": "Payment to", "pending": "Unconfirmed", "confirmed": "Confirmed", "emptyPending": "No unconfirmed payments for these filters.", "emptyConfirmed": "No confirmed payments for these filters.",
       "col": { "paymentDate": "Payment Date", "amount": "Amount", "mode": "Mode", "status": "Status", "select": "Select", "actions": "Actions" },
       "err": { "generic": "Could not save the change. Refresh and try again." },
-      "detailTitle": "Payment Detail"
+      "detailTitle": "Payment Detail", "editAction": "Edit"
     },
     "plotCancel": {
       "title": "Plot Cancel", "subtitle": "Active bookings that can be cancelled. Open Detail for the full booking, or Cancel to set the cancellation charge and refund.",

@@ -140,7 +140,7 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
                 <td [attr.data-label]="'admin.viewConfirmedPlot.col.mode' | translate">{{ r.paymentMode ? ('admin.bookingsEmi.paymentMode.' + r.paymentMode | translate) : '—' }}</td>
                 <td [attr.data-label]="'admin.viewConfirmedPlot.col.status' | translate">{{ (status === 'ENTERED' ? 'admin.viewConfirmedPlot.pending' : 'admin.viewConfirmedPlot.confirmed') | translate }}</td>
                 <td *ngIf="status === 'ENTERED'" class="add-plot-emi__actions add-plot-emi__actions--icons add-plot-emi__noprint" [attr.data-label]="'admin.viewConfirmedPlot.col.actions' | translate">
-                  <button type="button" class="brand-button add-plot-emi__btn add-plot-emi__icon-btn" [disabled]="busy" (click)="openDetail(r)">{{ 'admin.viewBookedPlot.col.detail' | translate }}</button>
+                  <button type="button" class="brand-button add-plot-emi__btn add-plot-emi__icon-btn" [disabled]="busy" (click)="openDetail(r)">{{ 'admin.viewConfirmedPlot.editAction' | translate }}</button>
                 </td>
               </tr>
               <tr *ngIf="!page?.payments?.length">
