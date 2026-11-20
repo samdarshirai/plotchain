@@ -249,6 +249,22 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
         <h2 class="add-plot-emi__modal-title">{{ 'admin.addPlotEmi.editBooking.title' | translate }}</h2>
         <p class="add-plot-emi__hint">{{ 'admin.addPlotEmi.editBooking.hint' | translate }}</p>
         <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
+        <h3 class="add-plot-emi__section">{{ 'admin.addPlotEmi.plotDetails' | translate }}</h3>
+        <dl class="add-plot-emi__facts" *ngIf="bookingForm.booking as b">
+          <div><dt>{{ 'admin.addPlotEmi.col.project' | translate }}</dt><dd>{{ b.projectName || '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.plot' | translate }}</dt><dd>{{ b.plotNo || '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.plotType' | translate }}</dt><dd>{{ b.plotType ? ('admin.projectsPlots.type.' + b.plotType | translate) : '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.area' | translate }}</dt><dd>{{ b.areaSqft != null ? b.areaSqft : '—' }}</dd></div>
+          <div><dt>{{ 'admin.viewBookedPlot.col.rate' | translate }}</dt><dd>{{ b.rate != null ? money(b.rate) : '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.price' | translate }}</dt><dd>{{ b.listPrice != null ? money(b.listPrice) : '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.buyer' | translate }}</dt><dd>{{ b.buyerName || '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.associate' | translate }}</dt><dd>{{ b.associateName || '—' }} ({{ b.associateCode || '—' }})</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.bookedOn' | translate }}</dt><dd>{{ b.bookedAt ? (b.bookedAt | date: 'd MMM y' : '+0530') : '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.total' | translate }}</dt><dd>{{ money(b.totalAmount) }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.paid' | translate }}</dt><dd>{{ money(b.paidAmount) }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.remaining' | translate }}</dt><dd>{{ money(b.dueAmount) }}</dd></div>
+        </dl>
+        <h3 class="add-plot-emi__section">{{ 'admin.addPlotEmi.editBooking.editable' | translate }}</h3>
         <div class="add-plot-emi__grid">
           <label>{{ 'admin.addPlotEmi.editBooking.phone' | translate }}
             <input type="tel" name="ebPhone" maxlength="20" [(ngModel)]="ebPhone" />
@@ -260,6 +276,7 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
             <input type="number" name="ebExtra" min="0" step="1" [(ngModel)]="ebExtra" />
           </label>
         </div>
+        <p class="add-plot-emi__hint" *ngIf="newTotal != null">{{ 'admin.addPlotEmi.editBooking.newTotal' | translate: { total: money(newTotal) } }}</p>
         <div class="add-plot-emi__footer">
           <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="busy" (click)="closeForms()">{{ 'admin.addPlotEmi.cancel' | translate }}</button>
           <button type="submit" class="brand-button add-plot-emi__btn" [disabled]="busy">{{ (busy ? 'admin.addPlotEmi.saving' : 'admin.addPlotEmi.editBooking.save') | translate }}</button>
@@ -296,7 +313,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
   deleteKey: string | null = null;
   detailRow: PaymentRow | null = null;
   payForm: { bookingId: string; number: number; plot: string } | null = null;
-  bookingForm: { bookingId: string; plot: string } | null = null;
+  bookingForm: { bookingId: string; plot: string; booking: Booking } | null = null;
   amount: number | null = null;
   mode: PaymentMode | '' = '';
   bankName = '';
@@ -406,6 +423,12 @@ export class ViewConfirmedPlotComponent implements OnInit {
   openDetail(r: PaymentRow): void { this.banner = null; this.deleteKey = null; this.detailRow = r; }
   closeDetail(): void { if (!this.busy) { this.detailRow = null; this.deleteKey = null; } }
 
+  // Live preview of the recalculated total (list price + extra - discount); the server is the authority.
+  get newTotal(): number | null {
+    const l = this.bookingForm?.booking.listPrice;
+    return l == null ? null : l + (this.ebExtra ?? 0) - (this.ebDiscount ?? 0);
+  }
+
   closeForms(): void { if (!this.busy) { this.payForm = null; this.bookingForm = null; } }
 
   private fail(err: { status: number; error?: { error?: string } }, inForm: boolean): void {
@@ -478,7 +501,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
         if (b.installments.some(i => i.status === 'PAID')) { this.load(); return; }
         this.formError = '';
         this.detailRow = null;
-        this.bookingForm = { bookingId: b.id, plot: r.plotNo ?? '' };
+        this.bookingForm = { bookingId: b.id, plot: r.plotNo ?? '', booking: b };
         this.ebPhone = b.buyerPhone ?? '';
         this.ebDiscount = b.discount ?? 0;
         this.ebExtra = b.extraPrice ?? 0;

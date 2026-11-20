@@ -99,4 +99,14 @@ describe('ViewConfirmedPlotComponent', () => {
     expect(component.canEditPlot({ ...row('b1', 1), paidAmount: 5000 } as any)).toBeFalse();
     expect(component.canEditPlot(row('b1', 1) as any)).toBeFalse(); // unknown
   });
+
+  it('edit plot form keeps the plot details and previews the new total', () => {
+    boot();
+    component.openEditBooking({ ...row('b1', 1), paidAmount: 0 } as any);
+    http.expectOne('/api/admin/bookings/b1').flush({ id: 'b1', plotNo: 'A-1', listPrice: 100000, discount: 1000, extraPrice: 500,
+      installments: [{ installmentNumber: 1, amount: 10, status: 'ENTERED' }] });
+    expect(component.bookingForm?.booking.plotNo).toBe('A-1');
+    component.ebDiscount = 2000;
+    expect(component.newTotal).toBe(98500);
+  });
 });

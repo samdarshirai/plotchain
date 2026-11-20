@@ -1468,7 +1468,7 @@
       "deleteYes": "Yes, delete", "deleteNo": "Keep",
       "deleted": "Payment deleted for plot {{plot}}.", "updated": "Payment updated for plot {{plot}}.",
       "editBooking": { "button": "Edit Plot", "title": "Edit Plot Details", "phone": "Buyer phone", "discount": "Discount",
-        "extraPrice": "Extra price", "save": "Save", "success": "Plot {{plot}} updated.",
+        "extraPrice": "Extra price", "editable": "Editable fields", "newTotal": "New total: {{total}}", "save": "Save", "success": "Plot {{plot}} updated.",
         "hint": "Editable until the first payment is confirmed. Total and pending EMIs are recalculated." },
       "transfer": {
         "button": "ट्रांसफर",
