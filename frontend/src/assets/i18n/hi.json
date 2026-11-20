@@ -1461,6 +1461,13 @@
       },
       "addPayment": "भुगतान जोड़ें",
       "history": "इतिहास",
+      "editPayment": "Edit", "deletePayment": "Delete", "editPayTitle": "Edit Payment",
+      "deleteConfirm": "Delete payment of {{amount}}? Its amount goes back to the pending schedule.",
+      "deleteYes": "Yes, delete", "deleteNo": "Keep",
+      "deleted": "Payment deleted for plot {{plot}}.", "updated": "Payment updated for plot {{plot}}.",
+      "editBooking": { "button": "Edit Plot", "title": "Edit Plot Details", "phone": "Buyer phone", "discount": "Discount",
+        "extraPrice": "Extra price", "save": "Save", "success": "Plot {{plot}} updated.",
+        "hint": "Editable until the first payment is confirmed. Total and pending EMIs are recalculated." },
       "transfer": {
         "button": "ट्रांसफर",
         "title": "प्लॉट ट्रांसफर",

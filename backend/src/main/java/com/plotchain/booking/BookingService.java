@@ -276,6 +276,160 @@ public class BookingService {
         return toResponse(booking, installments);
     }
 
+    // Edit/delete of unconfirmed payments and booking details. Nothing downstream (Sale, ledger, live income)
+    // exists before confirmation, so only the PENDING schedule needs re-balancing.
+    @Transactional
+    public BookingResponse updatePayment(UUID bookingId, int number, TopUpRequest request, UUID actorId) {
+        PlotBooking booking = lockActive(bookingId);
+        String bankName = request.bankName() == null ? "" : request.bankName().trim();
+        if (request.paymentMode() != PaymentMode.CASH && bankName.isEmpty()) {
+            throw new InvalidTopUpException("Bank name is required for " + request.paymentMode());
+        }
+        List<EmiInstallment> installments = new ArrayList<>(
+            emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
+        EmiInstallment payment = enteredPayment(installments, bookingId, number);
+        BigDecimal amount = request.amount().setScale(0, RoundingMode.HALF_UP);
+        BigDecimal others = sumByStatus(installments, InstallmentStatus.PAID)
+            .add(sumByStatus(installments, InstallmentStatus.ENTERED)).subtract(payment.getAmount());
+        if (amount.signum() <= 0 || others.add(amount).compareTo(booking.getTotalAmount()) > 0) {
+            throw new InvalidTopUpException("Amount must be between 0.01 and "
+                + booking.getTotalAmount().subtract(others).toPlainString());
+        }
+        Instant paidAt = request.paidAt() != null ? request.paidAt()
+            : payment.getPaidAt() != null ? payment.getPaidAt() : clock.instant();
+        payment.setAmount(amount);
+        payment.setPaymentMode(request.paymentMode());
+        payment.setBankName(bankName.isEmpty() ? null : bankName);
+        payment.setPaymentRef(request.paymentRef().trim());
+        payment.setReceiptNo(request.receiptNo().trim());
+        payment.setPaidAt(paidAt);
+        payment.setDueDate(paidAt.atZone(ZoneOffset.UTC).toLocalDate());
+        resplitPending(bookingId, installments, booking.getTotalAmount());
+        return saveEdit(booking, installments, BookingEventType.PAYMENT_EDITED, actorId,
+            "edited: payment #" + number + ", amount " + amount.toPlainString() + ", ref " + payment.getPaymentRef());
+    }
+
+    @Transactional
+    public BookingResponse deletePayment(UUID bookingId, int number, UUID actorId) {
+        PlotBooking booking = lockActive(bookingId);
+        List<EmiInstallment> installments = new ArrayList<>(
+            emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
+        EmiInstallment payment = enteredPayment(installments, bookingId, number);
+        payment.setStatus(InstallmentStatus.VOID);
+        resplitPending(bookingId, installments, booking.getTotalAmount());
+        return saveEdit(booking, installments, BookingEventType.PAYMENT_DELETED, actorId,
+            "deleted: payment #" + number + ", amount " + payment.getAmount().toPlainString());
+    }
+
+    @Transactional
+    public BookingResponse updateBooking(UUID bookingId, UpdateBookingRequest request, UUID actorId) {
+        PlotBooking booking = lockActive(bookingId);
+        List<EmiInstallment> installments = new ArrayList<>(
+            emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(bookingId));
+        if (installments.stream().anyMatch(i -> i.getStatus() == InstallmentStatus.PAID)) {
+            throw new PaymentNotEditableException("Booking has a confirmed payment and can no longer be edited");
+        }
+        UUID sponsorId = booking.getAssociateId();
+        if (request.associateId() != null) {
+            sponsorId = associateRepository.findById(request.associateId())
+                .orElseThrow(() -> new AssociateNotFoundException(request.associateId())).getId();
+        }
+        UUID buyerId = booking.getBuyerAssociateId();
+        if (request.buyerAssociateId() != null) {
+            Associate buyer = associateRepository.findById(request.buyerAssociateId())
+                .orElseThrow(() -> new InvalidBuyerException("Buyer associate not found"));
+            if (buyer.getStatus() != com.plotchain.associate.AssociateStatus.ACTIVE
+                    || !associateRepository.hasActivationEpin(buyer.getId())) {
+                throw new InvalidBuyerException("Buyer must be an active associate with an e-PIN");
+            }
+            buyerId = buyer.getId();
+        }
+        BigDecimal listPrice = booking.getListPrice();
+        BigDecimal discount = request.discount() == null ? booking.getDiscount()
+            : request.discount().setScale(0, RoundingMode.HALF_UP);
+        if (discount.signum() < 0 || discount.compareTo(listPrice) >= 0) {
+            throw new InvalidDiscountException(discount, listPrice);
+        }
+        BigDecimal extraPrice = (request.extraPercent() != null ? Money.percentOf(listPrice, request.extraPercent())
+            : request.extraPrice() != null ? request.extraPrice() : booking.getExtraPrice())
+            .setScale(0, RoundingMode.HALF_UP);
+        BigDecimal total = listPrice.add(extraPrice).subtract(discount);
+        BigDecimal entered = sumByStatus(installments, InstallmentStatus.ENTERED);
+        if (entered.compareTo(total) > 0) {
+            throw new InvalidTopUpException("New total " + total.toPlainString()
+                + " is below the entered payments " + entered.toPlainString() + ": edit or delete them first");
+        }
+        booking.setAssociateId(sponsorId);
+        booking.setBuyerAssociateId(buyerId);
+        if (request.buyerPhone() != null) {
+            booking.setBuyerPhone(request.buyerPhone().isBlank() ? null : request.buyerPhone().trim());
+        }
+        booking.setDiscount(discount);
+        booking.setExtraPrice(extraPrice);
+        booking.setTotalAmount(total);
+        resplitPending(bookingId, installments, total);
+        return saveEdit(booking, installments, BookingEventType.BOOKING_EDITED, actorId,
+            "edited: total " + total.toPlainString());
+    }
+
+    private PlotBooking lockActive(UUID bookingId) {
+        PlotBooking booking = plotBookingRepository.findByIdForUpdate(bookingId)
+            .orElseThrow(() -> new BookingNotFoundException(bookingId));
+        if (booking.getStatus() != BookingStatus.ACTIVE) {
+            throw new BookingNotActiveException(bookingId);
+        }
+        return booking;
+    }
+
+    private EmiInstallment enteredPayment(List<EmiInstallment> installments, UUID bookingId, int number) {
+        EmiInstallment payment = installments.stream().filter(i -> i.getInstallmentNumber() == number).findFirst()
+            .orElseThrow(() -> new InstallmentNotFoundException(bookingId, number));
+        if (payment.getStatus() != InstallmentStatus.ENTERED) {
+            throw new PaymentNotEditableException("Payment " + number + " is not an unconfirmed payment");
+        }
+        return payment;
+    }
+
+    // Re-balance the PENDING rows in place so PAID + ENTERED + PENDING == total.
+    private void resplitPending(UUID bookingId, List<EmiInstallment> installments, BigDecimal total) {
+        BigDecimal committed = sumByStatus(installments, InstallmentStatus.PAID)
+            .add(sumByStatus(installments, InstallmentStatus.ENTERED));
+        BigDecimal balance = total.subtract(committed);
+        List<EmiInstallment> pending = installments.stream()
+            .filter(i -> i.getStatus() == InstallmentStatus.PENDING).toList();
+        if (balance.signum() <= 0) {
+            pending.forEach(i -> i.setStatus(InstallmentStatus.VOID));
+            return;
+        }
+        if (pending.isEmpty()) {
+            EmiInstallment n = new EmiInstallment();
+            n.setId(UUID.randomUUID());
+            n.setBookingId(bookingId);
+            n.setInstallmentNumber(installments.stream().mapToInt(EmiInstallment::getInstallmentNumber).max().orElse(0) + 1);
+            n.setDueDate(LocalDate.now(clock).plusMonths(1));
+            n.setAmount(balance);
+            installments.add(n);
+            return;
+        }
+        BigDecimal base = balance.divide(BigDecimal.valueOf(pending.size()), 0, RoundingMode.DOWN);
+        BigDecimal running = BigDecimal.ZERO;
+        for (int k = 0; k < pending.size(); k++) {
+            BigDecimal a = k == pending.size() - 1 ? balance.subtract(running) : base;
+            pending.get(k).setAmount(a);
+            running = running.add(a);
+        }
+    }
+
+    private BookingResponse saveEdit(PlotBooking booking, List<EmiInstallment> installments,
+                                     BookingEventType type, UUID actorId, String detail) {
+        emiInstallmentRepository.saveAll(installments);
+        booking.setInstallmentCount((int) installments.stream()
+            .filter(i -> i.getStatus() != InstallmentStatus.VOID).count());
+        plotBookingRepository.save(booking);
+        bookingEventRepository.save(BookingEvent.of(booking.getId(), type, actorId, detail, clock.instant()));
+        return toResponse(booking, installments);
+    }
+
     // U2: admin confirms an ENTERED payment (ENTERED -> PAID). Allowed on ACTIVE or CONFIRMED bookings,
     // never CANCELLED. Booking lock first (Decision 8); the plot lock is taken only for the completing payment.
     @Transactional

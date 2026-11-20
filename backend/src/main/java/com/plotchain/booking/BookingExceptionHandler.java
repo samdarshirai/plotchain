@@ -93,4 +93,9 @@ public class BookingExceptionHandler {
     public ResponseEntity<Map<String, String>> handleDuplicatePaymentRef(DuplicatePaymentRefException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(PaymentNotEditableException.class)
+    public ResponseEntity<Map<String, String>> handlePaymentNotEditable(PaymentNotEditableException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
 }

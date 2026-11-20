@@ -19,6 +19,8 @@ export interface RegisterFilters {
 
 export interface TopUpRequest { amount: number; paymentMode: PaymentMode; bankName?: string; paymentRef: string; paidAt?: string; receiptNo: string; }
 
+export interface UpdateBookingRequest { associateId?: string; buyerAssociateId?: string; buyerPhone?: string; discount?: number; extraPrice?: number; extraPercent?: number; }
+
 export interface PaymentRow {
   bookingId: string; installmentNumber: number; paymentDate: string;
   associateCode: string | null; associateName: string | null; projectName: string | null; plotNo: string | null;

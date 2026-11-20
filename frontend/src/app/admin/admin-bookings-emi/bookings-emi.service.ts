@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Booking } from '../../plot-bookings/models/associate-booking-page.model';
 import {
-  BookingPage, PaymentFilters, PaymentPage, PaymentRef, PlotTransferPage, RegisterFilters, TopUpRequest
+  BookingPage, PaymentFilters, PaymentPage, PaymentRef, PlotTransferPage, RegisterFilters, TopUpRequest, UpdateBookingRequest
 } from './bookings-emi.model';
 
 @Injectable({ providedIn: 'root' })
@@ -43,6 +43,20 @@ export class BookingsEmiService {
 
   topUp(id: string, req: TopUpRequest): Observable<Booking> {
     return this.http.post<Booking>(`/api/admin/bookings/${id}/top-up`, req);
+  }
+
+  // Edit/delete a payment that is not yet confirmed (ENTERED); the server rebalances the pending schedule.
+  updatePayment(id: string, number: number, req: TopUpRequest): Observable<Booking> {
+    return this.http.put<Booking>(`/api/admin/bookings/${id}/payments/${number}`, req);
+  }
+
+  deletePayment(id: string, number: number): Observable<Booking> {
+    return this.http.delete<Booking>(`/api/admin/bookings/${id}/payments/${number}`);
+  }
+
+  // Edit booking details while none of its payments is confirmed.
+  updateBooking(id: string, req: UpdateBookingRequest): Observable<Booking> {
+    return this.http.put<Booking>(`/api/admin/bookings/${id}`, req);
   }
 
   // Response is ordered by bookingId, not request order: callers must key results by id.

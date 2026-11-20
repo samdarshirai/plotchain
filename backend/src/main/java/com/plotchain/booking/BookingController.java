@@ -4,8 +4,10 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -59,5 +61,27 @@ public class BookingController {
     public BookingResponse moveMoney(@PathVariable UUID id, @Valid @RequestBody MoveMoneyRequest request,
                                      @AuthenticationPrincipal UUID actorId) {
         return bookingService.moveMoney(id, request, actorId);
+    }
+
+    // Edit booking details while none of its payments is confirmed.
+    @PutMapping("/{id}")
+    public BookingResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateBookingRequest request,
+                                  @AuthenticationPrincipal UUID actorId) {
+        return bookingService.updateBooking(id, request, actorId);
+    }
+
+    // Edit an unconfirmed (ENTERED) payment. Same body as top-up.
+    @PutMapping("/{id}/payments/{number}")
+    public BookingResponse updatePayment(@PathVariable UUID id, @PathVariable int number,
+                                         @Valid @RequestBody TopUpRequest request,
+                                         @AuthenticationPrincipal UUID actorId) {
+        return bookingService.updatePayment(id, number, request, actorId);
+    }
+
+    // Delete an unconfirmed (ENTERED) payment; its amount returns to the pending schedule.
+    @DeleteMapping("/{id}/payments/{number}")
+    public BookingResponse deletePayment(@PathVariable UUID id, @PathVariable int number,
+                                         @AuthenticationPrincipal UUID actorId) {
+        return bookingService.deletePayment(id, number, actorId);
     }
 }

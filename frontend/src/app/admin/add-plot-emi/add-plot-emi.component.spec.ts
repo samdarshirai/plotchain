@@ -99,6 +99,49 @@ describe('AddPlotEmiComponent', () => {
     expect(row.textContent!.trim()).toBe('RCP-5');
   });
 
+  describe('edit/delete unconfirmed payments and booking', () => {
+    const entered = () => booking({
+      installments: [
+        { installmentNumber: 1, amount: 10000, dueDate: '2026-10-01', status: 'ENTERED', paidAt: '2026-10-01T00:00:00Z', overdue: false, paymentMode: 'CASH', paymentRef: 'T0', receiptNo: 'R0' },
+        { installmentNumber: 2, amount: 90000, dueDate: '2026-11-01', status: 'PENDING', paidAt: null, overdue: false }
+      ]
+    });
+
+    it('edit prefills the form and PUTs to the payment endpoint; amount ceiling includes its own amount', () => {
+      const b = entered();
+      c.openEditPayment(b, b.installments[0]);
+      expect(c.editNo).toBe(1);
+      expect(c.amount).toBe(10000);
+      c.amount = 100000;
+      expect(c.amountInvalid).toBeFalse();
+      c.amount = 100001;
+      expect(c.amountInvalid).toBeTrue();
+      c.amount = 20000; c.txnDate = c.today;
+      c.submit();
+      const req = http.expectOne('/api/admin/bookings/b1/payments/1');
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body.amount).toBe(20000);
+      req.flush(b);
+    });
+
+    it('delete calls DELETE then reloads', () => {
+      const b = entered();
+      c.onProject('proj1');
+      http.expectOne(r => r.url === '/api/admin/bookings').flush({ bookings: [b], page: 0, size: 20, totalElements: 1 });
+      c.confirmDelete(b, b.installments[0]);
+      const req = http.expectOne('/api/admin/bookings/b1/payments/1');
+      expect(req.request.method).toBe('DELETE');
+      req.flush(b);
+      http.expectOne(r => r.url === '/api/admin/bookings').flush({ bookings: [], page: 0, size: 20, totalElements: 0 });
+    });
+
+    it('booking edit allowed only while ACTIVE with no PAID row', () => {
+      expect(c.canEditBooking(entered())).toBeTrue();
+      expect(c.canEditBooking(booking())).toBeFalse();
+      expect(c.canEditBooking({ ...entered(), status: 'CANCELLED' })).toBeFalse();
+    });
+  });
+
   describe('cancel booking', () => {
     beforeEach(() => {
       c.onProject('proj1');
