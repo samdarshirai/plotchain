@@ -19,7 +19,7 @@ import java.util.UUID;
 // token below the discounted total) need the plot, so BookingService checks them.
 public record CreateBookingRequest(
     @NotNull UUID plotId,
-    @NotNull UUID associateId,
+    UUID associateId, // ignored: the sale belongs to buyerAssociateId and the sponsor is derived from it
     @Size(max = 200) String buyerName,
     @Size(max = 20) String buyerPhone,
     @NotNull @Positive BigDecimal tokenAmount,
@@ -33,7 +33,7 @@ public record CreateBookingRequest(
     @DecimalMin("0") @DecimalMax("100") BigDecimal extraPercent,
     @Size(max = 50) String receiptNo,
     // The buyer: an existing ACTIVE associate holding an activation e-PIN. buyerName is derived from
-    // it server-side (client value ignored). associateId above stays the sponsor.
+    // it server-side (client value ignored). the sponsor is the buyer's own sponsor.
     UUID buyerAssociateId
 ) {
     public CreateBookingRequest(UUID plotId, UUID associateId, String buyerName, String buyerPhone,

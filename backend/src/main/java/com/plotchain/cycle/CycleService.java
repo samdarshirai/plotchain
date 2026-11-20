@@ -341,7 +341,7 @@ public class CycleService {
     private List<LegVolume> rollUpLegVolumes(UUID cycleId, List<Associate> associates, List<Sale> sales) {
         Map<UUID, BigDecimal> ownSaleVolume = new HashMap<>();
         for (Sale sale : sales) {
-            ownSaleVolume.merge(sale.getAssociateId(), sale.getAmount(), BigDecimal::add);
+            ownSaleVolume.merge(sale.getSponsorId(), sale.getAmount(), BigDecimal::add);
         }
 
         Map<UUID, Associate> leftChildOf = new HashMap<>();
@@ -432,9 +432,8 @@ public class CycleService {
     // Flow step 3 text taken literally, not an oversight).
     // Direct Income is written once at payment time (SaleService). Recalculation keeps this
     // cycle's rows in line with the current rules:
-    //  - the earner is the seller's sponsor (SaleService.directIncomeEarner); a row on anyone else
-    //    is re-pointed, and if it was already PAID its wallet credit moves with it. An admin's
-    //    sale has no earner, so its row is REVERSED (and un-credited if PAID).
+    //  - the earner is the sale's sponsor (sale.sponsorId, the buyer's sponsor); a row on anyone else
+    //    is re-pointed, and if it was already PAID its wallet credit moves with it.
     //  - not-yet-PAID rows are re-rated in place with today's plan, so a mid-cycle rate change
     //    reaches them too. PAID amounts are never re-rated.
     // Updated, not deleted and re-inserted, so ids and Payout Approval marks stay put. Rows whose
@@ -455,8 +454,7 @@ public class CycleService {
                 continue;
             }
             boolean paid = entry.getStatus() == LedgerEntryStatus.PAID;
-            Optional<UUID> earner = SaleService.directIncomeEarner(
-                associatesById.get(sale.getAssociateId()), associateRepository);
+            Optional<UUID> earner = Optional.of(sale.getSponsorId());
             if (earner.isEmpty()) {
                 if (paid) {
                     walletRepository.creditBalance(entry.getAssociateId(), entry.getNetAmount().negate());

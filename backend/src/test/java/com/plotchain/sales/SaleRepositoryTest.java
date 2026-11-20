@@ -78,6 +78,7 @@ class SaleRepositoryTest {
         sale.setPlotId(plotId);
         sale.setProjectId(projectId);
         sale.setAssociateId(associateId);
+        sale.setSponsorId(associateId);
         sale.setBuyerPhone("9999999999");
         sale.setNote("Sold to Jane Buyer");
         sale.setAmount(new BigDecimal("600000.00"));
@@ -315,6 +316,7 @@ class SaleRepositoryTest {
         b.setId(UUID.randomUUID());
         b.setPlotId(plotId);
         b.setAssociateId(sellerId);
+        b.setSponsorId(sellerId);
         b.setBuyerAssociateId(buyerId);
         b.setTotalAmount(new BigDecimal("600000.00"));
         b.setInstallmentCount(1);

@@ -65,27 +65,11 @@ public class SaleService {
         this.projectRepository = projectRepository;
     }
 
-    // Who earns Direct Income for a sale by `seller`: their sponsor. The admin is the one associate
-    // with no sponsor, and earns for no one above them, so an admin's sale yields no Direct Income.
-    // Any other sponsorless seller, or a dangling sponsor id, is a data-integrity error.
-    public static Optional<UUID> directIncomeEarner(Associate seller, AssociateRepository associates) {
-        UUID sponsorId = seller.getSponsorId();
-        if (sponsorId == null) {
-            if (seller.getRole() != AssociateRole.ASSOCIATE) {
-                return Optional.empty();
-            }
-            throw new IllegalStateException(
-                "associate " + seller.getId() + " has no sponsor - every non-admin associate must have one");
-        }
-        if (!associates.existsById(sponsorId)) {
-            throw new IllegalStateException("sponsor row missing for associate " + seller.getId());
-        }
-        return Optional.of(sponsorId);
-    }
-
     // Core of recordInstallmentPayment. plot may be null only for legacy plotless sales being voided elsewhere.
     // Runs inside the caller's transaction.
-    private SaleResponse persistSaleAndIncome(Plot plot, Associate associate, Project project,
+    // `sponsor` is the buyer's sponsor: it earns Direct Income and the binary volume / leg credit.
+    // The sale itself is recorded against the buyer (buyerAssociateId).
+    private SaleResponse persistSaleAndIncome(Plot plot, Associate sponsor, Project project,
             UUID buyerAssociateId, String buyerPhone, String buyerEmail, String note,
             BigDecimal amount, UUID bookingId, UUID installmentId, boolean markPlotSold) {
         // Flow step 4: flip Plot -> SOLD (Decision 1) -- only when a Plot is linked. A booking
@@ -107,7 +91,8 @@ public class SaleService {
         sale.setId(UUID.randomUUID());
         sale.setPlotId(plot != null ? plot.getId() : null);
         sale.setProjectId(project.getId());
-        sale.setAssociateId(associate.getId());
+        sale.setAssociateId(buyerAssociateId != null ? buyerAssociateId : sponsor.getId());
+        sale.setSponsorId(sponsor.getId());
         sale.setBuyerAssociateId(buyerAssociateId);
         sale.setBuyerPhone(buyerPhone);
         sale.setBuyerEmail(buyerEmail);
@@ -116,7 +101,7 @@ public class SaleService {
         sale.setBookingId(bookingId);
         sale.setEmiInstallmentId(installmentId);
         sale.setCycleId(cycle.getId());
-        sale.setLegCredited(associate.getPosition());
+        sale.setLegCredited(sponsor.getPosition());
         sale.setStatus(SaleStatus.RECORDED);
         sale.setRecordedAt(Instant.now());
         sale = saleRepository.save(sale);
@@ -130,9 +115,9 @@ public class SaleService {
             .orElseThrow(() -> new IllegalStateException(
                 "compensation_plan_version row missing - V8 migration seeds it"));
 
-        // Flow step 8: Direct Income goes to the seller's sponsor, one hop up (compensation-plan-reference.md
+        // Flow step 8: Direct Income goes to the buyer's sponsor (compensation-plan-reference.md
         // section 1). adminDeduction is the plan's Processing Fee % (stored as admin_charge_with_pan_pct).
-        Optional<UUID> directEarner = directIncomeEarner(associate, associateRepository);
+        Optional<UUID> directEarner = Optional.of(sponsor.getId());
         if (directEarner.isPresent()) {
             BigDecimal grossAmount = Money.percentOf(sale.getAmount(), planVersion.getDirectIncomePct());
             BigDecimal tdsDeduction = Money.percentOf(grossAmount, planVersion.getTdsPct());
@@ -160,7 +145,7 @@ public class SaleService {
 
         // Flow step 9. plot and project are already loaded above -- toResponse(sale, plot,
         // associate, project) reuses them instead of re-fetching via toResponses' batch lookups.
-        return toResponse(sale, plot, associate, project);
+        return toResponse(sale, plot, associateRepository.findById(sale.getAssociateId()).orElse(null), project);
     }
 
     // Business and income are credited per confirmed booking payment: one Sale per EMI
@@ -171,15 +156,15 @@ public class SaleService {
     // the allowed dependency direction (booking must not be imported by sales).
     @Transactional
     public SaleResponse recordInstallmentPayment(UUID bookingId, UUID installmentId, int installmentNumber,
-            UUID associateId, UUID buyerAssociateId, String buyerPhone, BigDecimal amount, Plot plot,
+            UUID sponsorId, UUID buyerAssociateId, String buyerPhone, BigDecimal amount, Plot plot,
             boolean markPlotSold) {
-        Associate associate = associateRepository.findById(associateId)
-            .orElseThrow(() -> new AssociateNotFoundException(associateId));
+        Associate sponsor = associateRepository.findById(sponsorId)
+            .orElseThrow(() -> new AssociateNotFoundException(sponsorId));
 
         Project project = projectRepository.findById(plot.getProjectId())
             .orElseThrow(() -> new ProjectNotFoundException(plot.getProjectId()));
 
-        return persistSaleAndIncome(plot, associate, project,
+        return persistSaleAndIncome(plot, sponsor, project,
             buyerAssociateId, buyerPhone, null,
             "Payment " + installmentNumber + " of booking " + bookingId, amount, bookingId, installmentId,
             markPlotSold);
@@ -324,7 +309,7 @@ public class SaleService {
         Map<UUID, String> projectNamesByProjectId = projectRepository.findAllById(projectIds).stream()
             .collect(Collectors.toMap(Project::getId, Project::getName));
         List<UUID> associateIds = sales.stream()
-            .flatMap(s -> Stream.of(s.getAssociateId(), s.getBuyerAssociateId())).filter(Objects::nonNull).distinct().toList();
+            .flatMap(s -> Stream.of(s.getAssociateId(), s.getBuyerAssociateId(), s.getSponsorId())).filter(Objects::nonNull).distinct().toList();
         Map<UUID, Associate> associatesById = associateRepository.findAllById(associateIds).stream()
             .collect(Collectors.toMap(Associate::getId, a -> a));
 
@@ -342,7 +327,8 @@ public class SaleService {
             String associateName = associate != null ? associate.getName() : null;
             Associate buyer = sale.getBuyerAssociateId() != null ? associatesById.get(sale.getBuyerAssociateId()) : null;
             String placement = buyer != null && buyer.getParentId() != null ? parentUserIds.get(buyer.getParentId()) : null;
-            return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName, buyer, placement);
+            return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName, buyer, placement,
+                associatesById.get(sale.getSponsorId()));
         }).toList();
     }
 
@@ -359,12 +345,13 @@ public class SaleService {
             : associateRepository.findById(sale.getBuyerAssociateId()).orElse(null);
         String placement = buyer == null || buyer.getParentId() == null ? null
             : associateRepository.findById(buyer.getParentId()).map(Associate::getUserId).orElse(null);
-        return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName, buyer, placement);
+        return buildResponse(sale, plot, plotNo, projectName, associateUserId, associateName, buyer, placement,
+            associateRepository.findById(sale.getSponsorId()).orElse(null));
     }
 
     private SaleResponse buildResponse(
             Sale sale, Plot plot, String plotNo, String projectName, String associateUserId, String associateName,
-            Associate buyer, String placementUserId) {
+            Associate buyer, String placementUserId, Associate sponsor) {
         return new SaleResponse(
             sale.getId(), sale.getPlotId(), sale.getAssociateId(),
             buyer != null ? buyer.getName() : null, sale.getBuyerPhone(), sale.getBuyerEmail(),
@@ -373,6 +360,7 @@ public class SaleService {
             plotNo, projectName, associateUserId, associateName, sale.getNote(),
             plot != null ? plot.getPlotType().name() : null, plot != null ? plot.getAreaSqft() : null,
             plot != null ? plot.getRate() : null, plot != null ? plot.getPrice() : null,
-            plot != null ? plot.getExtraPrice() : null, buyer != null ? buyer.getUserId() : null, placementUserId);
+            plot != null ? plot.getExtraPrice() : null, buyer != null ? buyer.getUserId() : null, placementUserId,
+            sponsor != null ? sponsor.getUserId() : null, sponsor != null ? sponsor.getName() : null);
     }
 }

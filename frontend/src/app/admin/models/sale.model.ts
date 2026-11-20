@@ -25,4 +25,7 @@ export interface Sale {
   extraPrice?: number | null;
   buyerAssociateUserId?: string | null;
   buyerPlacementUserId?: string | null;
+  // associateUserId/Name above is the buyer; the sponsor earns Direct Income and the volume.
+  sponsorUserId?: string | null;
+  sponsorName?: string | null;
 }

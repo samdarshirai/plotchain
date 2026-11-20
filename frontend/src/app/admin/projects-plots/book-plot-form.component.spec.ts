@@ -87,7 +87,7 @@ describe('BookPlotFormComponent', () => {
     typeInto('buyerPhone', ' 9876543210 ');
     typeInto('tokenAmount', '100000');
     submitForm();
-    expect(out).toEqual([{ associateId: 's1', buyerAssociateId: 'a1', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0, extraPrice: 0, extraPercent: 0, ...pay }]);
+    expect(out).toEqual([{ buyerAssociateId: 'a1', buyerPhone: '9876543210', tokenAmount: 100000, discount: 0, extraPrice: 0, extraPercent: 0, ...pay }]);
   });
 
   it('blocks submit without a receipt no and flags the field', async () => {
@@ -323,7 +323,7 @@ describe('BookPlotFormComponent', () => {
       const out = await ready();
       typeInto('discount', '130000'); typeInto('tokenAmount', '100000');
       submitForm();
-      expect(out).toEqual([{ associateId: 's1', buyerAssociateId: 'a1', buyerPhone: '9123456780', tokenAmount: 100000, discount: 130000, extraPrice: 0, extraPercent: 0, ...pay }]);
+      expect(out).toEqual([{ buyerAssociateId: 'a1', buyerPhone: '9123456780', tokenAmount: 100000, discount: 130000, extraPrice: 0, extraPercent: 0, ...pay }]);
     });
   });
 

@@ -92,6 +92,7 @@ class BookingCancelServiceTest {
         b.setId(UUID.randomUUID());
         b.setPlotId(PLOT_ID);
         b.setAssociateId(ASSOCIATE_ID);
+        b.setSponsorId(ASSOCIATE_ID);
         b.setBuyerAssociateId(b.getAssociateId());
         b.setTotalAmount(new BigDecimal("600000.00"));
         b.setInstallmentCount(installments.length);

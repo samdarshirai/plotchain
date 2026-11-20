@@ -67,6 +67,7 @@ class BookingEditServiceTest {
         b.setId(UUID.randomUUID());
         b.setPlotId(UUID.randomUUID());
         b.setAssociateId(UUID.randomUUID());
+        b.setSponsorId(UUID.randomUUID());
         b.setBuyerAssociateId(b.getAssociateId());
         b.setListPrice(new BigDecimal("100000.00"));
         b.setDiscount(BigDecimal.ZERO);

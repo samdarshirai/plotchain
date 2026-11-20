@@ -13,6 +13,8 @@ export interface BookingRow {
   associateCode?: string | null;
   associateName?: string | null;
   associatePhone?: string | null;
+  sponsorCode?: string | null;
+  sponsorName?: string | null;
   projectName?: string | null;
   plotType?: string | null;
   plotNo?: string | null;
@@ -29,6 +31,7 @@ export interface BookingRow {
 
 export const bookingRow = (b: Booking): BookingRow => ({
   key: b.id, bookedAt: b.bookedAt, associateCode: b.associateCode, associateName: b.associateName, associatePhone: b.associatePhone,
+  sponsorCode: b.sponsorCode, sponsorName: b.sponsorName,
   projectName: b.projectName, plotType: b.plotType, plotNo: b.plotNo, roadSizeFt: b.roadSizeFt, rate: b.rate, areaSqft: b.areaSqft,
   price: b.listPrice, extraPrice: b.extraPrice, total: b.totalAmount, paid: b.paidAmount, rest: b.dueAmount,
   installments: b.installments
@@ -37,6 +40,7 @@ export const bookingRow = (b: Booking): BookingRow => ({
 // A recorded sale is a completed purchase: fully paid, nothing left.
 export const saleRow = (s: Sale): BookingRow => ({
   key: s.id, bookedAt: s.recordedAt, associateCode: s.associateUserId, associateName: s.associateName,
+  sponsorCode: s.sponsorUserId, sponsorName: s.sponsorName,
   projectName: s.projectName, plotType: s.plotType, plotNo: s.plotNo, rate: s.rate, areaSqft: s.areaSqft,
   price: s.listPrice, extraPrice: s.extraPrice, total: s.amount, paid: s.amount, rest: 0
 });
@@ -68,6 +72,8 @@ export const saleRow = (s: Sale): BookingRow => ({
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'plotBookings.table.associateId' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">person</span>{{ 'plotBookings.table.name' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">call</span>{{ 'plotBookings.table.mobile' | translate }}</th>
+            <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'plotBookings.table.sponsorId' | translate }}</th>
+            <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">person</span>{{ 'plotBookings.table.sponsorName' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">apartment</span>{{ 'plotBookings.table.project' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'plotBookings.table.plotType' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'plotBookings.table.plotNo' | translate }}</th>
@@ -84,7 +90,7 @@ export const saleRow = (s: Sale): BookingRow => ({
         </thead>
         <tbody>
           <tr class="booking-table__empty" *ngIf="!visibleRows.length">
-            <td colspan="17">{{ 'plotBookings.table.empty' | translate }}</td>
+            <td colspan="19">{{ 'plotBookings.table.empty' | translate }}</td>
           </tr>
           <ng-container *ngFor="let r of visibleRows; let idx = index; trackBy: trackKey">
             <tr [class.booking-table__row--selected]="r.key === selectedKey" [attr.data-booking-id]="r.key">
@@ -93,6 +99,8 @@ export const saleRow = (s: Sale): BookingRow => ({
               <td class="booking-table__mono editable-table__cell--bold" [attr.data-label]="'plotBookings.table.associateId' | translate">{{ r.associateCode || '—' }}</td>
               <td class="editable-table__cell--bold" [attr.data-label]="'plotBookings.table.name' | translate">{{ r.associateName || '—' }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.mobile' | translate">{{ r.associatePhone || '—' }}</td>
+              <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.sponsorId' | translate">{{ r.sponsorCode || '—' }}</td>
+              <td [attr.data-label]="'plotBookings.table.sponsorName' | translate">{{ r.sponsorName || '—' }}</td>
               <td class="booking-table__wrap" [attr.data-label]="'plotBookings.table.project' | translate">{{ r.projectName || '—' }}</td>
               <td [attr.data-label]="'plotBookings.table.plotType' | translate">{{ r.plotType ? ('plotTile.type.' + r.plotType | translate) : '—' }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.plotNo' | translate">{{ r.plotNo || '—' }}</td>
@@ -117,7 +125,7 @@ export const saleRow = (s: Sale): BookingRow => ({
           <tr class="editable-table__total">
             <td class="table__sno"></td>
             <td>{{ 'common.total' | translate }}</td>
-            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
             <td class="booking-table__num" [attr.data-label]="'plotBookings.table.area' | translate">{{ area(sum('areaSqft')) }}</td>
             <td class="booking-table__num" [attr.data-label]="'plotBookings.table.price' | translate">{{ money(sum('price')) }}</td>
             <td class="booking-table__num" [attr.data-label]="'plotBookings.table.extraPrice' | translate">{{ money(sum('extraPrice')) }}</td>

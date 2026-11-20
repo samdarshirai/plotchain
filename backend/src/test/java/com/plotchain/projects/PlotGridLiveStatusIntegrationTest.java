@@ -71,6 +71,7 @@ class PlotGridLiveStatusIntegrationTest {
         associate.setPasswordHash("$2y$10$m1anhr1Y8va62ZGafTcLOODFQNYTpJDdbbnuriSLpRSELJIkV8J5C");
         // ADMIN: chk_associate_rank_required demands a rank for ASSOCIATE rows; also the FK-satisfying actor.
         associate.setRole(AssociateRole.ADMIN);
+        associate.setSponsorId(associate.getId()); // self-sponsored: bookings need a sponsor
         associateRepository.saveAndFlush(associate);
         // plot buyers must hold an ACTIVATION e-PIN
         jdbc.update("INSERT INTO epin (id, code, batch_id, status, generated_by, generated_at, redeemed_to, "

@@ -89,6 +89,7 @@ class BookingMoveMoneyServiceTest {
         b.setId(UUID.randomUUID());
         b.setPlotId(plot.getId());
         b.setAssociateId(buyer);
+        b.setSponsorId(buyer);
         b.setBuyerAssociateId(buyer);
         b.setTotalAmount(new BigDecimal("1000000.00"));
         b.setDiscount(BigDecimal.ZERO);
