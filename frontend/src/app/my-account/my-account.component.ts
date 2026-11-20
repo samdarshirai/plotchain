@@ -237,14 +237,14 @@ const BANK_LABELS = { bankName: 'Bank name', accountHolder: 'Account holder', ac
                 <span>{{ 'myAccount.personalDetail.genderLabel' | translate }}</span>
                 <select formControlName="gender">
                   <option value=""></option>
-                  <option *ngFor="let g of genderOptions" [value]="g">{{ 'myAccount.personalDetail.gender' + g | translate }}</option>
+                  <option *ngFor="let g of genderOptions" [value]="g">{{ 'myAccount.personalDetail.gender' + (g | titlecase) | translate }}</option>
                 </select>
               </label>
               <label class="detail-card__field">
                 <span>{{ 'myAccount.personalDetail.maritalStatusLabel' | translate }}</span>
                 <select formControlName="maritalStatus">
                   <option value=""></option>
-                  <option *ngFor="let m of maritalStatusOptions" [value]="m">{{ 'myAccount.personalDetail.marital' + m | translate }}</option>
+                  <option *ngFor="let m of maritalStatusOptions" [value]="m">{{ 'myAccount.personalDetail.marital' + (m | titlecase) | translate }}</option>
                 </select>
               </label>
             </div>

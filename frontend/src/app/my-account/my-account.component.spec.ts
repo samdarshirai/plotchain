@@ -110,6 +110,14 @@ describe('MyAccountComponent', () => {
     expect(fixture.componentInstance.rankProgress?.designation).toBe('Sales Manager');
   });
 
+  it('looks up gender and marital option labels by their camel-case i18n keys', () => {
+    init();
+    const keys = Array.from(fixture.nativeElement.querySelectorAll('select option') as NodeListOf<HTMLOptionElement>).map(o => o.textContent!.trim());
+    expect(keys).toContain('myAccount.personalDetail.genderMale');
+    expect(keys).toContain('myAccount.personalDetail.maritalSingle');
+    expect(keys).not.toContain('myAccount.personalDetail.genderMALE');
+  });
+
   it('renders the header identity strip with name, associate ID, joined date, and KYC status', () => {
     init();
     switchTab('kyc');
