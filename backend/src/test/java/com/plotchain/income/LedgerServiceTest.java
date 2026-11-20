@@ -44,6 +44,8 @@ class LedgerServiceTest {
     @BeforeEach
     void setUp() {
         service = new LedgerService(ledgerEntryRepository, associateRepository, cycleRepository, legVolumeRepository, compensationPlanService, saleRepository);
+        org.mockito.Mockito.lenient().when(saleRepository.sumOpenCycleLegBusiness(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+            .thenReturn(BigDecimal.ZERO);
     }
 
     private Associate newAssociate(UUID id, String userId, String name) {
@@ -472,20 +474,22 @@ class LedgerServiceTest {
     }
 
     @Test
-    void myRewardBusiness_countsClosedCyclesOnly() {
+    void myRewardBusiness_includesLiveOpenCycleVolume() {
         UUID me = UUID.randomUUID();
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("1000000"), new BigDecimal("200000")));
+        when(saleRepository.sumOpenCycleLegBusiness(me, "L")).thenReturn(new BigDecimal("300000"));
+        when(saleRepository.sumOpenCycleLegBusiness(me, "R")).thenReturn(new BigDecimal("50000"));
 
         AssociateRewardBusiness b = service.myRewardBusiness(me);
 
         assertThat(b.paidLeft()).isEqualByComparingTo("1000000");
         assertThat(b.paidRight()).isEqualByComparingTo("200000");
-        // Associates see closed cycles only: open-cycle sales never count.
-        assertThat(b.newLeft()).isZero();
-        assertThat(b.newRight()).isZero();
-        assertThat(b.totalLeft()).isEqualByComparingTo("1000000");
-        assertThat(b.totalRight()).isEqualByComparingTo("200000");
+        // Volumes are live for associates: open-cycle sales count.
+        assertThat(b.newLeft()).isEqualByComparingTo("300000");
+        assertThat(b.newRight()).isEqualByComparingTo("50000");
+        assertThat(b.totalLeft()).isEqualByComparingTo("1300000");
+        assertThat(b.totalRight()).isEqualByComparingTo("250000");
     }
 
     @Test

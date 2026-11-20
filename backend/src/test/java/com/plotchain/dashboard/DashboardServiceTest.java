@@ -287,6 +287,47 @@ class DashboardServiceTest {
     }
 
     @Test
+    void legVolumesAreLiveButIncomeStaysZeroForOpenCycle() {
+        UUID associateId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        UUID currentRankId = UUID.randomUUID();
+
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(currentRankId);
+        associate.setKycStatus(KycStatus.VERIFIED);
+
+        Cycle cycle = new Cycle();
+        cycle.setId(cycleId);
+        cycle.setStatus(CycleStatus.OPEN);
+        cycle.setPeriodStart(LocalDate.now().minusDays(5));
+        cycle.setPeriodEnd(LocalDate.now().plusDays(10));
+
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(cycle));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.empty());
+
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any())).thenReturn(BigDecimal.ZERO);
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion(new BigDecimal("7.00"))));
+        when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
+        when(saleRepository.countByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(0L);
+        when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        when(cycleRepository.countByPeriodStartLessThanEqual(cycle.getPeriodStart())).thenReturn(1L);
+
+        stubUnconditionalCalls(associateId);
+        when(saleRepository.sumOpenCycleLegBusiness(associateId, "L")).thenReturn(new BigDecimal("500"));
+        when(saleRepository.sumOpenCycleLegBusiness(associateId, "R")).thenReturn(new BigDecimal("200"));
+
+        DashboardResponse response = dashboardService.getDashboard(associateId);
+
+        assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("500");
+        assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("200");
+        assertThat(response.legVolumeSummary().newMatchingBusiness()).isEqualByComparingTo("200");
+        assertThat(response.cycleIncome().matchingIncome()).isEqualByComparingTo("0");
+    }
+
+    @Test
     void rejectsTheDashboardForAnAccountWithNoRank() {
         UUID associateId = UUID.randomUUID();
         Associate associate = new Associate();

@@ -372,9 +372,9 @@ public class LedgerService {
     public List<AssociateRewardTierRow> myRewardTiers(UUID associateId) {
         Map<Integer, LedgerEntry> byLevel = rewardEntriesByTierLevel(associateId);
         LegVolumeRepository.LegBusinessTotals closed = legVolumeRepository.totalBusiness(associateId);
-        // Associates see closed-cycle business only (no live open-cycle sales).
-        BigDecimal openLeft = BigDecimal.ZERO;
-        BigDecimal openRight = BigDecimal.ZERO;
+        // Volumes are live for associates; award status below stays closed-cycle only.
+        BigDecimal openLeft = saleRepository.sumOpenCycleLegBusiness(associateId, "L");
+        BigDecimal openRight = saleRepository.sumOpenCycleLegBusiness(associateId, "R");
         BigDecimal left = closed.left().add(openLeft);
         BigDecimal right = closed.right().add(openRight);
         BigDecimal matched = RewardTierRule.lifetimeMatched(closed, openLeft, openRight);
@@ -415,8 +415,8 @@ public class LedgerService {
 
     public AssociateRewardBusiness myRewardBusiness(UUID associateId) {
         LegVolumeRepository.LegBusinessTotals closed = legVolumeRepository.totalBusiness(associateId);
-        BigDecimal newLeft = BigDecimal.ZERO; // closed cycles only for associates
-        BigDecimal newRight = BigDecimal.ZERO;
+        BigDecimal newLeft = saleRepository.sumOpenCycleLegBusiness(associateId, "L");
+        BigDecimal newRight = saleRepository.sumOpenCycleLegBusiness(associateId, "R");
         return new AssociateRewardBusiness(
             closed.left().add(newLeft), closed.right().add(newRight),
             closed.left(), closed.right(),

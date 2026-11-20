@@ -96,9 +96,9 @@ public class DashboardService {
         Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
         Optional<LegVolume> latestLegVolume = latestClosedCycle
             .flatMap(closed -> legVolumeRepository.findByAssociateIdAndCycleId(associateId, closed.getId()));
-        // Closed-cycle carry only: no live open-cycle leg sales for associates.
-        BigDecimal newLeftBusiness = BigDecimal.ZERO;
-        BigDecimal newRightBusiness = BigDecimal.ZERO;
+        // Business and volumes are live for associates too (only income is closed-cycle).
+        BigDecimal newLeftBusiness = saleRepository.sumOpenCycleLegBusiness(associateId, "L");
+        BigDecimal newRightBusiness = saleRepository.sumOpenCycleLegBusiness(associateId, "R");
         BigDecimal leftLegVolume = newLeftBusiness
             .add(latestLegVolume.map(LegVolume::getCarriedForwardLeft).orElse(BigDecimal.ZERO));
         BigDecimal rightLegVolume = newRightBusiness
