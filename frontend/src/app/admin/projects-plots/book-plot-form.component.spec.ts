@@ -8,7 +8,7 @@ describe('BookPlotFormComponent', () => {
   let fixture: ComponentFixture<BookPlotFormComponent>;
   const el = () => fixture.nativeElement as HTMLElement;
   const associates = [
-    { id: 'a1', userId: 'VP00001', name: 'Jane', role: 'ASSOCIATE' as const, hasFreeSlot: true, hasEpin: true, sponsorId: 's1', sponsorUserId: 'VP00009', sponsorName: 'Sam Sponsor' },
+    { id: 'a1', userId: 'VP00001', name: 'Jane', role: 'ASSOCIATE' as const, hasFreeSlot: true, hasEpin: true, sponsorId: 's1', sponsorUserId: 'VP00009', sponsorName: 'Sam Sponsor', phone: '9123456780' },
     { id: 'a2', userId: 'VP00002', name: 'Noepin', role: 'ASSOCIATE' as const, hasFreeSlot: true, hasEpin: false, sponsorId: null, sponsorUserId: null, sponsorName: null },
     { id: 'a3', userId: 'VP00003', name: 'Root', role: 'ASSOCIATE' as const, hasFreeSlot: true, hasEpin: true, sponsorId: null, sponsorUserId: null, sponsorName: null }
   ];
@@ -323,7 +323,7 @@ describe('BookPlotFormComponent', () => {
       const out = await ready();
       typeInto('discount', '130000'); typeInto('tokenAmount', '100000');
       submitForm();
-      expect(out).toEqual([{ associateId: 's1', buyerAssociateId: 'a1', buyerPhone: '', tokenAmount: 100000, discount: 130000, extraPrice: 0, extraPercent: 0, ...pay }]);
+      expect(out).toEqual([{ associateId: 's1', buyerAssociateId: 'a1', buyerPhone: '9123456780', tokenAmount: 100000, discount: 130000, extraPrice: 0, extraPercent: 0, ...pay }]);
     });
   });
 
@@ -342,6 +342,20 @@ describe('BookPlotFormComponent', () => {
     fixture.detectChanges();
     expect(c.associateId).toBe('');
     expect(c.associateName).toBe('');
+  });
+
+  it('fills the buyer phone from the selected buyer and clears it with the buyer', async () => {
+    setup();
+    await fixture.whenStable();
+    typeInto('buyerUserId', 'VP00001');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const phone = el().querySelector<HTMLInputElement>('[name="buyerPhone"]')!;
+    expect(fixture.componentInstance.buyerPhone).toBe('9123456780');
+    expect(phone.value).toBe('9123456780');
+    typeInto('buyerUserId', 'nope');
+    fixture.detectChanges();
+    expect(fixture.componentInstance.buyerPhone).toBe('');
   });
 
   it('requires a bank name for bank transfer and cheque but not cash', async () => {

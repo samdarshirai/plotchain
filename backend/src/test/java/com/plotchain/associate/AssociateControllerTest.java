@@ -111,6 +111,7 @@ class AssociateControllerTest {
         child.setUserId("VP00002");
         child.setName("Child");
         child.setSponsorId(sponsor.getId());
+        child.setPhone("9123456780");
         when(associateRepository.findAllByOrderByUserIdAsc()).thenReturn(List.of(sponsor, child));
 
         mockMvc.perform(get("/api/associates")
@@ -119,7 +120,8 @@ class AssociateControllerTest {
             .andExpect(jsonPath("$[0].sponsorId").doesNotExist())
             .andExpect(jsonPath("$[1].sponsorId").value(sponsor.getId().toString()))
             .andExpect(jsonPath("$[1].sponsorUserId").value("VP00001"))
-            .andExpect(jsonPath("$[1].sponsorName").value("Sponsor"));
+            .andExpect(jsonPath("$[1].sponsorName").value("Sponsor"))
+            .andExpect(jsonPath("$[1].phone").value("9123456780"));
     }
 
     @Test

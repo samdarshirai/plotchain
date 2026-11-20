@@ -10,4 +10,5 @@ export interface AssociateSummary {
   sponsorId?: string | null;
   sponsorUserId?: string | null;
   sponsorName?: string | null;
+  phone?: string | null;
 }

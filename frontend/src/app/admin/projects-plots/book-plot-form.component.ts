@@ -173,6 +173,7 @@ export class BookPlotFormComponent implements OnInit {
     const found = id ? this.associates.find(a => a.userId.toLowerCase() === id) : undefined;
     this.buyerAssociateId = found?.id ?? '';
     this.buyerName = found?.name ?? '';
+    this.buyerPhone = found?.phone ?? '';
     // Sponsor is always the buyer's own sponsor; not editable.
     this.associateId = found?.sponsorId ?? '';
     this.associateUserId = found?.sponsorUserId ?? '';
