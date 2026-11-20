@@ -56,4 +56,37 @@ describe('ViewConfirmedPlotComponent', () => {
     listReq().flush(pageOf([]));
     expect(component.selected.size).toBe(0);
   });
+
+  it('edit loads the booking, PUTs the payment and reloads', () => {
+    boot();
+    component.openEditPayment(row('b1', 1) as any);
+    http.expectOne('/api/admin/bookings/b1').flush({ id: 'b1', installments: [
+      { installmentNumber: 1, amount: 250, status: 'ENTERED', paidAt: '2026-03-02T00:00:00Z', paymentMode: 'CASH', paymentRef: 'R', receiptNo: 'RC' }] });
+    expect(component.payForm).toEqual({ bookingId: 'b1', number: 1, plot: 'A-1' });
+    component.amount = 300;
+    component.savePayment();
+    const req = http.expectOne('/api/admin/bookings/b1/payments/1');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body.amount).toBe(300);
+    req.flush({});
+    listReq().flush(pageOf([]));
+    expect(component.payForm).toBeNull();
+  });
+
+  it('delete calls DELETE and reloads', () => {
+    boot();
+    component.confirmDelete(row('b1', 1) as any);
+    const req = http.expectOne('/api/admin/bookings/b1/payments/1');
+    expect(req.request.method).toBe('DELETE');
+    req.flush({});
+    listReq().flush(pageOf([]));
+  });
+
+  it('edit plot is refused client-side when the booking has a PAID row', () => {
+    boot();
+    component.openEditBooking(row('b1', 1) as any);
+    http.expectOne('/api/admin/bookings/b1').flush({ id: 'b1', installments: [{ installmentNumber: 1, amount: 1, status: 'PAID' }] });
+    expect(component.bookingForm).toBeNull();
+    listReq().flush(pageOf([]));
+  });
 });

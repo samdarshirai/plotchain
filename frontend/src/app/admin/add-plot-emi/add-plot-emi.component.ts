@@ -113,10 +113,9 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.total' | translate">{{ money(b.totalAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.paid' | translate">{{ money(b.paidAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.remaining' | translate">{{ money(b.dueAmount) }}</td>
-                <td class="add-plot-emi__actions add-plot-emi__actions--compact add-plot-emi__noprint">
+                <td class="add-plot-emi__actions add-plot-emi__noprint">
                   <button type="button" class="brand-button add-plot-emi__btn" (click)="openPay(b)">{{ 'admin.addPlotEmi.addPayment' | translate }}</button>
-                  <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="historyOf = b; deleteNo = null; formError = ''">{{ 'admin.addPlotEmi.history' | translate }}</button>
-                  <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" *ngIf="canEditBooking(b)" (click)="openEditBooking(b)">{{ 'admin.addPlotEmi.editBooking.button' | translate }}</button>
+                  <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="historyOf = b">{{ 'admin.addPlotEmi.history' | translate }}</button>
                   <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" *ngIf="b.status === 'ACTIVE'" (click)="openCancel(b)">{{ 'admin.addPlotEmi.cancelBooking.button' | translate }}</button>
                 </td>
               </tr>
@@ -152,7 +151,7 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
     <div class="add-plot-emi__overlay" *ngIf="payFor as b" (keydown.escape)="closePay()">
       <form class="add-plot-emi__modal" role="dialog" aria-modal="true" aria-labelledby="ape-pay-title" [class.was-submitted]="tried" (ngSubmit)="submit()" novalidate>
         <app-error-summary [issues]="issues"></app-error-summary>
-        <h2 class="add-plot-emi__modal-title" id="ape-pay-title">{{ (editNo ? 'admin.addPlotEmi.editPayTitle' : 'admin.addPlotEmi.payTitle') | translate }}</h2>
+        <h2 class="add-plot-emi__modal-title" id="ape-pay-title">{{ 'admin.addPlotEmi.payTitle' | translate }}</h2>
         <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
 
         <h3 class="add-plot-emi__section">{{ 'admin.addPlotEmi.plotDetails' | translate }}</h3>
@@ -206,29 +205,6 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
       </form>
     </div>
 
-    <div class="add-plot-emi__overlay" *ngIf="editBookingFor as b" (keydown.escape)="editBookingFor = null">
-      <form class="add-plot-emi__modal" role="dialog" aria-modal="true" (ngSubmit)="saveBooking()" novalidate>
-        <h2 class="add-plot-emi__modal-title">{{ 'admin.addPlotEmi.editBooking.title' | translate }} · {{ plot(b) }}</h2>
-        <p class="add-plot-emi__hint">{{ 'admin.addPlotEmi.editBooking.hint' | translate }}</p>
-        <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
-        <div class="add-plot-emi__grid">
-          <label>{{ 'admin.addPlotEmi.editBooking.phone' | translate }}
-            <input type="tel" name="ebPhone" maxlength="20" [(ngModel)]="ebPhone" />
-          </label>
-          <label>{{ 'admin.addPlotEmi.editBooking.discount' | translate }}
-            <input type="number" name="ebDiscount" min="0" step="1" [(ngModel)]="ebDiscount" />
-          </label>
-          <label>{{ 'admin.addPlotEmi.editBooking.extraPrice' | translate }}
-            <input type="number" name="ebExtra" min="0" step="1" [(ngModel)]="ebExtra" />
-          </label>
-        </div>
-        <div class="add-plot-emi__footer">
-          <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="saving" (click)="editBookingFor = null">{{ 'admin.addPlotEmi.cancel' | translate }}</button>
-          <button type="submit" class="brand-button add-plot-emi__btn" [disabled]="saving">{{ (saving ? 'admin.addPlotEmi.saving' : 'admin.addPlotEmi.editBooking.save') | translate }}</button>
-        </div>
-      </form>
-    </div>
-
     <div class="add-plot-emi__overlay" *ngIf="cancelFor as b" (keydown.escape)="closeCancel()">
       <div class="add-plot-emi__modal" role="dialog" aria-modal="true" aria-labelledby="ape-cx-title">
         <h2 class="add-plot-emi__modal-title" id="ape-cx-title">{{ 'admin.addPlotEmi.cancelBooking.title' | translate }}</h2>
@@ -277,7 +253,6 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
     <div class="add-plot-emi__overlay" *ngIf="historyOf as b" (keydown.escape)="historyOf = null">
       <div class="add-plot-emi__modal add-plot-emi__modal--wide" role="dialog" aria-modal="true" aria-labelledby="ape-hist-title">
         <h2 class="add-plot-emi__modal-title" id="ape-hist-title">{{ 'admin.addPlotEmi.historyTitle' | translate }} · {{ plot(b) }}</h2>
-        <app-inline-banner *ngIf="formError" tone="danger">{{ formError }}</app-inline-banner>
         <p class="add-plot-emi__hint" *ngIf="!history(b).length">{{ 'admin.addPlotEmi.hist.empty' | translate }}</p>
         <div class="add-plot-emi__scroll" *ngIf="history(b).length">
           <table class="add-plot-emi__table add-plot-emi__table--history">
@@ -292,7 +267,6 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.hist.txnDate' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">flag</span>{{ 'admin.addPlotEmi.hist.status' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.addPlotEmi.hist.confirmedDate' | translate }}</th>
-                <th scope="col" class="add-plot-emi__noprint"></th>
               </tr>
             </thead>
             <tbody>
@@ -306,26 +280,13 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
                 <td [attr.data-label]="'admin.addPlotEmi.hist.txnDate' | translate">{{ i.paidAt ? i.paidAt.slice(0, 10) : '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.hist.status' | translate">{{ 'admin.bookingsEmi.installment.' + i.status | translate }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.hist.confirmedDate' | translate">{{ dateTime(i.confirmedAt) }}</td>
-                <td class="add-plot-emi__actions add-plot-emi__noprint">
-                  <ng-container *ngIf="i.status === 'ENTERED' && b.status === 'ACTIVE'">
-                    <ng-container *ngIf="deleteNo !== i.installmentNumber">
-                      <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="openEditPayment(b, i)">{{ 'admin.addPlotEmi.editPayment' | translate }}</button>
-                      <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" (click)="deleteNo = i.installmentNumber">{{ 'admin.addPlotEmi.deletePayment' | translate }}</button>
-                    </ng-container>
-                    <ng-container *ngIf="deleteNo === i.installmentNumber">
-                      <span>{{ 'admin.addPlotEmi.deleteConfirm' | translate: { amount: money(i.amount) } }}</span>
-                      <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" [disabled]="saving" (click)="confirmDelete(b, i)">{{ 'admin.addPlotEmi.deleteYes' | translate }}</button>
-                      <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="deleteNo = null">{{ 'admin.addPlotEmi.deleteNo' | translate }}</button>
-                    </ng-container>
-                  </ng-container>
-                </td>
               </tr>
             </tbody>
             <tfoot>
               <tr>
                 <td colspan="2">{{ 'admin.addPlotEmi.hist.total' | translate }}</td>
                 <td class="add-plot-emi__num">{{ money(historyTotal(b)) }}</td>
-                <td colspan="7"></td>
+                <td colspan="6"></td>
               </tr>
             </tfoot>
           </table>
@@ -367,12 +328,6 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
 
   payFor: Booking | null = null;
   historyOf: Booking | null = null;
-  editNo: number | null = null;
-  deleteNo: number | null = null;
-  editBookingFor: Booking | null = null;
-  ebPhone = '';
-  ebDiscount: number | null = null;
-  ebExtra: number | null = null;
   cancelFor: Booking | null = null;
   cancelStep: 'detail' | 'confirm' = 'detail';
   cancelReason = '';
@@ -546,7 +501,6 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
 
   openPay(b: Booking): void {
     this.payFor = b;
-    this.editNo = null;
     this.amount = null;
     this.mode = '';
     this.bankName = '';
@@ -562,7 +516,7 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
 
   get amountInvalid(): boolean {
     const a = this.amount;
-    return a == null || !(a > 0) || (!!this.payFor && round2(a) > this.pendingOf(this.payFor) + this.editedAmount);
+    return a == null || !(a > 0) || (!!this.payFor && round2(a) > this.pendingOf(this.payFor));
   }
   get bankInvalid(): boolean { return !!this.mode && this.mode !== 'CASH' && !this.bankName.trim(); }
   get dateInvalid(): boolean { return !this.txnDate || this.txnDate > this.today; }
@@ -584,20 +538,14 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
     this.saving = true;
     this.formError = '';
     const amount = round2(this.amount as number);
-    const body = {
+    this.service.topUp(b.id, {
       amount, paymentMode: this.mode, bankName: this.bankName.trim() || undefined,
       paymentRef: this.txnNo.trim(), receiptNo: this.receiptNo.trim(), paidAt: `${this.txnDate}T00:00:00Z`
-    };
-    const editing = this.editNo;
-    (editing ? this.service.updatePayment(b.id, editing, body) : this.service.topUp(b.id, body)).subscribe({
+    }).subscribe({
       next: () => {
         this.saving = false;
         this.payFor = null;
-        this.editNo = null;
-        this.historyOf = null;
-        this.flash = editing
-          ? this.translate.instant('admin.addPlotEmi.updated', { plot: plotText(b) })
-          : this.translate.instant('admin.addPlotEmi.success', { amount: formatMoney(amount), plot: plotText(b) });
+        this.flash = this.translate.instant('admin.addPlotEmi.success', { amount: formatMoney(amount), plot: plotText(b) });
         this.load();
       },
       error: err => {
@@ -608,78 +556,6 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
         } else {
           this.formError = err.error?.error ?? this.translate.instant('admin.addPlotEmi.err.server');
         }
-      }
-    });
-  }
-
-  // ---- edit / delete unconfirmed payments, edit booking ------------------
-
-  private get editedAmount(): number {
-    const b = this.payFor;
-    return b && this.editNo ? b.installments.find(i => i.installmentNumber === this.editNo)?.amount ?? 0 : 0;
-  }
-
-  openEditPayment(b: Booking, i: EmiInstallment): void {
-    this.openPay(b);
-    this.editNo = i.installmentNumber;
-    this.amount = i.amount;
-    this.mode = i.paymentMode ?? '';
-    this.bankName = i.bankName ?? '';
-    this.txnNo = i.paymentRef ?? '';
-    this.receiptNo = i.receiptNo ?? '';
-    this.txnDate = i.paidAt ? i.paidAt.slice(0, 10) : this.today;
-  }
-
-  confirmDelete(b: Booking, i: EmiInstallment): void {
-    if (this.saving) { return; }
-    this.saving = true;
-    this.formError = '';
-    this.service.deletePayment(b.id, i.installmentNumber).subscribe({
-      next: () => {
-        this.saving = false;
-        this.deleteNo = null;
-        this.historyOf = null;
-        this.flash = this.translate.instant('admin.addPlotEmi.deleted', { plot: plotText(b) });
-        this.load();
-      },
-      error: err => {
-        this.saving = false;
-        this.formError = err.error?.error ?? this.translate.instant('admin.addPlotEmi.err.server');
-        if (err.status === 409) { this.load(); }
-      }
-    });
-  }
-
-  canEditBooking(b: Booking): boolean {
-    return b.status === 'ACTIVE' && !b.installments.some(i => i.status === 'PAID');
-  }
-
-  openEditBooking(b: Booking): void {
-    this.editBookingFor = b;
-    this.ebPhone = b.buyerPhone ?? '';
-    this.ebDiscount = b.discount ?? 0;
-    this.ebExtra = b.extraPrice ?? 0;
-    this.formError = '';
-  }
-
-  saveBooking(): void {
-    const b = this.editBookingFor;
-    if (!b || this.saving) { return; }
-    this.saving = true;
-    this.formError = '';
-    this.service.updateBooking(b.id, {
-      buyerPhone: this.ebPhone.trim(), discount: this.ebDiscount ?? 0, extraPrice: this.ebExtra ?? 0
-    }).subscribe({
-      next: () => {
-        this.saving = false;
-        this.editBookingFor = null;
-        this.flash = this.translate.instant('admin.addPlotEmi.editBooking.success', { plot: plotText(b) });
-        this.load();
-      },
-      error: err => {
-        this.saving = false;
-        this.formError = err.error?.error ?? this.translate.instant('admin.addPlotEmi.err.server');
-        if (err.status === 409) { this.load(); }
       }
     });
   }
