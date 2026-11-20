@@ -125,7 +125,7 @@ describe('AssociateSidebarComponent', () => {
       .map(a => a.getAttribute('href'));
     expect(hrefs).toEqual([
       '/plot-bookings', '/plot-bookings/team', '/plot-bookings/left', '/plot-bookings/right',
-      '/plot-bookings/mine', '/plot-bookings/my-sales'
+      '/plot-bookings/mine', '/plot-bookings/my-sales', '/plot-bookings/direct-sponsor-sales'
     ]);
   });
 
