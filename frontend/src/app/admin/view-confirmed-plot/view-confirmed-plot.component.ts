@@ -139,17 +139,8 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.viewConfirmedPlot.col.amount' | translate">{{ money(r.amount) }}</td>
                 <td [attr.data-label]="'admin.viewConfirmedPlot.col.mode' | translate">{{ r.paymentMode ? ('admin.bookingsEmi.paymentMode.' + r.paymentMode | translate) : '—' }}</td>
                 <td [attr.data-label]="'admin.viewConfirmedPlot.col.status' | translate">{{ (status === 'ENTERED' ? 'admin.viewConfirmedPlot.pending' : 'admin.viewConfirmedPlot.confirmed') | translate }}</td>
-                <td *ngIf="status === 'ENTERED'" class="add-plot-emi__actions add-plot-emi__noprint" [attr.data-label]="'admin.viewConfirmedPlot.col.actions' | translate">
-                  <ng-container *ngIf="deleteKey !== key(r)">
-                    <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="busy" (click)="openEditPayment(r)">{{ 'admin.addPlotEmi.editPayment' | translate }}</button>
-                    <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" [disabled]="busy" (click)="deleteKey = key(r)">{{ 'admin.addPlotEmi.deletePayment' | translate }}</button>
-                    <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" *ngIf="!r.paidAmount" [disabled]="busy" (click)="openEditBooking(r)">{{ 'admin.addPlotEmi.editBooking.button' | translate }}</button>
-                  </ng-container>
-                  <ng-container *ngIf="deleteKey === key(r)">
-                    <span>{{ 'admin.addPlotEmi.deleteConfirm' | translate: { amount: money(r.amount) } }}</span>
-                    <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" [disabled]="busy" (click)="confirmDelete(r)">{{ 'admin.addPlotEmi.deleteYes' | translate }}</button>
-                    <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="deleteKey = null">{{ 'admin.addPlotEmi.deleteNo' | translate }}</button>
-                  </ng-container>
+                <td *ngIf="status === 'ENTERED'" class="add-plot-emi__actions add-plot-emi__actions--icons add-plot-emi__noprint" [attr.data-label]="'admin.viewConfirmedPlot.col.actions' | translate">
+                  <button type="button" class="brand-button add-plot-emi__btn add-plot-emi__icon-btn" [disabled]="busy" (click)="openDetail(r)">{{ 'admin.viewBookedPlot.col.detail' | translate }}</button>
                 </td>
               </tr>
               <tr *ngIf="!page?.payments?.length">
@@ -185,6 +176,40 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
         </div>
       </div>
     </div>
+    <div class="add-plot-emi__overlay" *ngIf="detailRow as r" (keydown.escape)="closeDetail()">
+      <div class="add-plot-emi__modal" role="dialog" aria-modal="true" aria-labelledby="vcp-detail-title">
+        <h2 class="add-plot-emi__modal-title" id="vcp-detail-title">{{ 'admin.viewConfirmedPlot.detailTitle' | translate }} · {{ r.plotNo || '—' }}</h2>
+        <dl class="add-plot-emi__facts">
+          <div><dt>{{ 'admin.addPlotEmi.col.project' | translate }}</dt><dd>{{ r.projectName || '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.plot' | translate }}</dt><dd>{{ r.plotNo || '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.associate' | translate }}</dt><dd>{{ r.associateName || '—' }} ({{ r.associateCode || '—' }})</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.mobile' | translate }}</dt><dd>{{ r.associatePhone || '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.area' | translate }}</dt><dd>{{ r.areaSqft != null ? r.areaSqft : '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.discount' | translate }}</dt><dd>{{ r.discount != null ? money(r.discount) : '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.total' | translate }}</dt><dd>{{ r.totalAmount != null ? money(r.totalAmount) : '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.paid' | translate }}</dt><dd>{{ r.paidAmount != null ? money(r.paidAmount) : '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.remaining' | translate }}</dt><dd>{{ r.dueAmount != null ? money(r.dueAmount) : '—' }}</dd></div>
+          <div><dt>{{ 'admin.viewConfirmedPlot.col.amount' | translate }}</dt><dd>{{ money(r.amount) }}</dd></div>
+          <div><dt>{{ 'admin.viewConfirmedPlot.col.mode' | translate }}</dt><dd>{{ r.paymentMode ? ('admin.bookingsEmi.paymentMode.' + r.paymentMode | translate) : '—' }}</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.txnNo' | translate }}</dt><dd>{{ r.paymentRef || '—' }}</dd></div>
+          <div><dt>{{ 'admin.viewConfirmedPlot.col.paymentDate' | translate }}</dt><dd>{{ r.paymentDate ? (r.paymentDate | date: 'd MMM y, h:mm a' : '+0530') : '—' }}</dd></div>
+        </dl>
+        <app-inline-banner *ngIf="deleteKey === key(r)" tone="warning">{{ 'admin.addPlotEmi.deleteConfirm' | translate: { amount: money(r.amount) } }}</app-inline-banner>
+        <div class="add-plot-emi__footer">
+          <ng-container *ngIf="deleteKey !== key(r)">
+            <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="closeDetail()">{{ 'admin.addPlotEmi.close' | translate }}</button>
+            <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" [disabled]="busy" (click)="deleteKey = key(r)">{{ 'admin.addPlotEmi.deletePayment' | translate }}</button>
+            <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" *ngIf="canEditPlot(r)" [disabled]="busy" (click)="openEditBooking(r)">{{ 'admin.addPlotEmi.editBooking.button' | translate }}</button>
+            <button type="button" class="brand-button add-plot-emi__btn" [disabled]="busy" (click)="openEditPayment(r)">{{ 'admin.addPlotEmi.editPayment' | translate }}</button>
+          </ng-container>
+          <ng-container *ngIf="deleteKey === key(r)">
+            <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="busy" (click)="deleteKey = null">{{ 'admin.addPlotEmi.deleteNo' | translate }}</button>
+            <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" [disabled]="busy" (click)="confirmDelete(r)">{{ 'admin.addPlotEmi.deleteYes' | translate }}</button>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+
     <div class="add-plot-emi__overlay" *ngIf="payForm" (keydown.escape)="closeForms()">
       <form class="add-plot-emi__modal" role="dialog" aria-modal="true" (ngSubmit)="savePayment()" novalidate>
         <h2 class="add-plot-emi__modal-title">{{ 'admin.addPlotEmi.editPayTitle' | translate }}</h2>
@@ -269,6 +294,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
   busy = false;
   asking = false;
   deleteKey: string | null = null;
+  detailRow: PaymentRow | null = null;
   payForm: { bookingId: string; number: number; plot: string } | null = null;
   bookingForm: { bookingId: string; plot: string } | null = null;
   amount: number | null = null;
@@ -374,10 +400,17 @@ export class ViewConfirmedPlotComponent implements OnInit {
       && !!this.txnNo.trim() && !!this.receiptNo.trim() && !!this.txnDate && this.txnDate <= this.today;
   }
 
+  // Plot details are editable only while nothing on the booking is confirmed; unknown paid amount = hide.
+  canEditPlot(r: PaymentRow): boolean { return r.paidAmount === 0; }
+
+  openDetail(r: PaymentRow): void { this.banner = null; this.deleteKey = null; this.detailRow = r; }
+  closeDetail(): void { if (!this.busy) { this.detailRow = null; this.deleteKey = null; } }
+
   closeForms(): void { if (!this.busy) { this.payForm = null; this.bookingForm = null; } }
 
   private fail(err: { status: number; error?: { error?: string } }, inForm: boolean): void {
     this.busy = false;
+    if (!inForm) { this.detailRow = null; this.deleteKey = null; }
     const msg = err.error?.error;
     if (inForm) { this.formError = msg ?? this.translate.instant('admin.viewConfirmedPlot.err.generic'); }
     else { this.banner = { tone: 'danger', msg: { key: 'admin.viewConfirmedPlot.err.generic' } }; }
@@ -389,6 +422,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
     this.payForm = null;
     this.bookingForm = null;
     this.deleteKey = null;
+    this.detailRow = null;
     this.banner = { tone: 'success', msg: { key, params: { plot } } };
     this.load();
   }
@@ -402,6 +436,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
         const i = b.installments.find(x => x.installmentNumber === r.installmentNumber);
         if (!i || i.status !== 'ENTERED') { this.load(); return; }
         this.formError = '';
+        this.detailRow = null;
         this.payForm = { bookingId: b.id, number: i.installmentNumber, plot: r.plotNo ?? '' };
         this.amount = i.amount;
         this.mode = i.paymentMode ?? '';
@@ -442,6 +477,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
         this.busy = false;
         if (b.installments.some(i => i.status === 'PAID')) { this.load(); return; }
         this.formError = '';
+        this.detailRow = null;
         this.bookingForm = { bookingId: b.id, plot: r.plotNo ?? '' };
         this.ebPhone = b.buyerPhone ?? '';
         this.ebDiscount = b.discount ?? 0;

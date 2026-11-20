@@ -79,6 +79,11 @@
   }
 }
 
+// Icon-only row actions: one inline row at every width (beats the wrap/column rules above).
+.add-plot-emi td.add-plot-emi__actions--icons { flex-direction: row; flex-wrap: nowrap; justify-content: flex-end; gap: 4px;
+  .add-plot-emi__icon-btn { width: auto; min-height: 28px; padding: 0 6px; line-height: 1;
+    .material-symbols-outlined { font-size: 18px; } } }
+
 @media print {
   .add-plot-emi__noprint { display: none !important; }
 }

@@ -59,10 +59,13 @@ describe('ViewConfirmedPlotComponent', () => {
 
   it('edit loads the booking, PUTs the payment and reloads', () => {
     boot();
+    component.openDetail(row('b1', 1) as any);
+    expect(component.detailRow).not.toBeNull();
     component.openEditPayment(row('b1', 1) as any);
     http.expectOne('/api/admin/bookings/b1').flush({ id: 'b1', installments: [
       { installmentNumber: 1, amount: 250, status: 'ENTERED', paidAt: '2026-03-02T00:00:00Z', paymentMode: 'CASH', paymentRef: 'R', receiptNo: 'RC' }] });
     expect(component.payForm).toEqual({ bookingId: 'b1', number: 1, plot: 'A-1' });
+    expect(component.detailRow).toBeNull();
     component.amount = 300;
     component.savePayment();
     const req = http.expectOne('/api/admin/bookings/b1/payments/1');
@@ -88,5 +91,12 @@ describe('ViewConfirmedPlotComponent', () => {
     http.expectOne('/api/admin/bookings/b1').flush({ id: 'b1', installments: [{ installmentNumber: 1, amount: 1, status: 'PAID' }] });
     expect(component.bookingForm).toBeNull();
     listReq().flush(pageOf([]));
+  });
+
+  it('edit plot is offered only when the booking has no confirmed money', () => {
+    boot();
+    expect(component.canEditPlot({ ...row('b1', 1), paidAmount: 0 } as any)).toBeTrue();
+    expect(component.canEditPlot({ ...row('b1', 1), paidAmount: 5000 } as any)).toBeFalse();
+    expect(component.canEditPlot(row('b1', 1) as any)).toBeFalse(); // unknown
   });
 });
