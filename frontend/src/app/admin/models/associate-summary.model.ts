@@ -6,4 +6,5 @@ export interface AssociateSummary {
   status: 'ACTIVE' | 'SUSPENDED' | 'PENDING';
   hasFreeSlot: boolean;
   hasEpin: boolean;
+  freeLegs?: string[];
 }

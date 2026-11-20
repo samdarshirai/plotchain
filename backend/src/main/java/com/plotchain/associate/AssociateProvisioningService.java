@@ -39,16 +39,19 @@ public class AssociateProvisioningService {
         assertIdentityUnique(request);
         UUID sponsorId = null;
         UUID parentId = null;
+        boolean rootExists = associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE);
         if (request.sponsorUserId() != null && !request.sponsorUserId().isBlank()) {
-            Associate sponsor = associateRepository.findByUserId(request.sponsorUserId().trim())
-                .orElseThrow(() -> new AssociateNotFoundException(request.sponsorUserId()));
-            if (request.position() == null) {
-                throw new PositionRequiredException(sponsor.getId());
-            }
-            sponsorId = sponsor.getId();
-            parentId = findFreeSlotParent(sponsor, request.position()).getId();
-        } else if (associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)) {
+            sponsorId = associateRepository.findByUserId(request.sponsorUserId().trim())
+                .orElseThrow(() -> new AssociateNotFoundException(request.sponsorUserId())).getId();
+        } else if (rootExists) {
             throw new SponsorRequiredException();
+        }
+        if (request.placementUserId() != null && !request.placementUserId().isBlank()) {
+            // createPending validates position + slot occupancy; the unique index is the race guard.
+            parentId = associateRepository.findByUserId(request.placementUserId().trim())
+                .orElseThrow(() -> new AssociateNotFoundException(request.placementUserId())).getId();
+        } else if (rootExists) {
+            throw new PlacementRequiredException();
         }
         String email = request.email() == null || request.email().isBlank() ? null : request.email().trim();
         Associate associate = createPending(request.name().trim(), email, request.phone(),

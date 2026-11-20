@@ -20,7 +20,7 @@ describe('NewAssociatePanelComponent', () => {
   }
 
   const fillValid = (form: AssociateProfileFormComponent) => form.form.patchValue({
-    sponsorUserId: 'VP00002', position: 'L', name: 'Aditya Kumar', panNumber: 'ABCDE1234F', aadhaarNumber: '123456789012',
+    sponsorUserId: 'VP00002', placementUserId: 'VP00002', position: 'L', name: 'Aditya Kumar', panNumber: 'ABCDE1234F', aadhaarNumber: '123456789012',
     phone: '9876543210', state: 'Delhi', district: 'Central', address: 'Addr'
   });
 
@@ -34,7 +34,7 @@ describe('NewAssociatePanelComponent', () => {
     fixture.detectChanges();
 
     httpMock.expectOne('/api/associates')
-      .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true }]);
+      .flush([{ id: 'sponsor-1', userId: 'VP00002', name: 'Sunil Sponsor', role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: true, freeLegs: ['L', 'R'] }]);
   });
 
   afterEach(() => httpMock.verify());
@@ -80,6 +80,7 @@ describe('NewAssociatePanelComponent', () => {
     const req = httpMock.expectOne('/api/associates');
     expect(req.request.method).toBe('POST');
     expect(req.request.body.sponsorUserId).toBe('VP00002');
+    expect(req.request.body.placementUserId).toBe('VP00002');
     expect(req.request.body.position).toBe('L');
     expect(req.request.body.panNumber).toBe('ABCDE1234F');
     expect(req.request.body.transactionPassword).toBeUndefined();
@@ -115,6 +116,7 @@ describe('NewAssociatePanelComponent', () => {
     fixture.componentInstance.presetParent = { parentId: 'p1', leg: 'R', parentUserId: 'VP00050', parentName: 'Ravi Root' };
     const form = open();
     expect(form.form.controls.sponsorUserId.value).toBe('VP00050');
+    expect(form.form.controls.placementUserId.value).toBe('VP00050');
     expect(form.form.controls.position.value).toBe('R');
   });
 

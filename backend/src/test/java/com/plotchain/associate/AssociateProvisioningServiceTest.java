@@ -136,32 +136,52 @@ class AssociateProvisioningServiceTest {
     }
 
     private static CreateAssociateRequest req(String sponsorUserId, String position, String phone) {
-        return new CreateAssociateRequest("Jane Doe", sponsorUserId, position, null, "ABCDE1234F", "123456789012",
+        return req(sponsorUserId, null, position, phone);
+    }
+
+    private static CreateAssociateRequest req(String sponsorUserId, String placementUserId, String position, String phone) {
+        return new CreateAssociateRequest("Jane Doe", sponsorUserId, placementUserId, position, null, "ABCDE1234F", "123456789012",
             null, null, null, "new@plotchain.test", phone, "Odisha", "Khordha", "1 Main St", null, null, null);
     }
 
     @Test
-    void createWithSponsorWalksTheLegToTheFirstFreeSlotAndStoresProfile() {
+    void createUsesChosenPlacementAsParentAndStoresProfile() {
         when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
         Associate sponsor = new Associate();
         sponsor.setId(UUID.randomUUID());
-        Associate leftChild = new Associate();
-        leftChild.setId(UUID.randomUUID());
+        Associate placement = new Associate();
+        placement.setId(UUID.randomUUID());
         when(associateRepository.findByUserId("VP00009")).thenReturn(Optional.of(sponsor));
-        when(associateRepository.findFirstByParentIdAndPosition(sponsor.getId(), "L")).thenReturn(Optional.of(leftChild));
-        when(associateRepository.findFirstByParentIdAndPosition(leftChild.getId(), "L")).thenReturn(Optional.empty());
-        when(associateRepository.findById(leftChild.getId())).thenReturn(Optional.of(leftChild));
+        when(associateRepository.findByUserId("VP00010")).thenReturn(Optional.of(placement));
+        when(associateRepository.findById(placement.getId())).thenReturn(Optional.of(placement));
 
-        service.create(req("VP00009", "L", "9990001111"));
+        service.create(req("VP00009", "VP00010", "L", "9990001111"));
 
         ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
         org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.times(2)).save(saved.capture());
         Associate created = saved.getValue();
         assertThat(created.getSponsorId()).isEqualTo(sponsor.getId());
-        assertThat(created.getParentId()).isEqualTo(leftChild.getId());
+        assertThat(created.getParentId()).isEqualTo(placement.getId());
         assertThat(created.getPosition()).isEqualTo("L");
         assertThat(created.getPanNumber()).isEqualTo("ABCDE1234F");
         assertThat(created.getStatus()).isEqualTo(AssociateStatus.PENDING);
+    }
+
+    @Test
+    void rejectsMissingPlacementOnceTheRootUserExists() {
+        when(associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).thenReturn(true);
+        when(associateRepository.findByUserId("VP00009")).thenReturn(Optional.of(new Associate()));
+
+        assertThatThrownBy(() -> service.create(req("VP00009", "L", "9990001111")))
+            .isInstanceOf(PlacementRequiredException.class);
+    }
+
+    @Test
+    void rejectsAnUnknownPlacement() {
+        when(associateRepository.findByUserId("VP00010")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(req(null, "VP00010", "L", "9990001111")))
+            .isInstanceOf(AssociateNotFoundException.class);
     }
 
     @Test

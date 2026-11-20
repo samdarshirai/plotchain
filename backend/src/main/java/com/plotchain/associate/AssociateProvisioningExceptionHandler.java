@@ -25,6 +25,11 @@ public class AssociateProvisioningExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(PlacementRequiredException.class)
+    public ResponseEntity<Map<String, String>> handlePlacementRequired(PlacementRequiredException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(SponsorRequiredException.class)
     public ResponseEntity<Map<String, String>> handleSponsorRequired(SponsorRequiredException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));

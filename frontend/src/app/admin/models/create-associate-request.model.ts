@@ -2,6 +2,7 @@
 export interface CreateAssociateRequest {
   name: string;
   sponsorUserId?: string;
+  placementUserId?: string;
   position?: string;
   fatherHusbandName?: string;
   panNumber: string;

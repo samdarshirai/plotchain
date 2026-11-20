@@ -6,18 +6,21 @@ import { Observable } from 'rxjs';
 import { PasswordToggleDirective } from '../../directives/password-toggle.directive';
 import { InlineBannerComponent } from '../inline-banner/inline-banner.component';
 import { FieldErrorComponent } from '../field-error/field-error.component';
+import { AssociateLookupComponent } from '../associate-lookup/associate-lookup.component';
+import { AssociateSummary } from '../../../admin/models/associate-summary.model';
 import { ErrorSummaryComponent } from '../error-summary/error-summary.component';
 import { INDIA_STATE_OPTIONS } from '../../india-states';
 import { FormIssue, collectIssues, errorMessage, format } from '../../validation/validation';
 
 const LABELS: Record<string, string> = {
-  sponsorUserId: 'Sponsor ID', position: 'Position', name: 'Name', panNumber: 'PAN', aadhaarNumber: 'Aadhaar number',
+  sponsorUserId: 'Sponsor ID', placementUserId: 'Placement ID', position: 'Position', name: 'Name', panNumber: 'PAN', aadhaarNumber: 'Aadhaar number',
   email: 'Email', phone: 'Mobile', state: 'State', district: 'District', address: 'Address', postalCode: 'Pincode',
   transactionPassword: 'Transaction password'
 };
 
 export interface AssociateProfileValue {
   sponsorUserId: string;
+  placementUserId: string;
   position: string;
   name: string;
   fatherHusbandName: string;
@@ -49,7 +52,7 @@ export interface AssociateProfileValue {
 @Component({
   selector: 'app-associate-profile-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent, PasswordToggleDirective],
+  imports: [CommonModule, ReactiveFormsModule, TranslateModule, InlineBannerComponent, FieldErrorComponent, ErrorSummaryComponent, PasswordToggleDirective, AssociateLookupComponent],
   styleUrl: './associate-profile-form.component.scss',
   template: `
     <form #formEl class="associate-profile-form" [formGroup]="form" [class.was-submitted]="submitAttempted" (ngSubmit)="submit()" novalidate>
@@ -67,11 +70,20 @@ export interface AssociateProfileValue {
             <label class="associate-profile-form__field">{{ 'epinRegister.join.sponsorName' | translate }}
               <input class="associate-profile-form__input" [value]="sponsorName" readonly />
             </label>
-            <label class="associate-profile-form__field"><span>{{ 'epinRegister.join.position' | translate }} <span class="associate-profile-form__req" *ngIf="sponsorRequired">*</span></span>
+            <label class="associate-profile-form__field" *ngIf="placementAssociates">
+              <span>{{ 'epinRegister.join.placementId' | translate }} <span class="associate-profile-form__req">*</span></span>
+              <input *ngIf="lockPlacement; else placementPicker" class="associate-profile-form__input" [value]="form.controls.placementUserId.value" readonly />
+              <ng-template #placementPicker>
+                <app-associate-lookup [associates]="placementOptions" [value]="placementId"
+                  [placeholder]="'epinRegister.join.selectPlacement' | translate" (selected)="onPlacement($event)"></app-associate-lookup>
+              </ng-template>
+              <app-field-error [message]="err('placementUserId')"></app-field-error>
+            </label>
+            <label class="associate-profile-form__field"><span>{{ 'epinRegister.join.position' | translate }} <span class="associate-profile-form__req" *ngIf="sponsorRequired || placementAssociates">*</span></span>
               <select class="associate-profile-form__input" formControlName="position">
                 <option value="">{{ 'epinRegister.join.selectPosition' | translate }}</option>
-                <option value="L">{{ 'epinRegister.join.left' | translate }}</option>
-                <option value="R">{{ 'epinRegister.join.right' | translate }}</option>
+                <option *ngIf="legAllowed('L')" value="L">{{ 'epinRegister.join.left' | translate }}</option>
+                <option *ngIf="legAllowed('R')" value="R">{{ 'epinRegister.join.right' | translate }}</option>
               </select>
               <app-field-error [message]="err('position')"></app-field-error>
             </label>
@@ -213,6 +225,11 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   /** Sponsor userId / leg to prefill (e.g. the clicked vacant tree slot). */
   @Input() presetSponsorUserId = '';
   @Input() presetPosition = '';
+  /** Associates to choose a placement parent from; null hides the Placement field (join, edit, root). */
+  @Input() placementAssociates: AssociateSummary[] | null = null;
+  /** Prefilled, read-only placement (clicked vacant tree slot). */
+  @Input() presetPlacementUserId = '';
+  @Input() lockPlacement = false;
   /** Resolves a sponsor userId to a display name; join and admin use different endpoints. */
   @Input() sponsorLookup: ((userId: string) => Observable<{ name: string } | null>) | null = null;
   /** Field errors from the server, keyed by control name. */
@@ -240,6 +257,7 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
 
   form = this.fb.nonNullable.group({
     sponsorUserId: [''],
+    placementUserId: [''],
     position: [''],
     name: ['', Validators.required],
     fatherHusbandName: [''],
@@ -268,7 +286,7 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['serverErrors'] && this.submitAttempted) { this.issues = collectIssues(this.form, LABELS, this.serverErrors); }
-    if (changes['sponsorRequired'] || changes['showTransactionPassword'] || changes['lockSponsor'] || changes['lockedFields']) { this.syncValidators(); }
+    if (changes['sponsorRequired'] || changes['placementAssociates'] || changes['showTransactionPassword'] || changes['lockSponsor'] || changes['lockedFields']) { this.syncValidators(); }
     if (changes['initial'] && !changes['initial'].firstChange) { this.applyInitial(); }
     if ((changes['presetSponsorUserId'] || changes['presetPosition']) && !changes['presetSponsorUserId']?.firstChange) { this.applyPreset(); }
   }
@@ -276,7 +294,9 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   private syncValidators(): void {
     const sponsorValidators = this.sponsorRequired && !this.lockSponsor ? [Validators.required] : [];
     this.form.controls.sponsorUserId.setValidators(sponsorValidators);
-    this.form.controls.position.setValidators(sponsorValidators);
+    const placementValidators = this.placementAssociates && !this.lockSponsor ? [Validators.required] : [];
+    this.form.controls.placementUserId.setValidators(placementValidators);
+    this.form.controls.position.setValidators(sponsorValidators.length || placementValidators.length ? [Validators.required] : []);
     for (const c of [this.form.controls.sponsorUserId, this.form.controls.position]) {
       if (this.lockSponsor) { c.disable({ emitEvent: false }); } else { c.enable({ emitEvent: false }); }
     }
@@ -287,8 +307,30 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
 
   private applyPreset(): void {
     if (!this.presetSponsorUserId) { return; }
-    this.form.patchValue({ sponsorUserId: this.presetSponsorUserId, position: this.presetPosition });
+    this.form.patchValue({ sponsorUserId: this.presetSponsorUserId, position: this.presetPosition, placementUserId: this.presetPlacementUserId });
     this.lookupSponsor();
+  }
+
+  get placementOptions(): AssociateSummary[] {
+    return (this.placementAssociates ?? []).filter(a => a.role === 'ASSOCIATE' && a.freeLegs?.length);
+  }
+
+  private get placement(): AssociateSummary | undefined {
+    const id = this.form.controls.placementUserId.value;
+    return id ? this.placementOptions.find(a => a.userId === id) : undefined;
+  }
+
+  get placementId(): string { return this.placement?.id ?? ''; }
+
+  /** Only legs the chosen placement still has free; all legs until one is chosen. */
+  legAllowed(leg: string): boolean {
+    const p = this.placement;
+    return !this.placementAssociates || !p || !!p.freeLegs?.includes(leg);
+  }
+
+  onPlacement(a: AssociateSummary | null): void {
+    this.form.controls.placementUserId.setValue(a?.userId ?? '');
+    this.form.controls.position.setValue(a?.freeLegs?.length === 1 ? a.freeLegs[0] : '');
   }
 
   private applyInitial(): void {
@@ -349,6 +391,7 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
     this.submitted.emit({
       ...rest,
       sponsorUserId: v.sponsorUserId.trim(),
+      placementUserId: v.placementUserId.trim(),
       name: v.name.trim(),
       dateOfBirth: v.dateOfBirth || null,
       email: v.email.trim() || null,

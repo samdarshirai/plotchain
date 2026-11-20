@@ -82,6 +82,9 @@ export interface PresetParent {
             [serverErrors]="serverErrors"
             [presetSponsorUserId]="presetParent?.parentUserId ?? ''"
             [presetPosition]="presetParent?.leg ?? ''"
+            [placementAssociates]="!rootMode && !editAssociateId && hasTreeMember ? associates : null"
+            [presetPlacementUserId]="presetParent?.parentUserId ?? ''"
+            [lockPlacement]="!!presetParent"
             [sponsorLookup]="sponsorLookup"
             [initial]="initial"
             [lockSponsor]="!!editAssociateId"
@@ -220,7 +223,7 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
     if (this.editAssociateId) { this.saveEdit(this.editAssociateId, v); return; }
     const { transactionPassword: _unused, ...request } = v;
     this.adminService
-      .createAssociate({ ...request, sponsorUserId: request.sponsorUserId || undefined, position: request.position || undefined })
+      .createAssociate({ ...request, sponsorUserId: request.sponsorUserId || undefined, placementUserId: request.placementUserId || undefined, position: request.position || undefined })
       .subscribe({
         next: response => {
           this.busy = false;
@@ -279,6 +282,7 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
 
   private conflictKey(backendMessage: string | undefined): string {
     if (backendMessage?.startsWith('Placement already occupied')) { return 'admin.validation.placementUnavailable'; }
+    if (backendMessage?.startsWith('A placement is required')) { return 'admin.validation.placementRequired'; }
     if (backendMessage?.startsWith('Position is required')) { return 'admin.validation.positionRequired'; }
     if (backendMessage === 'No rank tiers are configured; an associate cannot be created without a rank') {
       return 'admin.validation.noRankTiersConfigured';

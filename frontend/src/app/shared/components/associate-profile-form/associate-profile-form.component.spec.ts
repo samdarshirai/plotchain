@@ -25,3 +25,33 @@ describe('AssociateProfileFormComponent lockedFields', () => {
     expect(c.form.controls.name.enabled).toBeTrue();
   });
 });
+
+describe('AssociateProfileFormComponent placement', () => {
+  const a = (userId: string, freeLegs: string[]) =>
+    ({ id: 'id-' + userId, userId, name: userId, role: 'ASSOCIATE', status: 'ACTIVE', hasFreeSlot: !!freeLegs.length, hasEpin: false, freeLegs } as const);
+
+  function create() {
+    TestBed.configureTestingModule({ imports: [AssociateProfileFormComponent, TranslateModule.forRoot()] });
+    const fixture = TestBed.createComponent(AssociateProfileFormComponent);
+    const c = fixture.componentInstance;
+    c.placementAssociates = [a('VP1', ['L']), a('VP2', ['L', 'R']), a('VP3', [])] as never;
+    fixture.detectChanges();
+    return c;
+  }
+
+  it('offers only associates with a free leg and requires a placement', () => {
+    const c = create();
+    expect(c.placementOptions.map(o => o.userId)).toEqual(['VP1', 'VP2']);
+    expect(c.form.controls.placementUserId.hasError('required')).toBeTrue();
+  });
+
+  it('auto-fills the single free leg and lets the admin pick when both are free', () => {
+    const c = create();
+    c.onPlacement(c.placementOptions[0]);
+    expect(c.form.controls.position.value).toBe('L');
+    expect(c.legAllowed('R')).toBeFalse();
+    c.onPlacement(c.placementOptions[1]);
+    expect(c.form.controls.position.value).toBe('');
+    expect(c.legAllowed('R')).toBeTrue();
+  });
+});
