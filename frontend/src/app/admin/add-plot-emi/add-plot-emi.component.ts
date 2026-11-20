@@ -113,7 +113,7 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.total' | translate">{{ money(b.totalAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.paid' | translate">{{ money(b.paidAmount) }}</td>
                 <td class="add-plot-emi__num" [attr.data-label]="'admin.addPlotEmi.col.remaining' | translate">{{ money(b.dueAmount) }}</td>
-                <td class="add-plot-emi__actions add-plot-emi__noprint">
+                <td class="add-plot-emi__actions add-plot-emi__actions--compact add-plot-emi__noprint">
                   <button type="button" class="brand-button add-plot-emi__btn" (click)="openPay(b)">{{ 'admin.addPlotEmi.addPayment' | translate }}</button>
                   <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="historyOf = b; deleteNo = null; formError = ''">{{ 'admin.addPlotEmi.history' | translate }}</button>
                   <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" *ngIf="canEditBooking(b)" (click)="openEditBooking(b)">{{ 'admin.addPlotEmi.editBooking.button' | translate }}</button>

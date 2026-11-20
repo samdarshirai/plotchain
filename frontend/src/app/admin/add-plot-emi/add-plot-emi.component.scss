@@ -32,7 +32,7 @@
     &__table { font-size: 11px;
       th, td { padding-inline: 4px !important; } }
     &__actions { flex-wrap: wrap; }
-    &__actions--compact { flex-direction: column; gap: 4px;
+    &__actions--compact { flex-direction: column; flex-wrap: nowrap; gap: 4px;
       .add-plot-emi__btn { min-height: 28px; padding: 0 10px; font-size: 11px; } }
   }
   @media (max-width: 768px) {
