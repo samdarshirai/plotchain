@@ -1416,7 +1416,7 @@
     },
     "expenseTypes": {
       "eyebrow": "Finance & Cycles", "title": "Expense Types", "subtitle": "Categories used to classify expenses. Set a type to Inactive to stop using it.",
-      "addAction": "Add Expense Type", "editAction": "Edit", "addTitle": "Add Expense Type", "editTitle": "Edit Expense Type", "cancelAction": "Cancel", "saveAction": "Save",
+      "addAction": "Add Expense Type", "editAction": "Edit", "systemType": "System", "addTitle": "Add Expense Type", "editTitle": "Edit Expense Type", "cancelAction": "Cancel", "saveAction": "Save",
       "columnSNo": "S No", "expenseType": "Expense Type", "status": "Status", "columnAction": "Action", "statusActive": "Active", "statusInactive": "Inactive",
       "emptyState": "No expense types yet.", "loadError": "Could not load expense types.", "saveError": "Could not save expense type.", "requiredError": "Required"
     },

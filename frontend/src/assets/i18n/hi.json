@@ -1325,7 +1325,7 @@
     },
     "expenseTypes": {
       "eyebrow": "वित्त और चक्र", "title": "व्यय प्रकार", "subtitle": "व्यय को वर्गीकृत करने की श्रेणियाँ। उपयोग रोकने के लिए प्रकार को निष्क्रिय करें।",
-      "addAction": "व्यय प्रकार जोड़ें", "editAction": "संपादित करें", "addTitle": "व्यय प्रकार जोड़ें", "editTitle": "व्यय प्रकार संपादित करें", "cancelAction": "रद्द करें", "saveAction": "सहेजें",
+      "addAction": "व्यय प्रकार जोड़ें", "editAction": "संपादित करें", "systemType": "सिस्टम", "addTitle": "व्यय प्रकार जोड़ें", "editTitle": "व्यय प्रकार संपादित करें", "cancelAction": "रद्द करें", "saveAction": "सहेजें",
       "columnSNo": "क्र.सं.", "expenseType": "व्यय प्रकार", "status": "स्थिति", "columnAction": "कार्रवाई", "statusActive": "सक्रिय", "statusInactive": "निष्क्रिय",
       "emptyState": "अभी कोई व्यय प्रकार नहीं।", "loadError": "व्यय प्रकार लोड नहीं हो सके।", "saveError": "व्यय प्रकार सहेजा नहीं जा सका।", "requiredError": "आवश्यक"
     },
