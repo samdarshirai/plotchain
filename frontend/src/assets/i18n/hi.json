@@ -159,7 +159,7 @@
     "columnBuyerName": "Buyer",
     "columnBuyerPhone": "Phone",
     "columnAmount": "Amount",
-    "columnAssociateId": "Associate ID",
+    "columnAssociateId": "खरीदार आईडी",
     "columnAssociateName": "Associate",
     "columnLegCredited": "Leg",
     "columnStatus": "Status",
@@ -180,13 +180,13 @@
     },
     "emi": { "title": "बकाया ईएमआई", "subtitle": "आपकी टीम में सभी का बकाया ईएमआई।", "cycle": "साइकिल", "allCycles": "सभी साइकिल", "open": "चालू", "side": "ट्री साइड", "sideAll": "सभी", "sideLeft": "बायाँ", "sideRight": "दायाँ" },
     "column": {
-      "number": "क्रम", "paymentDate": "भुगतान तिथि", "confirmDate": "पुष्टि तिथि", "associateId": "एसोसिएट आईडी",
+      "number": "क्रम", "paymentDate": "भुगतान तिथि", "confirmDate": "पुष्टि तिथि", "associateId": "खरीदार आईडी",
       "name": "नाम", "project": "प्रोजेक्ट", "plotNumber": "प्लॉट नंबर", "business": "व्यवसाय", "amount": "राशि", "mode": "माध्यम"
     }
   },
   "plotBookings": {
-    "filter": {"plotId": "प्लॉट आईडी", "plotIdPlaceholder": "प्लॉट नं. खोजें", "associateId": "एसोसिएट आईडी", "associateIdPlaceholder": "एसोसिएट आईडी खोजें"},
-    "table": {"empty": "दिखाने के लिए कोई डेटा नहीं।", "bookingDate": "बुकिंग तिथि", "sponsorId": "स्पॉन्सर आईडी", "sponsorName": "स्पॉन्सर का नाम", "associateId": "एसोसिएट आईडी", "name": "नाम", "project": "प्रोजेक्ट", "plotType": "प्लॉट प्रकार", "plotNo": "प्लॉट नं.", "rate": "दर", "area": "क्षेत्रफल", "price": "मूल्य", "mobile": "मोबाइल नं.", "roadSize": "सड़क का आकार", "extraPrice": "अतिरिक्त मूल्य", "totalPrice": "कुल मूल्य", "paid": "भुगतान राशि", "rest": "शेष राशि", "details": "विवरण", "detailsAction": "देखें", "close": "बंद करें"},
+    "filter": {"plotId": "प्लॉट आईडी", "plotIdPlaceholder": "प्लॉट नं. खोजें", "associateId": "खरीदार आईडी", "associateIdPlaceholder": "खरीदार आईडी खोजें"},
+    "table": {"empty": "दिखाने के लिए कोई डेटा नहीं।", "bookingDate": "बुकिंग तिथि", "sponsorId": "स्पॉन्सर आईडी", "sponsorName": "स्पॉन्सर का नाम", "associateId": "खरीदार आईडी", "name": "नाम", "project": "प्रोजेक्ट", "plotType": "प्लॉट प्रकार", "plotNo": "प्लॉट नं.", "rate": "दर", "area": "क्षेत्रफल", "price": "मूल्य", "mobile": "मोबाइल नं.", "roadSize": "सड़क का आकार", "extraPrice": "अतिरिक्त मूल्य", "totalPrice": "कुल मूल्य", "paid": "भुगतान राशि", "rest": "शेष राशि", "details": "विवरण", "detailsAction": "देखें", "close": "बंद करें"},
     "payments": {"paymentDate": "भुगतान तिथि", "amount": "राशि", "receiptNo": "रसीद नं", "mode": "भुगतान माध्यम", "instrumentNo": "चेक/डीडी/NEFT/RTGS नं", "date": "तिथि", "empty": "अभी कोई भुगतान नहीं।"},
     "myBookings": { "title": "My Bookings" },
     "team": {
@@ -941,7 +941,7 @@
       "recordedToLabel": "Recorded to",
       "columnProjectName": "Project",
       "columnSponsorId": "स्पॉन्सर ID",
-      "columnBuyerAssociateId": "Associate ID",
+      "columnBuyerAssociateId": "खरीदार आईडी",
       "columnBuyerName": "Associate Name",
       "columnPlotNo": "Plot No",
       "columnSponsorName": "Sponsor Name",
@@ -1234,7 +1234,7 @@
       "associateHint": "The associate who gets credit for this booking.",
       "associateRequired": "Enter the sponsor's ID.",
       "lookupPlaceholder": "Search by ID or name",
-      "buyerIdLabel": "Buyer Associate ID",
+      "buyerIdLabel": "खरीदार आईडी",
       "buyerIdPlaceholder": "ID of the associate buying the plot",
       "buyerNotFound": "No active associate with this ID.",
       "buyerNoEpin": "This associate has no e-PIN, so they cannot buy a plot.",
@@ -1331,15 +1331,15 @@
     },
     "invoicePayments": {
       "eyebrow": "इनवॉइस", "title": "भुगतान विवरण", "subtitle": "एसोसिएट्स से प्राप्त अग्रिम ऋण की किस्तें देखें और रसीदें प्रिंट करें।",
-      "filterFrom": "से", "filterTo": "तक", "search": "खोजें", "searchPlaceholder": "एसोसिएट आईडी, नाम या मोबाइल से खोजें", "apply": "लागू करें",
-      "columnSNo": "क्र.सं.", "paymentDate": "भुगतान तिथि", "associateId": "एसोसिएट आईडी", "associateName": "एसोसिएट का नाम", "mobileNo": "मोबाइल नंबर",
+      "filterFrom": "से", "filterTo": "तक", "search": "खोजें", "searchPlaceholder": "खरीदार आईडी, नाम या मोबाइल से खोजें", "apply": "लागू करें",
+      "columnSNo": "क्र.सं.", "paymentDate": "भुगतान तिथि", "associateId": "खरीदार आईडी", "associateName": "एसोसिएट का नाम", "mobileNo": "मोबाइल नंबर",
       "paymentType": "भुगतान प्रकार", "receiptNo": "रसीद संख्या", "amount": "राशि", "payMode": "भुगतान माध्यम", "bankName": "बैंक का नाम", "txnNo": "लेन-देन संख्या", "print": "प्रिंट",
       "paymentTypeLoanRepayment": "ऋण वापसी", "printAction": "प्रिंट", "emptyState": "इन फ़िल्टर के लिए कोई भुगतान नहीं।", "loadError": "भुगतान लोड नहीं हो सके।",
       "filterError": "शुरू की तिथि अंतिम तिथि के बाद की नहीं हो सकती।",
       "payModes": { "CASH": "नकद", "CHEQUE": "चेक", "DD": "डिमांड ड्राफ्ट", "UPI": "यूपीआई", "BANK_TRANSFER": "बैंक ट्रांसफर" }
     },
     "invoiceReceipt": {
-      "title": "ऋण वापसी रसीद", "receiptNo": "रसीद संख्या", "paymentDate": "भुगतान तिथि", "associateId": "एसोसिएट आईडी", "associateName": "एसोसिएट का नाम",
+      "title": "ऋण वापसी रसीद", "receiptNo": "रसीद संख्या", "paymentDate": "भुगतान तिथि", "associateId": "खरीदार आईडी", "associateName": "एसोसिएट का नाम",
       "mobileNo": "मोबाइल नंबर", "amount": "राशि", "payMode": "भुगतान माध्यम", "bankName": "बैंक का नाम", "txnNo": "लेन-देन संख्या",
       "printAction": "प्रिंट", "notFound": "यह रसीद नहीं मिली।", "back": "भुगतान विवरण पर वापस जाएँ"
     },
@@ -1411,7 +1411,7 @@
       "col": { "paymentDate": "भुगतान की तारीख", "paymentAmount": "भुगतान राशि" }
     },
     "viewPlotEmi": {
-      "associate": "एसोसिएट आईडी", "anyAssociate": "कोई भी एसोसिएट", "cycle": "साइकिल", "allCycles": "सभी साइकिल",
+      "associate": "खरीदार आईडी", "anyAssociate": "कोई भी एसोसिएट", "cycle": "साइकिल", "allCycles": "सभी साइकिल",
       "title": "बकाया ईएमआई", "subtitle": "तारीख और प्रोजेक्ट के अनुसार बकाया EMI वाली सक्रिय बुकिंग। पूरी बुकिंग और भुगतान इतिहास के लिए विवरण खोलें।"
     },
     "viewBookedPlot": {
@@ -1425,8 +1425,8 @@
       "subtitle": "प्रोजेक्ट चुनें और बकाया भुगतान वाली बुकिंग देखें, फिर भुगतान जोड़ें, पिछले भुगतान देखें या बुकिंग रद्द करें।",
       "project": "प्रोजेक्ट",
       "selectProject": "प्रोजेक्ट चुनें",
-      "searchLabel": "प्लॉट नं / एसोसिएट आईडी",
-      "searchPlaceholder": "प्लॉट नं या एसोसिएट आईडी से खोजें",
+      "searchLabel": "प्लॉट नं / खरीदार आईडी",
+      "searchPlaceholder": "प्लॉट नं या खरीदार आईडी से खोजें",
       "from": "बुकिंग से",
       "to": "बुकिंग तक",
       "reset": "रीसेट",
@@ -1446,7 +1446,7 @@
       "next": "अगला",
       "col": {
         "bookedOn": "बुकिंग तिथि",
-        "sponsorId": "स्पॉन्सर आईडी", "sponsorName": "स्पॉन्सर का नाम", "associateId": "एसोसिएट आईडी",
+        "sponsorId": "स्पॉन्सर आईडी", "sponsorName": "स्पॉन्सर का नाम", "associateId": "खरीदार आईडी",
         "associate": "एसोसिएट नाम",
         "mobile": "मोबाइल नं",
         "project": "प्रोजेक्ट",

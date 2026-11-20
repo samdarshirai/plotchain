@@ -146,7 +146,7 @@
     "columnBuyerName": "Buyer",
     "columnBuyerPhone": "Phone",
     "columnAmount": "Amount",
-    "columnAssociateId": "Associate ID",
+    "columnAssociateId": "Buyer ID",
     "columnAssociateName": "Associate",
     "columnLegCredited": "Leg",
     "columnStatus": "Status",
@@ -167,13 +167,13 @@
     },
     "emi": { "title": "Pending EMI", "subtitle": "Pending EMI of everyone in your team.", "cycle": "Cycle", "allCycles": "All cycles", "open": "Open", "side": "Tree side", "sideAll": "All", "sideLeft": "Left", "sideRight": "Right" },
     "column": {
-      "number": "Number", "paymentDate": "Payment Date", "confirmDate": "Confirm Date", "associateId": "Associate Id",
+      "number": "Number", "paymentDate": "Payment Date", "confirmDate": "Confirm Date", "associateId": "Buyer Id",
       "name": "Name", "project": "Project", "plotNumber": "Plot Number", "business": "Business", "amount": "Amount", "mode": "Mode"
     }
   },
   "plotBookings": {
-    "filter": {"plotId": "Plot ID", "plotIdPlaceholder": "Search plot no.", "associateId": "Associate ID", "associateIdPlaceholder": "Search associate ID"},
-    "table": {"empty": "No data to show.", "bookingDate": "Booking Date", "sponsorId": "Sponsor ID", "sponsorName": "Sponsor Name", "associateId": "Associate ID", "name": "Name", "project": "Project", "plotType": "Plot Type", "plotNo": "Plot No.", "rate": "Rate", "area": "Area", "price": "Price", "mobile": "Mobile No", "roadSize": "Road Size", "extraPrice": "Extra Price", "totalPrice": "Total Price", "paid": "Paid Amount", "rest": "Rest Amount", "details": "Details", "detailsAction": "View", "close": "Close"},
+    "filter": {"plotId": "Plot ID", "plotIdPlaceholder": "Search plot no.", "associateId": "Buyer ID", "associateIdPlaceholder": "Search buyer ID"},
+    "table": {"empty": "No data to show.", "bookingDate": "Booking Date", "sponsorId": "Sponsor ID", "sponsorName": "Sponsor Name", "associateId": "Buyer ID", "name": "Name", "project": "Project", "plotType": "Plot Type", "plotNo": "Plot No.", "rate": "Rate", "area": "Area", "price": "Price", "mobile": "Mobile No", "roadSize": "Road Size", "extraPrice": "Extra Price", "totalPrice": "Total Price", "paid": "Paid Amount", "rest": "Rest Amount", "details": "Details", "detailsAction": "View", "close": "Close"},
     "payments": {"paymentDate": "Payment Date", "amount": "Amount", "receiptNo": "Receipt No", "mode": "Payment Mode", "instrumentNo": "Cheque/DD/NEFT/RTGS No", "date": "Date", "empty": "No payments yet."},
     "myBookings": { "title": "My Bookings" },
     "team": {
@@ -971,7 +971,7 @@
       "recordedToLabel": "Recorded to",
       "columnProjectName": "Project",
       "columnSponsorId": "Sponsor ID",
-      "columnBuyerAssociateId": "Associate ID",
+      "columnBuyerAssociateId": "Buyer ID",
       "columnBuyerName": "Associate Name",
       "columnPlotNo": "Plot No",
       "columnSponsorName": "Sponsor Name",
@@ -1219,7 +1219,7 @@
       "associateHint": "The associate who gets credit for this booking.",
       "associateRequired": "Enter the sponsor's ID.",
       "lookupPlaceholder": "Search by ID or name",
-      "buyerIdLabel": "Buyer Associate ID",
+      "buyerIdLabel": "Buyer ID",
       "buyerIdPlaceholder": "ID of the associate buying the plot",
       "buyerNotFound": "No active associate with this ID.",
       "buyerNoEpin": "This associate has no e-PIN, so they cannot buy a plot.",
@@ -1422,15 +1422,15 @@
     },
     "invoicePayments": {
       "eyebrow": "Invoice", "title": "Payment Details", "subtitle": "Review advance loan repayments received from associates and print receipts.",
-      "filterFrom": "From", "filterTo": "To", "search": "Search", "searchPlaceholder": "Search by Associate Id, name or mobile", "apply": "Apply",
-      "columnSNo": "S No", "paymentDate": "Payment Date", "associateId": "Associate Id", "associateName": "Associate Name", "mobileNo": "Mobile No",
+      "filterFrom": "From", "filterTo": "To", "search": "Search", "searchPlaceholder": "Search by Buyer Id, name or mobile", "apply": "Apply",
+      "columnSNo": "S No", "paymentDate": "Payment Date", "associateId": "Buyer Id", "associateName": "Associate Name", "mobileNo": "Mobile No",
       "paymentType": "Payment Type", "receiptNo": "Receipt No", "amount": "Amount", "payMode": "Payment Mode", "bankName": "Bank Name", "txnNo": "TXN No", "print": "Print",
       "paymentTypeLoanRepayment": "Loan Repayment", "printAction": "Print", "emptyState": "No payments for these filters.", "loadError": "Could not load payments.",
       "filterError": "The From date cannot be after the To date.",
       "payModes": { "CASH": "Cash", "CHEQUE": "Cheque", "DD": "Demand Draft", "UPI": "UPI", "BANK_TRANSFER": "Bank Transfer" }
     },
     "invoiceReceipt": {
-      "title": "Repayment Receipt", "receiptNo": "Receipt No", "paymentDate": "Payment Date", "associateId": "Associate Id", "associateName": "Associate Name",
+      "title": "Repayment Receipt", "receiptNo": "Receipt No", "paymentDate": "Payment Date", "associateId": "Buyer Id", "associateName": "Associate Name",
       "mobileNo": "Mobile No", "amount": "Amount", "payMode": "Payment Mode", "bankName": "Bank Name", "txnNo": "TXN No",
       "printAction": "Print", "notFound": "This receipt could not be found.", "back": "Back to Payment Details"
     },
@@ -1502,7 +1502,7 @@
       "col": { "paymentDate": "Payment Date", "paymentAmount": "Payment Amount" }
     },
     "viewPlotEmi": {
-      "associate": "Associate Id", "anyAssociate": "Any associate", "cycle": "Cycle", "allCycles": "All cycles",
+      "associate": "Buyer Id", "anyAssociate": "Any associate", "cycle": "Cycle", "allCycles": "All cycles",
       "title": "Pending EMI", "subtitle": "Active bookings with pending EMI money, by date and project. Open Detail for the full booking and payment history."
     },
     "viewBookedPlot": {
@@ -1516,8 +1516,8 @@
       "subtitle": "Pick a project to see bookings with pending payments, then add a payment, review past ones or cancel a booking.",
       "project": "Project",
       "selectProject": "Select project",
-      "searchLabel": "Plot No / Associate Id",
-      "searchPlaceholder": "Search by plot no or associate id",
+      "searchLabel": "Plot No / Buyer Id",
+      "searchPlaceholder": "Search by plot no or buyer id",
       "from": "Booking from",
       "to": "Booking to",
       "reset": "Reset",
@@ -1537,7 +1537,7 @@
       "next": "Next",
       "col": {
         "bookedOn": "Booking Date",
-        "sponsorId": "Sponsor Id", "sponsorName": "Sponsor Name", "associateId": "Associate Id",
+        "sponsorId": "Sponsor Id", "sponsorName": "Sponsor Name", "associateId": "Buyer Id",
         "associate": "Associate Name",
         "mobile": "Mobile No",
         "project": "Project",
