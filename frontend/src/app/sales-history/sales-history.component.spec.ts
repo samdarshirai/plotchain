@@ -15,7 +15,7 @@ describe('SalesHistoryComponent', () => {
       loadError: 'Something went wrong loading your sales history. Please try again.',
       emptyState: 'No sales to show yet.'
     },
-    plotBookings: { table: { bookingDate: 'Booking Date', associateId: 'Associate ID', name: 'Name', project: 'Project', plotType: 'Plot Type', plotNo: 'Plot No.', rate: 'Rate', area: 'Area', price: 'Price', extraPrice: 'Extra Price', totalPrice: 'Total Price', paid: 'Paid Amount', rest: 'Rest Amount', details: 'Details' } }
+    plotBookings: { table: { bookingDate: 'Booking Date', associateId: 'Associate ID', name: 'Name', sponsorId: 'Sponsor ID', sponsorName: 'Sponsor Name', project: 'Project', plotType: 'Plot Type', plotNo: 'Plot No.', rate: 'Rate', area: 'Area', price: 'Price', extraPrice: 'Extra Price', totalPrice: 'Total Price', paid: 'Paid Amount', rest: 'Rest Amount', details: 'Details' } }
   };
 
   const frTranslations = {
@@ -77,7 +77,7 @@ describe('SalesHistoryComponent', () => {
 
     it('gives every cell a translated data-label for the stacked mobile layout', () => {
       const cells = fixture.nativeElement.querySelectorAll('.booking-table tbody td');
-      expect(cells.length).toBe(17);
+      expect(cells.length).toBe(19);
       cells.forEach((td: HTMLElement) => expect(td.getAttribute('data-label')).toBeTruthy());
     });
 
@@ -98,7 +98,7 @@ describe('SalesHistoryComponent', () => {
   it('shows the empty state when there are no sales', () => {
     flushFirst([]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.booking-table thead th').length).toBe(17);
+    expect(fixture.nativeElement.querySelectorAll('.booking-table thead th').length).toBe(19);
     expect(q('.booking-table__empty')).toBeTruthy();
   });
 });
