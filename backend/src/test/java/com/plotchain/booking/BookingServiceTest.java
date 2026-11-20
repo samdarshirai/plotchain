@@ -64,6 +64,7 @@ class BookingServiceTest {
 
     private static final UUID PLOT_ID = UUID.randomUUID();
     private static final UUID ASSOCIATE_ID = UUID.randomUUID();
+    private static final UUID SPONSOR_ID = UUID.randomUUID();
     private static final Instant NOW = Instant.parse("2026-06-15T10:00:00Z");
     private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
 
@@ -79,6 +80,7 @@ class BookingServiceTest {
         booking.setId(UUID.randomUUID());
         booking.setPlotId(PLOT_ID);
         booking.setAssociateId(ASSOCIATE_ID);
+        booking.setSponsorId(ASSOCIATE_ID);
         booking.setBuyerAssociateId(booking.getAssociateId());
         booking.setTotalAmount(new BigDecimal("600000.00"));
         booking.setInstallmentCount(1);
@@ -260,7 +262,7 @@ class BookingServiceTest {
     void createBookingRejectsATokenAboveThePlotPriceAndDoesNotBookThePlot() {
         when(plotRepository.findByIdForUpdate(PLOT_ID))
             .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
+        lenient().when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
 
         assertThatThrownBy(() -> bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID, "700000")))
             .isInstanceOf(InvalidTokenAmountException.class);
@@ -369,7 +371,7 @@ class BookingServiceTest {
     void createBookingRejectsADiscountEqualToOrAboveThePlotPriceAndDoesNotBookThePlot() {
         when(plotRepository.findByIdForUpdate(PLOT_ID))
             .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
+        lenient().when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
 
         assertThatThrownBy(() -> bookingService.createBooking(requestWithDiscount("1000", "600000")))
             .isInstanceOf(InvalidDiscountException.class);
@@ -383,7 +385,7 @@ class BookingServiceTest {
     void createBookingChecksTheTokenAgainstTheDiscountedTotalNotTheListPrice() {
         when(plotRepository.findByIdForUpdate(PLOT_ID))
             .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
+        lenient().when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithId(ASSOCIATE_ID)));
 
         assertThatThrownBy(() -> bookingService.createBooking(requestWithDiscount("100001", "500000")))
             .isInstanceOf(InvalidTokenAmountException.class);
@@ -474,6 +476,7 @@ class BookingServiceTest {
         Associate associate = new Associate();
         associate.setId(id);
         associate.setName("Jane Buyer");
+        associate.setSponsorId(SPONSOR_ID);
         return associate;
     }
 
@@ -490,7 +493,7 @@ class BookingServiceTest {
     private void stubPlotAndBuyer(Associate buyer, boolean hasEpin) {
         when(plotRepository.findByIdForUpdate(PLOT_ID))
             .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(buyer));
+        lenient().when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(buyer));
         lenient().when(associateRepository.hasActivationEpin(ASSOCIATE_ID)).thenReturn(hasEpin);
     }
 
@@ -565,13 +568,13 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBookingThrowsAssociateNotFoundExceptionWhenTheAssociateDoesNotExist() {
+    void createBookingThrowsInvalidBuyerExceptionWhenTheBuyerDoesNotExist() {
         when(plotRepository.findByIdForUpdate(PLOT_ID))
             .thenReturn(Optional.of(plotWithStatusAndPrice(PlotStatus.AVAILABLE, "600000.00")));
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> bookingService.createBooking(requestFor(PLOT_ID, ASSOCIATE_ID)))
-            .isInstanceOf(AssociateNotFoundException.class);
+            .isInstanceOf(InvalidBuyerException.class);
 
         verify(plotRepository, never()).save(any());
     }
@@ -599,6 +602,9 @@ class BookingServiceTest {
         ArgumentCaptor<PlotBooking> captor = ArgumentCaptor.forClass(PlotBooking.class);
         verify(plotBookingRepository).save(captor.capture());
         assertThat(captor.getValue().getBuyerAssociateId()).isNotNull();
+        // The booking belongs to the buyer; the buyer's own sponsor is stored separately.
+        assertThat(captor.getValue().getAssociateId()).isEqualTo(ASSOCIATE_ID);
+        assertThat(captor.getValue().getSponsorId()).isEqualTo(SPONSOR_ID);
         assertThat(captor.getValue().getBuyerPhone()).isEqualTo("9999999999");
         assertThat(captor.getValue().getStatus()).isEqualTo(BookingStatus.ACTIVE);
     }
@@ -768,6 +774,7 @@ class BookingServiceTest {
         booking.setId(UUID.randomUUID());
         booking.setPlotId(PLOT_ID);
         booking.setAssociateId(ASSOCIATE_ID);
+        booking.setSponsorId(ASSOCIATE_ID);
         booking.setTotalAmount(new BigDecimal("600000.00"));
         booking.setInstallmentCount(1);
         booking.setBookedAt(Instant.now());
@@ -793,6 +800,7 @@ class BookingServiceTest {
         booking.setId(UUID.randomUUID());
         booking.setPlotId(PLOT_ID);
         booking.setAssociateId(ASSOCIATE_ID);
+        booking.setSponsorId(ASSOCIATE_ID);
         booking.setTotalAmount(new BigDecimal("600000.00"));
         booking.setInstallmentCount(2);
         booking.setBookedAt(Instant.now());

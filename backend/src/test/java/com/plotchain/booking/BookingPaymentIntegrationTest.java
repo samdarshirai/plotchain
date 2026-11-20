@@ -120,6 +120,7 @@ class BookingPaymentIntegrationTest {
             // ADMIN, not ASSOCIATE: chk_associate_rank_required (V4) demands a rank_id for any
             // ASSOCIATE row; this test only needs a persistable, FK-satisfying row (also the actor).
             associate.setRole(AssociateRole.ADMIN);
+            associate.setSponsorId(id); // self-sponsored: bookings need a sponsor
             associateRepository.saveAndFlush(associate);
             return id;
         });

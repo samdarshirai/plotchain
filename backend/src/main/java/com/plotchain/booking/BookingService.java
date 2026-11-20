@@ -90,9 +90,6 @@ public class BookingService {
             throw new PlotNotAvailableException(plot.getId());
         }
 
-        Associate associate = associateRepository.findById(request.associateId())
-            .orElseThrow(() -> new AssociateNotFoundException(request.associateId()));
-
         BigDecimal listPrice = plot.getPrice();
         BigDecimal discount = request.discount() == null ? BigDecimal.ZERO
             : request.discount().setScale(0, RoundingMode.HALF_UP);
@@ -119,6 +116,9 @@ public class BookingService {
                 || !associateRepository.hasActivationEpin(buyer.getId())) {
             throw new InvalidBuyerException("Buyer must be an active associate with an e-PIN");
         }
+        // The sale is the buyer's; the buyer's own sponsor earns Direct Income and the binary volume.
+        // The client-sent associateId is ignored.
+        UUID sponsorId = sponsorOf(buyer);
 
         // Plot -> BOOKED, not SOLD: a booking reserves the plot under an installment plan, it
         // doesn't complete a sale. A BOOKED plot still fails the AVAILABLE check above (and
@@ -137,12 +137,13 @@ public class BookingService {
         if (firstInstallment != null && firstInstallment.compareTo(total.subtract(token)) > 0) {
             throw new InvalidFirstInstallmentException(firstInstallment, total.subtract(token));
         }
-        List<EmiInstallment> schedule = computeSchedule(total, token, config, bookedAt, associate.getId(), request, firstInstallment);
+        List<EmiInstallment> schedule = computeSchedule(total, token, config, bookedAt, buyer.getId(), request, firstInstallment);
 
         PlotBooking booking = new PlotBooking();
         booking.setId(UUID.randomUUID());
         booking.setPlotId(plot.getId());
-        booking.setAssociateId(associate.getId());
+        booking.setAssociateId(buyer.getId());
+        booking.setSponsorId(sponsorId);
         booking.setTotalAmount(total);
         booking.setListPrice(listPrice);
         booking.setDiscount(discount);
@@ -329,11 +330,7 @@ public class BookingService {
         if (installments.stream().anyMatch(i -> i.getStatus() == InstallmentStatus.PAID)) {
             throw new PaymentNotEditableException("Booking has a confirmed payment and can no longer be edited");
         }
-        UUID sponsorId = booking.getAssociateId();
-        if (request.associateId() != null) {
-            sponsorId = associateRepository.findById(request.associateId())
-                .orElseThrow(() -> new AssociateNotFoundException(request.associateId())).getId();
-        }
+        UUID sponsorId = booking.getSponsorId();
         UUID buyerId = booking.getBuyerAssociateId();
         if (request.buyerAssociateId() != null) {
             Associate buyer = associateRepository.findById(request.buyerAssociateId())
@@ -343,6 +340,7 @@ public class BookingService {
                 throw new InvalidBuyerException("Buyer must be an active associate with an e-PIN");
             }
             buyerId = buyer.getId();
+            sponsorId = sponsorOf(buyer);
         }
         BigDecimal listPrice = booking.getListPrice();
         BigDecimal discount = request.discount() == null ? booking.getDiscount()
@@ -359,7 +357,8 @@ public class BookingService {
             throw new InvalidTopUpException("New total " + total.toPlainString()
                 + " is below the entered payments " + entered.toPlainString() + ": edit or delete them first");
         }
-        booking.setAssociateId(sponsorId);
+        booking.setAssociateId(buyerId);
+        booking.setSponsorId(sponsorId);
         booking.setBuyerAssociateId(buyerId);
         if (request.buyerPhone() != null) {
             booking.setBuyerPhone(request.buyerPhone().isBlank() ? null : request.buyerPhone().trim());
@@ -522,7 +521,7 @@ public class BookingService {
                 .filter(i -> i.getInstallmentNumber() == n).findFirst().orElseThrow();
             boolean completes = fullyPaid && n == numbers.get(numbers.size() - 1);
             saleService.recordInstallmentPayment(
-                booking.getId(), installment.getId(), n, booking.getAssociateId(), booking.getBuyerAssociateId(),
+                booking.getId(), installment.getId(), n, booking.getSponsorId(), booking.getBuyerAssociateId(),
                 booking.getBuyerPhone(), installment.getAmount(), plot, completes);
         }
         if (fullyPaid) {
@@ -557,7 +556,7 @@ public class BookingService {
         Plot plot = plotRepository.findById(booking.getPlotId()).orElseThrow(() -> missingPlot(booking));
         for (EmiInstallment i : missing) {
             saleService.recordInstallmentPayment(booking.getId(), i.getId(), i.getInstallmentNumber(),
-                booking.getAssociateId(), booking.getBuyerAssociateId(), booking.getBuyerPhone(), i.getAmount(), plot, false);
+                booking.getSponsorId(), booking.getBuyerAssociateId(), booking.getBuyerPhone(), i.getAmount(), plot, false);
         }
     }
 
@@ -1092,6 +1091,14 @@ public class BookingService {
         }).toList();
     }
 
+    // The buyer's sponsor. Every non-admin associate has one; an admin buyer has none and can't book.
+    private UUID sponsorOf(Associate buyer) {
+        if (buyer.getSponsorId() == null) {
+            throw new InvalidBuyerException("Buyer has no sponsor");
+        }
+        return buyer.getSponsorId();
+    }
+
     // Flat, no-interest amortization: BookingEmiConfig carries no down-payment-percentage or
     // interest-rate field (only emiEnabled and defaultInstallmentCount --
     // confirmed by reading the entity directly, not assumed), so
@@ -1170,8 +1177,8 @@ public class BookingService {
         Map<UUID, Project> projects = byId(projectRepository.findAllById(
             plots.values().stream().map(Plot::getProjectId).filter(java.util.Objects::nonNull).distinct().toList()), Project::getId);
         Map<UUID, Associate> associates = byId(associateRepository.findAllById(
-            java.util.stream.Stream.concat(ids(bookings, PlotBooking::getAssociateId).stream(),
-                ids(bookings, PlotBooking::getBuyerAssociateId).stream()).distinct().toList()), Associate::getId);
+            java.util.stream.Stream.of(ids(bookings, PlotBooking::getAssociateId), ids(bookings, PlotBooking::getBuyerAssociateId),
+                ids(bookings, PlotBooking::getSponsorId)).flatMap(List::stream).distinct().toList()), Associate::getId);
         LocalDate today = LocalDate.now(clock);
         return bookings.stream().map(booking -> {
             List<EmiInstallment> installments = installmentsByBooking.getOrDefault(booking.getId(), List.of());
@@ -1185,6 +1192,7 @@ public class BookingService {
             Project project = plot == null ? null : projects.get(plot.getProjectId());
             Associate associate = associates.get(booking.getAssociateId());
             Associate buyer = associates.get(booking.getBuyerAssociateId());
+            Associate sponsor = associates.get(booking.getSponsorId());
             return new BookingResponse(
                 booking.getId(), booking.getPlotId(), booking.getAssociateId(),
                 booking.getStatus(), buyer == null ? null : buyer.getName(),
@@ -1204,7 +1212,9 @@ public class BookingService {
                 booking.getCancelReason(),
                 plot == null ? null : plot.getRoadSizeFt(),
                 booking.getCancellationChargePct(), booking.getCancellationCharge(), booking.getRefundAmount(),
-                booking.getBuyerAssociateId());
+                booking.getBuyerAssociateId(),
+                sponsor == null ? null : sponsor.getUserId(), sponsor == null ? null : sponsor.getName(),
+                sponsor == null ? null : sponsor.getPhone());
         }).toList();
     }
 

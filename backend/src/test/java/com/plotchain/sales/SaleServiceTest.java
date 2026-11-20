@@ -125,8 +125,9 @@ class SaleServiceTest {
     }
 
     private void stubConfirmedPathDependencies() {
+        // ASSOCIATE_ID plays the buyer's SPONSOR here (earns Direct Income, volume leg); the sale is BUYER_ID's.
         when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(associateWithPosition("L")));
-        org.mockito.Mockito.lenient().when(associateRepository.existsById(SPONSOR_ID)).thenReturn(true);
+        org.mockito.Mockito.lenient().when(associateRepository.findById(BUYER_ID)).thenReturn(Optional.of(associateWithPosition("R")));
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(projectFixture()));
         when(cycleService.getOrOpenCurrent()).thenReturn(cycleWithId(CYCLE_ID));
         when(saleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -153,7 +154,9 @@ class SaleServiceTest {
         assertThat(saved.getEmiInstallmentId()).isEqualTo(INSTALLMENT_ID);
         assertThat(saved.getPlotId()).isEqualTo(PLOT_ID);
         assertThat(saved.getProjectId()).isEqualTo(PROJECT_ID);
-        assertThat(saved.getAssociateId()).isEqualTo(ASSOCIATE_ID);
+        // Sale belongs to the buyer; the buyer's sponsor holds the volume (leg = sponsor's position).
+        assertThat(saved.getAssociateId()).isEqualTo(BUYER_ID);
+        assertThat(saved.getSponsorId()).isEqualTo(ASSOCIATE_ID);
         assertThat(saved.getAmount()).isEqualByComparingTo("750000.00");
         assertThat(saved.getBuyerAssociateId()).isEqualTo(BUYER_ID);
         assertThat(saved.getBuyerPhone()).isEqualTo("9999999999");
@@ -191,7 +194,7 @@ class SaleServiceTest {
         verify(ledgerEntryRepository).save(captor.capture());
         LedgerEntry entry = captor.getValue();
         assertThat(entry.getIncomeType()).isEqualTo(IncomeType.DIRECT);
-        assertThat(entry.getAssociateId()).isEqualTo(SPONSOR_ID);
+        assertThat(entry.getAssociateId()).isEqualTo(ASSOCIATE_ID); // the sponsor
         assertThat(entry.getCycleId()).isEqualTo(CYCLE_ID);
         assertThat(entry.getGrossAmount()).isEqualByComparingTo("60000");
         assertThat(entry.getTdsDeduction()).isEqualByComparingTo("3000");
@@ -314,6 +317,7 @@ class SaleServiceTest {
         sale.setPlotId(plotId);
         sale.setProjectId(PROJECT_ID);
         sale.setAssociateId(ASSOCIATE_ID);
+        sale.setSponsorId(ASSOCIATE_ID);
         sale.setBuyerPhone("9999999999");
         sale.setNote("Sold to Jane Buyer");
         sale.setAmount(new BigDecimal("600000.00"));
@@ -502,43 +506,6 @@ class SaleServiceTest {
         verify(ledgerEntryRepository, never()).save(any());
     }
 
-    @Test
-    void paymentThrowsWhenNonAdminSellerHasNoSponsor() {
-        stubConfirmedPathDependencies();
-        Associate seller = associateWithPosition("L");
-        seller.setSponsorId(null);
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(seller));
-
-        assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00")))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("no sponsor");
-        verify(ledgerEntryRepository, never()).save(any());
-    }
-
-    @Test
-    void paymentThrowsWhenSponsorRowIsMissing() {
-        stubConfirmedPathDependencies();
-        when(associateRepository.existsById(SPONSOR_ID)).thenReturn(false);
-
-        assertThatThrownBy(() -> confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00")))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("sponsor row missing");
-    }
-
-    @Test
-    void adminSaleWithNoSponsorIsRecordedWithoutDirectIncome() {
-        stubConfirmedPathDependencies();
-        Associate admin = associateWithPosition("L");
-        admin.setRole(com.plotchain.associate.AssociateRole.ADMIN);
-        admin.setSponsorId(null);
-        when(associateRepository.findById(ASSOCIATE_ID)).thenReturn(Optional.of(admin));
-
-        confirm("600000.00", plotForBooking(PlotStatus.BOOKED, "1200.00"));
-
-        verify(saleRepository).save(any());
-        verify(ledgerEntryRepository, never()).save(any());
-    }
-
     // Sales unit 6 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // "Admin register -- GET /api/admin/sales"): list() delegation and date-range conversion.
     @Test
@@ -673,6 +640,7 @@ class SaleServiceTest {
         sale.setPlotId(plotId);
         sale.setProjectId(projectId);
         sale.setAssociateId(ASSOCIATE_ID);
+        sale.setSponsorId(ASSOCIATE_ID);
         sale.setBuyerPhone("9999999999");
         sale.setAmount(new BigDecimal("600000.00"));
         sale.setCycleId(CYCLE_ID);
@@ -707,6 +675,7 @@ class SaleServiceTest {
         sale.setId(UUID.randomUUID());
         sale.setPlotId(plotId);
         sale.setAssociateId(ASSOCIATE_ID);
+        sale.setSponsorId(ASSOCIATE_ID);
         sale.setBuyerPhone("9999999999");
         sale.setAmount(new BigDecimal("600000.00"));
         sale.setCycleId(CYCLE_ID);
@@ -734,6 +703,7 @@ class SaleServiceTest {
         sale.setPlotId(plotId);
         sale.setProjectId(PROJECT_ID);
         sale.setAssociateId(ASSOCIATE_ID);
+        sale.setSponsorId(ASSOCIATE_ID);
         sale.setBuyerPhone("9999999999");
         sale.setAmount(new BigDecimal("600000.00"));
         sale.setCycleId(CYCLE_ID);
@@ -763,6 +733,7 @@ class SaleServiceTest {
         sale.setPlotId(plotId);
         sale.setProjectId(PROJECT_ID);
         sale.setAssociateId(ASSOCIATE_ID);
+        sale.setSponsorId(ASSOCIATE_ID);
         sale.setBuyerPhone("9999999999");
         sale.setAmount(new BigDecimal("600000.00"));
         sale.setCycleId(CYCLE_ID);

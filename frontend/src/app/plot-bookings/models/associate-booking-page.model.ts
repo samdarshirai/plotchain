@@ -52,6 +52,10 @@ export interface Booking {
   cancellationCharge?: number | null;
   refundAmount?: number | null;
   buyerAssociateId?: string | null;
+  // associate* above is the buyer; the sponsor earns Direct Income and the volume.
+  sponsorCode?: string | null;
+  sponsorName?: string | null;
+  sponsorPhone?: string | null;
 }
 
 export interface AssociateBookingPage {

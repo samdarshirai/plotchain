@@ -299,7 +299,7 @@ export class BookPlotFormComponent implements OnInit {
     }
     if (!this.associateId || !this.paymentMode || !this.txnNo.trim() || !this.receiptNo.trim() || this.bankError || this.dateError) { return; }
     this.submitted.emit({ paymentMode: this.paymentMode, txnNo: this.txnNo.trim(), receiptNo: this.receiptNo.trim(), bankName: this.bankName.trim(), txnDate: this.txnDate,
-      firstInstallmentAmount: this.firstInstallmentAmount ?? undefined, associateId: this.associateId, buyerAssociateId: this.buyerAssociateId, buyerPhone: this.buyerPhone.trim(), tokenAmount: this.tokenAmount!, discount: this.discount, extraPrice: this.extra, extraPercent: this.extraPercentRaw ?? 0 });
+      firstInstallmentAmount: this.firstInstallmentAmount ?? undefined, buyerAssociateId: this.buyerAssociateId, buyerPhone: this.buyerPhone.trim(), tokenAmount: this.tokenAmount!, discount: this.discount, extraPrice: this.extra, extraPercent: this.extraPercentRaw ?? 0 });
   }
 }
 

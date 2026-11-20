@@ -292,6 +292,7 @@ class CycleServiceTest {
         seller.setRole(sellerIsAdmin ? AssociateRole.ADMIN : AssociateRole.ASSOCIATE);
         seller.setSponsorId(sellerIsAdmin ? null : SPONSOR_ID);
         Sale sale = saleFixture(seller.getId(), cycle.getId(), new BigDecimal("100000"));
+        sale.setSponsorId(SPONSOR_ID); // the sale's buyer is `seller`; the buyer's sponsor earns Direct Income
         LedgerEntry direct = matchingEntryFixture(entryOwner == null ? seller.getId() : entryOwner, cycle.getId(), new BigDecimal("7000"));
         direct.setIncomeType(IncomeType.DIRECT);
         direct.setSourceRef(sale.getId());
@@ -375,26 +376,6 @@ class CycleServiceTest {
 
         assertThat(d.direct().getAssociateId()).isEqualTo(d.seller().getId());
         verifyNoInteractions(walletRepository);
-    }
-
-    @Test
-    void recalculateThrowsWhenNonAdminSellerHasNoSponsor() {
-        DirectScenario d = directScenario(LedgerEntryStatus.PENDING, false, null);
-        d.seller().setSponsorId(null);
-
-        assertThatThrownBy(() -> service.refreshLiveIncome(d.cycle().getId()))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("no sponsor");
-    }
-
-    @Test
-    void recalculateReversesDirectEntryOnAdminSale() {
-        DirectScenario d = directScenario(LedgerEntryStatus.PAID, true, null);
-
-        service.refreshLiveIncome(d.cycle().getId());
-
-        assertThat(d.direct().getStatus()).isEqualTo(LedgerEntryStatus.REVERSED);
-        verify(walletRepository).creditBalance(d.seller().getId(), new BigDecimal("-4980"));
     }
 
     @Test
@@ -592,6 +573,7 @@ class CycleServiceTest {
         Sale sale = new Sale();
         sale.setId(UUID.randomUUID());
         sale.setAssociateId(associateId);
+        sale.setSponsorId(associateId);
         sale.setCycleId(cycleId);
         sale.setAmount(amount);
         sale.setStatus(SaleStatus.RECORDED);

@@ -37,8 +37,29 @@ public record BookingResponse(
     BigDecimal cancellationChargePct,
     BigDecimal cancellationCharge,
     BigDecimal refundAmount,
-    UUID buyerAssociateId
+    UUID buyerAssociateId,
+    // associate* above is the buyer (the sale's owner); the sponsor earns Direct Income and the volume.
+    String sponsorCode,
+    String sponsorName,
+    String sponsorPhone
 ) {
+    // Pre-sponsor shape, kept so existing callers need no change.
+    public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
+                           BigDecimal totalAmount, int installmentCount, Instant bookedAt,
+                           BigDecimal paidAmount, BigDecimal dueAmount, List<EmiInstallmentResponse> installments,
+                           String plotNo, String projectName, String associateName,
+                           String buyerPhone, BigDecimal listPrice, BigDecimal discount, BigDecimal areaSqft,
+                           BigDecimal rate, Instant cancelledAt, String associateCode, PlotType plotType,
+                           BigDecimal extraPrice, String associatePhone, String cancelReason, BigDecimal roadSizeFt,
+                           BigDecimal cancellationChargePct, BigDecimal cancellationCharge, BigDecimal refundAmount,
+                           UUID buyerAssociateId) {
+        this(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
+            paidAmount, dueAmount, installments, plotNo, projectName, associateName, buyerPhone, listPrice,
+            discount, areaSqft, rate, cancelledAt, associateCode, plotType, extraPrice, associatePhone,
+            cancelReason, roadSizeFt, cancellationChargePct, cancellationCharge, refundAmount, buyerAssociateId,
+            null, null, null);
+    }
+
     // Pre-buyerAssociateId shape, kept so existing callers need no change.
     public BookingResponse(UUID id, UUID plotId, UUID associateId, BookingStatus status, String buyerName,
                            BigDecimal totalAmount, int installmentCount, Instant bookedAt,
@@ -51,7 +72,7 @@ public record BookingResponse(
         this(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
             paidAmount, dueAmount, installments, plotNo, projectName, associateName, buyerPhone, listPrice,
             discount, areaSqft, rate, cancelledAt, associateCode, plotType, extraPrice, associatePhone,
-            cancelReason, roadSizeFt, cancellationChargePct, cancellationCharge, refundAmount, null);
+            cancelReason, roadSizeFt, cancellationChargePct, cancellationCharge, refundAmount, null, null, null, null);
     }
 
     // Pre-cancellation-charge shape, kept so existing callers need no change.
@@ -144,7 +165,8 @@ public record BookingResponse(
         return new BookingResponse(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
             paidAmount, dueAmount, installments, plotNo, projectName, associateName,
             null, listPrice, discount, areaSqft, rate, cancelledAt, associateCode, plotType, extraPrice, keepAssociatePhone ? associatePhone : null, cancelReason, roadSizeFt,
-            cancellationChargePct, cancellationCharge, refundAmount);
+            cancellationChargePct, cancellationCharge, refundAmount, buyerAssociateId,
+            sponsorCode, sponsorName, keepAssociatePhone ? sponsorPhone : null);
     }
 
     // Labels are additive (unit 14b); null when the referent is gone or the caller has no lookup.

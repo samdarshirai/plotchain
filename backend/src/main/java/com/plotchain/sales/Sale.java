@@ -17,6 +17,9 @@ public class Sale {
     private UUID projectId;
     @Column(name = "associate_id", nullable = false)
     private UUID associateId;
+    // The buyer's sponsor: earns Direct Income and the binary volume. associateId is the buyer.
+    @Column(name = "sponsor_id", nullable = false)
+    private UUID sponsorId;
     @Column(name = "buyer_associate_id")
     private UUID buyerAssociateId;
     @Column(name = "buyer_phone")
@@ -51,6 +54,8 @@ public class Sale {
     public void setProjectId(UUID projectId) { this.projectId = projectId; }
     public UUID getAssociateId() { return associateId; }
     public void setAssociateId(UUID associateId) { this.associateId = associateId; }
+    public UUID getSponsorId() { return sponsorId; }
+    public void setSponsorId(UUID sponsorId) { this.sponsorId = sponsorId; }
     public UUID getBuyerAssociateId() { return buyerAssociateId; }
     public void setBuyerAssociateId(UUID buyerAssociateId) { this.buyerAssociateId = buyerAssociateId; }
     public String getBuyerPhone() { return buyerPhone; }

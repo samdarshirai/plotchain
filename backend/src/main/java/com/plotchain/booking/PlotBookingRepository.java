@@ -148,7 +148,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
             @Param("code") String code, @Param("plotNo") String plotNo, @Param("from") Instant from,
             @Param("to") Instant to, Pageable pageable);
 
-    // "My Business Datewise": same downline CTE as findByDownline, restricted to booked_at in [from, to).
+    // "My Business Datewise": downline CTE keyed on the sponsor (who gets the volume), restricted to booked_at in [from, to).
     // position is 'L' or 'R'. CANCELLED bookings are not business.
     @Query(value = """
         WITH RECURSIVE downline(id) AS (
@@ -156,7 +156,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
             UNION ALL
             SELECT a.id FROM associate a JOIN downline d ON a.parent_id = d.id
         )
-        SELECT b.* FROM plot_booking b JOIN downline d ON b.associate_id = d.id
+        SELECT b.* FROM plot_booking b JOIN downline d ON b.sponsor_id = d.id
         WHERE b.status <> 'CANCELLED' AND b.booked_at >= :from AND b.booked_at < :to
         ORDER BY b.booked_at, b.id
         """, nativeQuery = true)

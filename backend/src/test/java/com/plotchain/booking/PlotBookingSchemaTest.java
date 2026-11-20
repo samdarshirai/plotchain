@@ -81,6 +81,7 @@ class PlotBookingSchemaTest {
         b.setId(UUID.randomUUID());
         b.setPlotId(plotId);
         b.setAssociateId(persistAssociate());
+        b.setSponsorId(persistAssociate());
         b.setBuyerAssociateId(b.getAssociateId());
         b.setTotalAmount(new BigDecimal("600000.00"));
         b.setInstallmentCount(1);
@@ -126,8 +127,8 @@ class PlotBookingSchemaTest {
         UUID associateId = persistAssociate();
         entityManager.flush();
         UUID bookingId = UUID.randomUUID();
-        jdbc.update("INSERT INTO plot_booking (id, plot_id, associate_id, buyer_associate_id, total_amount, installment_count, booked_at) "
-            + "VALUES (?, ?, ?, ?, 600000, 1, CURRENT_TIMESTAMP)", bookingId, plotId, associateId, associateId);
+        jdbc.update("INSERT INTO plot_booking (id, plot_id, associate_id, sponsor_id, buyer_associate_id, total_amount, installment_count, booked_at) "
+            + "VALUES (?, ?, ?, ?, ?, 600000, 1, CURRENT_TIMESTAMP)", bookingId, plotId, associateId, associateId, associateId);
         UUID installmentId = UUID.randomUUID();
         jdbc.update("INSERT INTO emi_installment (id, booking_id, installment_number, amount, due_date) "
             + "VALUES (?, ?, 1, 600000, DATE '2026-01-01')", installmentId, bookingId);
@@ -222,8 +223,8 @@ class PlotBookingSchemaTest {
         UUID associateId = persistAssociate();
         entityManager.flush();
         UUID bookingId = UUID.randomUUID();
-        jdbc.update("INSERT INTO plot_booking (id, plot_id, associate_id, buyer_associate_id, total_amount, installment_count, booked_at) "
-            + "VALUES (?, ?, ?, ?, 600000, 1, CURRENT_TIMESTAMP)", bookingId, plotId, associateId, associateId);
+        jdbc.update("INSERT INTO plot_booking (id, plot_id, associate_id, sponsor_id, buyer_associate_id, total_amount, installment_count, booked_at) "
+            + "VALUES (?, ?, ?, ?, ?, 600000, 1, CURRENT_TIMESTAMP)", bookingId, plotId, associateId, associateId, associateId);
         assertThat(jdbc.queryForObject("SELECT discount FROM plot_booking WHERE id = ?", BigDecimal.class, bookingId))
             .isEqualByComparingTo("0");
     }
@@ -260,6 +261,7 @@ class PlotBookingSchemaTest {
         s.setPlotId(b.getPlotId());
         s.setProjectId(entityManager.find(Plot.class, b.getPlotId()).getProjectId());
         s.setAssociateId(b.getAssociateId());
+        s.setSponsorId(b.getAssociateId());
         s.setNote("Confirmed from booking " + b.getId());
         s.setAmount(b.getTotalAmount());
         s.setCycleId(cycleId);

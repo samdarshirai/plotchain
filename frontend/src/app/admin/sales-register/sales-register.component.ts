@@ -186,8 +186,8 @@ export class SalesRegisterComponent implements OnInit {
     this.registerRows = (this.page?.sales ?? []).map(sale => ({
       projectName: sale.projectName ?? '',
       plotNo: sale.plotNo ?? '',
-      sponsorId: sale.associateUserId ?? '',
-      sponsorName: sale.associateName ?? '',
+      sponsorId: sale.sponsorUserId ?? '',
+      sponsorName: sale.sponsorName ?? '',
       buyerAssociateId: sale.buyerAssociateUserId ?? '',
       buyerName: sale.buyerName ?? '',
       placementId: sale.buyerPlacementUserId ?? '',

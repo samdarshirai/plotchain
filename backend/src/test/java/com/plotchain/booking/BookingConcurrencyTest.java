@@ -117,6 +117,7 @@ class BookingConcurrencyTest {
             // test only needs a persistable, FK-satisfying associate row to exercise the Plot
             // row lock, not a real rank-tiered associate.
             associate.setRole(AssociateRole.ADMIN);
+            associate.setSponsorId(id); // self-sponsored: bookings need a sponsor
             associateRepository.saveAndFlush(associate);
             return id;
         });

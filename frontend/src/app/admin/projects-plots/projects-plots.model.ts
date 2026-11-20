@@ -5,8 +5,7 @@ export interface BookingEmiConfig {
 
 // What the Book form emits; the container adds plotId.
 export interface BookingFormValue {
-  associateId: string; // the sponsor
-  buyerAssociateId: string;
+  buyerAssociateId: string; // the buyer; the server derives the sponsor from the buyer
   buyerPhone: string;
   tokenAmount: number;
   discount: number; // always emitted by the form (0 when blank)
@@ -22,7 +21,6 @@ export interface BookingFormValue {
 
 export interface CreateBookingRequest {
   plotId: string;
-  associateId: string; // the sponsor
   buyerAssociateId: string;
   buyerPhone?: string;
   tokenAmount: number;

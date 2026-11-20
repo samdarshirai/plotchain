@@ -24,6 +24,10 @@ public class PlotBooking {
     @Column(name = "associate_id", nullable = false)
     private UUID associateId;
 
+    // The buyer's sponsor: earns Direct Income and receives the binary volume. associateId is the buyer.
+    @Column(name = "sponsor_id", nullable = false)
+    private UUID sponsorId;
+
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
@@ -101,6 +105,8 @@ public class PlotBooking {
     public void setId(UUID id) { this.id = id; }
     public UUID getPlotId() { return plotId; }
     public void setPlotId(UUID plotId) { this.plotId = plotId; }
+    public UUID getSponsorId() { return sponsorId; }
+    public void setSponsorId(UUID sponsorId) { this.sponsorId = sponsorId; }
     public UUID getAssociateId() { return associateId; }
     public void setAssociateId(UUID associateId) { this.associateId = associateId; }
     public BigDecimal getListPrice() { return listPrice; }

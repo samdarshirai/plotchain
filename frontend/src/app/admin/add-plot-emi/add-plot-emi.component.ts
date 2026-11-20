@@ -83,6 +83,8 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.addPlotEmi.col.associateId' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.addPlotEmi.col.associate' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">call</span>{{ 'admin.addPlotEmi.col.mobile' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'admin.addPlotEmi.col.sponsorId' | translate }}</th>
+                <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.addPlotEmi.col.sponsorName' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">apartment</span>{{ 'admin.addPlotEmi.col.project' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">landscape</span>{{ 'admin.addPlotEmi.col.plot' | translate }}</th>
                 <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">category</span>{{ 'admin.addPlotEmi.col.plotType' | translate }}</th>
@@ -103,6 +105,8 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
                 <td class="editable-table__cell--bold" [attr.data-label]="'admin.addPlotEmi.col.associateId' | translate">{{ b.associateCode || '—' }}</td>
                 <td class="editable-table__cell--bold" [attr.data-label]="'admin.addPlotEmi.col.associate' | translate">{{ b.associateName || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.mobile' | translate">{{ b.associatePhone || '—' }}</td>
+                <td class="editable-table__cell--bold" [attr.data-label]="'admin.addPlotEmi.col.sponsorId' | translate">{{ b.sponsorCode || '—' }}</td>
+                <td [attr.data-label]="'admin.addPlotEmi.col.sponsorName' | translate">{{ b.sponsorName || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.project' | translate">{{ b.projectName || '—' }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.plot' | translate">{{ plot(b) }}</td>
                 <td [attr.data-label]="'admin.addPlotEmi.col.plotType' | translate">{{ b.plotType ? ('admin.projectsPlots.type.' + b.plotType | translate) : '—' }}</td>
@@ -120,7 +124,7 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
                 </td>
               </tr>
               <tr *ngIf="!page?.bookings?.length">
-                <td class="add-plot-emi__empty-cell" [attr.colspan]="16">{{ (projectId ? 'admin.addPlotEmi.empty' : 'admin.addPlotEmi.pickProject') | translate }}</td>
+                <td class="add-plot-emi__empty-cell" [attr.colspan]="18">{{ (projectId ? 'admin.addPlotEmi.empty' : 'admin.addPlotEmi.pickProject') | translate }}</td>
               </tr>
             </tbody>
           <tfoot *ngIf="page?.bookings?.length">
@@ -159,6 +163,7 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
           <div><dt>{{ 'admin.addPlotEmi.col.plot' | translate }}</dt><dd>{{ plot(b) }}</dd></div>
           <div><dt>{{ 'admin.addPlotEmi.col.project' | translate }}</dt><dd>{{ b.projectName || '—' }}</dd></div>
           <div><dt>{{ 'admin.addPlotEmi.col.associate' | translate }}</dt><dd>{{ b.associateName || '—' }} ({{ b.associateCode || '—' }})</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.sponsorName' | translate }}</dt><dd>{{ b.sponsorName || '—' }} ({{ b.sponsorCode || '—' }})</dd></div>
           <div><dt>{{ 'admin.addPlotEmi.buyer' | translate }}</dt><dd>{{ b.buyerName }}</dd></div>
           <div><dt>{{ 'admin.addPlotEmi.col.plotType' | translate }}</dt><dd>{{ b.plotType ? ('admin.projectsPlots.type.' + b.plotType | translate) : '—' }}</dd></div>
           <div><dt>{{ 'admin.addPlotEmi.col.area' | translate }}</dt><dd>{{ b.areaSqft != null ? b.areaSqft : '—' }}</dd></div>
@@ -217,6 +222,7 @@ const round2 = (n: number): number => Math.round(n); // whole rupees
             <div><dt>{{ 'admin.addPlotEmi.col.plot' | translate }}</dt><dd>{{ plot(b) }}</dd></div>
             <div><dt>{{ 'admin.addPlotEmi.buyer' | translate }}</dt><dd>{{ b.buyerName }}</dd></div>
             <div><dt>{{ 'admin.addPlotEmi.col.associate' | translate }}</dt><dd>{{ b.associateName || '—' }} ({{ b.associateCode || '—' }})</dd></div>
+          <div><dt>{{ 'admin.addPlotEmi.col.sponsorName' | translate }}</dt><dd>{{ b.sponsorName || '—' }} ({{ b.sponsorCode || '—' }})</dd></div>
             <div><dt>{{ 'admin.addPlotEmi.col.area' | translate }}</dt><dd>{{ b.areaSqft != null ? b.areaSqft : '—' }}</dd></div>
             <div><dt>{{ 'admin.addPlotEmi.col.discount' | translate }}</dt><dd>{{ money(b.discount || 0) }}</dd></div>
             <div><dt>{{ 'admin.addPlotEmi.col.total' | translate }}</dt><dd>{{ money(b.totalAmount) }}</dd></div>
@@ -426,6 +432,8 @@ export class AddPlotEmiComponent implements OnInit, OnDestroy {
       { header: t('associateId'), value: b => b.associateCode },
       { header: t('associate'), value: b => b.associateName },
       { header: t('mobile'), value: b => b.associatePhone },
+      { header: t('sponsorId'), value: b => b.sponsorCode },
+      { header: t('sponsorName'), value: b => b.sponsorName },
       { header: t('project'), value: b => b.projectName },
       { header: t('plot'), value: b => plotText(b) },
       { header: t('plotType'), value: b => b.plotType },

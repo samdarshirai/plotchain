@@ -97,6 +97,7 @@ class BookingRegisterTestData {
         b.setId(id);
         b.setPlotId(plot.getId());
         b.setAssociateId(associateId);
+        b.setSponsorId(associateId);
         b.setTotalAmount(new BigDecimal("600000.00"));
         b.setInstallmentCount(3);
         b.setBookedAt(T.plusSeconds(86400L * bookedDayOffset));
