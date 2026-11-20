@@ -5,7 +5,7 @@ describe('ASSOCIATE_NAV_ITEMS', () => {
 
   it('lists My Bookings under Plot Bookings, before My Sales', () => {
     const keys = plotBookings.children!.map(c => c.key);
-    expect(keys).toEqual(['viewPlot', 'teamPlots', 'leftPlots', 'rightPlots', 'myBookings', 'mySales']);
+    expect(keys).toEqual(['viewPlot', 'teamPlots', 'leftPlots', 'rightPlots', 'myBookings', 'mySales', 'directSponsorSales']);
     const mine = plotBookings.children!.find(c => c.key === 'myBookings')!;
     expect(mine.path).toBe('/plot-bookings/mine');
     expect(mine.labelKey).toBe('nav.myBookings');

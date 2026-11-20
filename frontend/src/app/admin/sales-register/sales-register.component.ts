@@ -1,7 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { map } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { SalesRegisterService } from './sales-register.service';
 import { AdminSalePage, AdminSaleFilters } from '../models/admin-sale-page.model';
 import { BadgeTone, EditableTableColumn, EditableTableComponent } from '../../shared/components/editable-table/editable-table.component';
@@ -91,6 +92,8 @@ export class SalesRegisterComponent implements OnInit {
   private datePipe = inject(DatePipe);
   private currencyPipe = inject(CurrencyPipe);
   private cycleService = inject(CycleManagementService);
+  // Associate portal reuses this screen (route data scope:'me'): same table, own tree only.
+  private mine = inject(ActivatedRoute).snapshot.data['scope'] === 'me';
 
   cycles: CycleSummary[] = [];
   private cycleId = '';
@@ -124,7 +127,10 @@ export class SalesRegisterComponent implements OnInit {
       },
       { key: 'recordedAt', label: this.translate.instant('admin.salesRegister.columnRecordedAt'), type: 'text' }
     ];
-    this.cycleService.list('', 0, 100).subscribe({ next: r => (this.cycles = r.cycles), error: () => undefined });
+    (this.mine
+      ? this.salesRegisterService.myCycles()
+      : this.cycleService.list('', 0, 100).pipe(map(r => r.cycles))
+    ).subscribe({ next: c => (this.cycles = c), error: () => undefined });
     this.loadPage(0);
   }
 
@@ -167,7 +173,7 @@ export class SalesRegisterComponent implements OnInit {
     if (this.recordedTo) filters.recordedTo = this.recordedTo;
     if (this.cycleId) filters.cycleId = this.cycleId;
     if (this.plotNo) filters.plotNo = this.plotNo;
-    fetchAllPages((p, size) => this.salesRegisterService.list(filters, p, size)).subscribe({
+    fetchAllPages((p, size) => this.salesRegisterService.list(filters, p, size, this.mine)).subscribe({
       next: res => {
         this.page = res;
         this.updateTableRows();

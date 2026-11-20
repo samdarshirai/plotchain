@@ -37,7 +37,11 @@ public class AssociateSaleController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) SaleStatus status,
+            @RequestParam(required = false) UUID cycleId,
+            @RequestParam(required = false) String plotNo,
+            @RequestParam(required = false) String search
     ) {
         if (from != null && to != null && from.isAfter(to)) {
             throw new org.springframework.web.server.ResponseStatusException(
@@ -45,6 +49,8 @@ public class AssociateSaleController {
         }
         page = Math.max(page, 0);
         size = Math.min(Math.max(size, 1), 100);
-        return saleService.getMySales(associateId, from, to, page, size);
+        return saleService.getMySales(associateId, from, to, page, size, status, cycleId,
+            plotNo == null || plotNo.isBlank() ? null : plotNo.trim(),
+            search == null || search.isBlank() ? null : search.trim());
     }
 }

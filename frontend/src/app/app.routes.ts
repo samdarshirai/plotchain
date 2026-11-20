@@ -47,6 +47,7 @@ export const routes: Routes = [
   { path: 'privacy', component: PrivacyPolicyComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings/my-sales', component: SalesHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
+  { path: 'plot-bookings/direct-sponsor-sales', loadComponent: () => import('./admin/sales-register/sales-register.component').then(m => m.SalesRegisterComponent), data: { scope: 'me' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'sales-history', redirectTo: 'plot-bookings/my-sales' }, // old bookmarks
   { path: 'my-tree', component: MyTreeComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'my-tree/downline', loadComponent: () => import('./my-team/associate-downline.component').then(m => m.AssociateDownlineComponent), data: { scope: 'me' }, canActivate: [authGuard, associateOnlyGuard] },

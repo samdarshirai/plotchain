@@ -280,13 +280,26 @@ public class SaleService {
     // view-only, paginated. associateId always comes from the caller's own JWT (see
     // AssociateSaleController) -- there is no path for one associate to view another's sales
     // through this method.
-    public AssociateSalePageResponse getMySales(UUID associateId, java.time.LocalDate from, java.time.LocalDate to, int page, int size) {
+    public AssociateSalePageResponse getMySales(UUID associateId, java.time.LocalDate from, java.time.LocalDate to, int page, int size,
+                                                SaleStatus status, UUID cycleId, String plotNo, String search) {
         List<UUID> selfAndDownlineIds = associateRepository.findSelfAndDownline(associateId);
+        java.time.Instant fromInstant = from == null ? java.time.Instant.EPOCH : from.atStartOfDay().toInstant(java.time.ZoneOffset.UTC);
+        java.time.Instant toExclusive = to == null ? java.time.Instant.parse("9999-01-01T00:00:00Z") : to.plusDays(1).atStartOfDay().toInstant(java.time.ZoneOffset.UTC);
 
-        Page<Sale> result = saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
-            selfAndDownlineIds, from == null ? java.time.Instant.EPOCH : from.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
-            to == null ? java.time.Instant.parse("9999-01-01T00:00:00Z") : to.plusDays(1).atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
-            PageRequest.of(page, size));
+        Page<Sale> result;
+        if (status == null && cycleId == null && plotNo == null && search == null) {
+            result = saleRepository.findByAssociateIdInOrderByRecordedAtDesc(selfAndDownlineIds, fromInstant, toExclusive, PageRequest.of(page, size));
+        } else {
+            // Same filters as the admin register, but the text search can never leave the caller's tree.
+            List<UUID> ids = selfAndDownlineIds;
+            if (search != null) {
+                java.util.Set<UUID> matches = new java.util.HashSet<>(associateRepository.findIdsBySearch(search));
+                ids = selfAndDownlineIds.stream().filter(matches::contains).toList();
+            }
+            result = ids.isEmpty()
+                ? Page.empty(PageRequest.of(page, size))
+                : saleRepository.searchRegisterByAssociates(ids, status, fromInstant, toExclusive, cycleId, plotNo, PageRequest.of(page, size));
+        }
 
         List<SaleResponse> sales = toResponses(result.getContent());
         return new AssociateSalePageResponse(sales, page, size, result.getTotalElements());

@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
+import { SalesRegisterService } from './sales-register.service';
 import { SalesRegisterComponent } from './sales-register.component';
 
 describe('SalesRegisterComponent', () => {
@@ -137,5 +138,11 @@ describe('SalesRegisterComponent', () => {
 
     expect(fixture.nativeElement.querySelector('.editable-table input, .editable-table button')).toBeFalsy();
     expect(fixture.nativeElement.textContent).toContain('Voided');
+  });
+
+  it('uses the associate endpoints (from/to params) when route scope is me', () => {
+    const svc = TestBed.inject(SalesRegisterService);
+    svc.list({ recordedFrom: '2026-01-01', recordedTo: '2026-01-31', plotNo: 'A1' }, 0, 100, true).subscribe();
+    httpMock.expectOne('/api/associates/me/sales?page=0&size=100&from=2026-01-01&to=2026-01-31&plotNo=A1').flush({ sales: [], page: 0, size: 100, totalElements: 0 });
   });
 });

@@ -58,7 +58,8 @@ export const ASSOCIATE_NAV_ITEMS: AssociateNavItem[] = [
       { key: 'leftPlots', labelKey: 'nav.leftPlots', path: '/plot-bookings/left' },
       { key: 'rightPlots', labelKey: 'nav.rightPlots', path: '/plot-bookings/right' },
       { key: 'myBookings', labelKey: 'nav.myBookings', path: '/plot-bookings/mine' },
-      { key: 'mySales', labelKey: 'nav.mySales', path: '/plot-bookings/my-sales' }
+      { key: 'mySales', labelKey: 'nav.mySales', path: '/plot-bookings/my-sales' },
+      { key: 'directSponsorSales', labelKey: 'nav.directSponsorSales', path: '/plot-bookings/direct-sponsor-sales' }
     ]
   },
   {
