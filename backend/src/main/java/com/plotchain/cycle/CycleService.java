@@ -341,7 +341,7 @@ public class CycleService {
     private List<LegVolume> rollUpLegVolumes(UUID cycleId, List<Associate> associates, List<Sale> sales) {
         Map<UUID, BigDecimal> ownSaleVolume = new HashMap<>();
         for (Sale sale : sales) {
-            ownSaleVolume.merge(sale.getSponsorId(), sale.getAmount(), BigDecimal::add);
+            ownSaleVolume.merge(sale.getAssociateId(), sale.getAmount(), BigDecimal::add);
         }
 
         Map<UUID, Associate> leftChildOf = new HashMap<>();

@@ -154,7 +154,7 @@ class SaleServiceTest {
         assertThat(saved.getEmiInstallmentId()).isEqualTo(INSTALLMENT_ID);
         assertThat(saved.getPlotId()).isEqualTo(PLOT_ID);
         assertThat(saved.getProjectId()).isEqualTo(PROJECT_ID);
-        // Sale belongs to the buyer; the buyer's sponsor holds the volume (leg = sponsor's position).
+        // Sale belongs to the buyer; volume goes to the buyer's placement parent (leg = buyer's position).
         assertThat(saved.getAssociateId()).isEqualTo(BUYER_ID);
         assertThat(saved.getSponsorId()).isEqualTo(ASSOCIATE_ID);
         assertThat(saved.getAmount()).isEqualByComparingTo("750000.00");
@@ -162,7 +162,7 @@ class SaleServiceTest {
         assertThat(saved.getBuyerPhone()).isEqualTo("9999999999");
         assertThat(saved.getNote()).isEqualTo("Payment 2 of booking " + BOOKING_ID);
         assertThat(saved.getStatus()).isEqualTo(SaleStatus.RECORDED);
-        assertThat(saved.getLegCredited()).isEqualTo("L");
+        assertThat(saved.getLegCredited()).isEqualTo("R");
         assertThat(saved.getCycleId()).isEqualTo(CYCLE_ID);
         assertThat(response.status()).isEqualTo("RECORDED");
         assertThat(response.plotNo()).isEqualTo("A-101");

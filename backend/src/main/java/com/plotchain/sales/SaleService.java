@@ -102,7 +102,9 @@ public class SaleService {
         sale.setEmiInstallmentId(installmentId);
         sale.setCycleId(cycle.getId());
         // root sponsor has no placement parent, so no position; "L" matches the rest of the codebase (null is not "R")
-        sale.setLegCredited(sponsor.getPosition() != null ? sponsor.getPosition() : "L");
+        // volume goes to the buyer's placement parent: the leg is the buyer's own position (sponsor if no buyer)
+        Associate legOwner = buyerAssociateId == null ? sponsor : associateRepository.findById(buyerAssociateId).orElse(sponsor);
+        sale.setLegCredited(legOwner.getPosition() != null ? legOwner.getPosition() : "L");
         sale.setStatus(SaleStatus.RECORDED);
         sale.setRecordedAt(Instant.now());
         sale = saleRepository.save(sale);
