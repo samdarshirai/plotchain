@@ -288,6 +288,8 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
     // only -- this is the associate network directory, not the Admin Team staff roster.
     // joinedToExclusive is an EXCLUSIVE upper bound: callers pass the day *after* the last day
     // to include.
+    // Ordering (newest-first vs userId) comes from the Pageable's Sort, not the query: Spring Data
+    // drops ORDER BY when deriving the count query, which orphaned an :newestFirst bind parameter.
     // Postgres prepares this statement once and must assign every bind parameter a static type
     // up front, before it knows whether the value is actually null at runtime. Left untyped:
     // :search (String) inside CONCAT resolves to bytea, and LOWER(bytea) has no overload
@@ -310,7 +312,6 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         AND (:status IS NULL OR a.status = :status)
         AND (CAST(:joinedFrom AS timestamp) IS NULL OR a.joinedAt >= :joinedFrom)
         AND (CAST(:joinedToExclusive AS timestamp) IS NULL OR a.joinedAt < :joinedToExclusive)
-        ORDER BY CASE WHEN :newestFirst = true THEN a.joinedAt END DESC, a.userId ASC
         """)
     Page<Associate> searchDirectory(
         @Param("search") String search,
@@ -320,7 +321,6 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         @Param("status") AssociateStatus status,
         @Param("joinedFrom") Instant joinedFrom,
         @Param("joinedToExclusive") Instant joinedToExclusive,
-        @Param("newestFirst") boolean newestFirst,
         @Param("position") String position,
         Pageable pageable);
 
@@ -337,7 +337,6 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         AND (:status IS NULL OR a.status = :status)
         AND (CAST(:joinedFrom AS timestamp) IS NULL OR a.joinedAt >= :joinedFrom)
         AND (CAST(:joinedToExclusive AS timestamp) IS NULL OR a.joinedAt < :joinedToExclusive)
-        ORDER BY CASE WHEN :newestFirst = true THEN a.joinedAt END DESC, a.userId ASC
         """)
     Page<Associate> searchWithinIds(
         @Param("ids") List<UUID> ids,
@@ -347,7 +346,6 @@ public interface AssociateRepository extends JpaRepository<Associate, UUID> {
         @Param("status") AssociateStatus status,
         @Param("joinedFrom") Instant joinedFrom,
         @Param("joinedToExclusive") Instant joinedToExclusive,
-        @Param("newestFirst") boolean newestFirst,
         Pageable pageable);
 
     // Row lock so concurrent wrong-password attempts serialize and none is lost.

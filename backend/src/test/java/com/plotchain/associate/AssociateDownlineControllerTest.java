@@ -23,7 +23,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -69,7 +68,7 @@ class AssociateDownlineControllerTest {
         child.setKycStatus(KycStatus.VERIFIED);
         child.setStatus(AssociateStatus.ACTIVE);
         child.setJoinedAt(Instant.now());
-        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(child)));
 
         mockMvc.perform(get("/api/associates/me/downline?kycStatus=VERIFIED")
@@ -80,7 +79,7 @@ class AssociateDownlineControllerTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<UUID>> ids = ArgumentCaptor.forClass(List.class);
-        verify(associateRepository).searchWithinIds(ids.capture(), any(), eq(KycStatus.VERIFIED), any(), any(), any(), any(), anyBoolean(), any());
+        verify(associateRepository).searchWithinIds(ids.capture(), any(), eq(KycStatus.VERIFIED), any(), any(), any(), any(), any());
         assertThat(ids.getValue()).containsExactly(childId);
     }
 
@@ -94,7 +93,7 @@ class AssociateDownlineControllerTest {
         when(associateRepository.findSelfAndDownline(caller.getId()))
             .thenReturn(List.of(caller.getId(), mine.getId(), deeper.getId()));
         when(associateRepository.findBySponsorId(caller.getId())).thenReturn(List.of(mine));
-        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(mine, deeper)));
 
         mockMvc.perform(get("/api/associates/me/downline").header("Authorization", "Bearer " + token))
@@ -115,7 +114,7 @@ class AssociateDownlineControllerTest {
         right.setPosition("R");
         when(associateRepository.findByParentId(caller.getId())).thenReturn(List.of(left, right));
         when(associateRepository.findSelfAndDownline(leftId)).thenReturn(List.of(leftId, deepId));
-        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/associates/me/downline?leg=L").header("Authorization", "Bearer " + token))
@@ -123,7 +122,7 @@ class AssociateDownlineControllerTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<UUID>> ids = ArgumentCaptor.forClass(List.class);
-        verify(associateRepository).searchWithinIds(ids.capture(), any(), any(), any(), any(), any(), any(), anyBoolean(), any());
+        verify(associateRepository).searchWithinIds(ids.capture(), any(), any(), any(), any(), any(), any(), any());
         assertThat(ids.getValue()).containsExactly(leftId, deepId);
     }
 
@@ -135,7 +134,7 @@ class AssociateDownlineControllerTest {
         mockMvc.perform(get("/api/associates/me/downline?leg=R").header("Authorization", "Bearer " + token))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalElements").value(0));
-        verify(associateRepository, never()).searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any());
+        verify(associateRepository, never()).searchWithinIds(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -146,7 +145,7 @@ class AssociateDownlineControllerTest {
         mockMvc.perform(get("/api/associates/me/downline").header("Authorization", "Bearer " + token))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalElements").value(0));
-        verify(associateRepository, never()).searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any());
+        verify(associateRepository, never()).searchWithinIds(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -173,7 +172,7 @@ class AssociateDownlineControllerTest {
         when(associateRepository.findByUserId("VP00002")).thenReturn(Optional.of(member(rootId, "VP00002")));
         when(associateRepository.findSelfAndDownline(caller.getId())).thenReturn(List.of(caller.getId(), rootId));
         when(associateRepository.findSelfAndDownline(rootId)).thenReturn(List.of(rootId, kidId));
-        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(member(kidId, "VP00003"))));
         Instant activated = Instant.parse("2026-01-05T10:00:00Z");
         when(epinRepository.findActivationTimes(any())).thenReturn(java.util.Collections.singletonList(new Object[] {kidId, activated}));
@@ -185,7 +184,7 @@ class AssociateDownlineControllerTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<UUID>> ids = ArgumentCaptor.forClass(List.class);
-        verify(associateRepository).searchWithinIds(ids.capture(), any(), any(), any(), any(), any(), any(), anyBoolean(), any());
+        verify(associateRepository).searchWithinIds(ids.capture(), any(), any(), any(), any(), any(), any(), any());
         assertThat(ids.getValue()).containsExactly(kidId);
     }
 
@@ -198,7 +197,7 @@ class AssociateDownlineControllerTest {
 
         mockMvc.perform(get("/api/associates/me/downline/of?rootUserId=VP09999").header("Authorization", "Bearer " + token))
             .andExpect(status().isNotFound());
-        verify(associateRepository, never()).searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any());
+        verify(associateRepository, never()).searchWithinIds(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -215,7 +214,7 @@ class AssociateDownlineControllerTest {
         String token = token();
         UUID kidId = UUID.randomUUID();
         when(associateRepository.findSelfAndDownline(caller.getId())).thenReturn(List.of(caller.getId(), kidId));
-        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(member(kidId, "VP00003"))));
 
         mockMvc.perform(get("/api/associates/me/downline/of").header("Authorization", "Bearer " + token))
@@ -234,7 +233,7 @@ class AssociateDownlineControllerTest {
         when(associateRepository.findFirstByParentIdIsNullAndRole(AssociateRole.ASSOCIATE))
             .thenReturn(Optional.of(member(rootUserId, "VP00001")));
         when(associateRepository.findSelfAndDownline(rootUserId)).thenReturn(List.of(rootUserId, kidId));
-        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), anyBoolean(), any()))
+        when(associateRepository.searchWithinIds(any(), any(), any(), any(), any(), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(member(kidId, "VP00003"))));
 
         mockMvc.perform(get("/api/admin/associates/downline").header("Authorization", "Bearer " + token))

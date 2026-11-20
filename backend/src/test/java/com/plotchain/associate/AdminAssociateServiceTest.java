@@ -84,7 +84,7 @@ class AdminAssociateServiceTest {
     void listReturnsAPageMappedToSummaries() {
         Associate associate = newAssociate(UUID.randomUUID(), "VP00001");
         when(associateRepository.searchDirectory(
-            eq("jane"), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(false), isNull(), eq(PageRequest.of(0, 20))))
+            eq("jane"), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
             .thenReturn(new PageImpl<>(List.of(associate), PageRequest.of(0, 20), 1));
         when(designationService.designationsOf(List.of(associate.getId()))).thenReturn(Map.of(associate.getId(), "Sales Manager"));
 
@@ -101,7 +101,7 @@ class AdminAssociateServiceTest {
     @Test
     void listConvertsJoinedDateRangeToAnExclusiveUpperBoundInstant() {
         when(associateRepository.searchDirectory(
-            isNull(), isNull(), isNull(), isNull(), isNull(), any(), any(), eq(false), isNull(), eq(PageRequest.of(0, 20))))
+            isNull(), isNull(), isNull(), isNull(), isNull(), any(), any(), isNull(), any()))
             .thenReturn(new PageImpl<>(List.of()));
 
         service.list(null, null, null, null, null, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), false, null, 0, 20);
@@ -109,7 +109,7 @@ class AdminAssociateServiceTest {
         ArgumentCaptor<Instant> fromCaptor = ArgumentCaptor.forClass(Instant.class);
         ArgumentCaptor<Instant> toCaptor = ArgumentCaptor.forClass(Instant.class);
         verify(associateRepository).searchDirectory(
-            isNull(), isNull(), isNull(), isNull(), isNull(), fromCaptor.capture(), toCaptor.capture(), eq(false), isNull(), any());
+            isNull(), isNull(), isNull(), isNull(), isNull(), fromCaptor.capture(), toCaptor.capture(), isNull(), any());
         assertThat(fromCaptor.getValue()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
         // Exclusive upper bound: the day AFTER joinedTo, so Jan 31 itself is included.
         assertThat(toCaptor.getValue()).isEqualTo(Instant.parse("2026-02-01T00:00:00Z"));
@@ -121,12 +121,12 @@ class AdminAssociateServiceTest {
         UUID sponsee = UUID.randomUUID();
         Associate a = newAssociate(sponsee, "VP00009");
         when(associateRepository.findBySponsorId(caller)).thenReturn(List.of(a));
-        when(associateRepository.searchWithinIds(eq(List.of(sponsee)), any(), any(), any(), any(), any(), any(), eq(false), any()))
+        when(associateRepository.searchWithinIds(eq(List.of(sponsee)), any(), any(), any(), any(), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of()));
 
         service.listDownline(caller, null, null, null, null, null, null, false, null, true, false, 0, 20);
 
-        verify(associateRepository).searchWithinIds(eq(List.of(sponsee)), any(), any(), any(), any(), any(), any(), eq(false), any());
+        verify(associateRepository).searchWithinIds(eq(List.of(sponsee)), any(), any(), any(), any(), any(), any(), any());
         verify(associateRepository, never()).findSelfAndDownline(any());
     }
 
@@ -135,7 +135,7 @@ class AdminAssociateServiceTest {
         UUID caller = UUID.randomUUID();
         UUID child = UUID.randomUUID();
         when(associateRepository.findSelfAndDownline(caller)).thenReturn(List.of(caller, child));
-        when(associateRepository.searchWithinIds(eq(List.of(child)), any(), any(), any(), any(), any(), any(), eq(false), any()))
+        when(associateRepository.searchWithinIds(eq(List.of(child)), any(), any(), any(), any(), any(), any(), any()))
             .thenReturn(new PageImpl<>(List.of(newAssociate(child, "VP00002"))));
         when(associateRepository.findByIdAndRole(caller, AssociateRole.ASSOCIATE)).thenReturn(Optional.of(newAssociate(caller, "VP00001")));
 

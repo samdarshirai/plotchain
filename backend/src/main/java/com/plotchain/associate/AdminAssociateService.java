@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,6 +71,11 @@ public class AdminAssociateService {
         this.nomineeService = nomineeService;
     }
 
+    private static PageRequest pageRequest(int page, int size, boolean newestFirst) {
+        Sort sort = newestFirst ? Sort.by(Sort.Order.desc("joinedAt"), Sort.Order.asc("userId")) : Sort.by("userId");
+        return PageRequest.of(page, size, sort);
+    }
+
     public AdminAssociatePageResponse list(String search, UUID rankId, KycStatus kycStatus, KycStatus excludeKycStatus,
                                             AssociateStatus status, LocalDate joinedFrom, LocalDate joinedTo,
                                             boolean newestFirst, String leg, int page, int size) {
@@ -80,7 +86,7 @@ public class AdminAssociateService {
 
         Page<Associate> result = associateRepository.searchDirectory(
             normalizedSearch, rankId, kycStatus, excludeKycStatus, status, joinedFromInstant, joinedToExclusive,
-            newestFirst, leg, PageRequest.of(page, size));
+            leg, pageRequest(page, size, newestFirst));
 
         List<AdminAssociateSummaryResponse> summaries = toSummaries(result.getContent());
         return new AdminAssociatePageResponse(summaries, page, size, result.getTotalElements());
@@ -176,7 +182,7 @@ public class AdminAssociateService {
 
         Page<Associate> result = associateRepository.searchWithinIds(
             ids, normalizedSearch, kycStatus, excludeKycStatus, status, joinedFromInstant, joinedToExclusive,
-            newestFirst, PageRequest.of(page, size));
+            pageRequest(page, size, newestFirst));
 
         List<AdminAssociateSummaryResponse> summaries = toSummaries(result.getContent());
         return new AdminAssociatePageResponse(summaries, page, size, result.getTotalElements());
