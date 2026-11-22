@@ -172,26 +172,44 @@ describe('BookingTableComponent', () => {
       expect(t.cards()).toBe(2);
     });
 
-    it('a ticked plot that leaves rows drops out of the comparison', () => {
+    it('a compared plot that leaves rows stays in the comparison', () => {
       const t = setup(true);
       t.tick(0);
       t.tick(1);
       t.fixture.componentRef.setInput('rows', [crow('b2', 'A-2'), crow('b3', 'B-3')]);
       t.fixture.detectChanges();
-      expect(t.fixture.componentInstance.comparedRows.length).toBe(1);
-      expect(t.el.querySelector('app-plot-compare')).toBeNull();
+      expect(t.fixture.componentInstance.comparedRows.map(r => r.key)).toEqual(['b1', 'b2']);
+      expect(t.cards()).toBe(2);
     });
 
-    it('a plot that left rows and returns later does not come back ticked', () => {
+    it('a compared plot that returns with new data gets a fresh snapshot', () => {
       const t = setup(true);
       t.tick(0);
       t.tick(1);
       t.fixture.componentRef.setInput('rows', [crow('b2', 'A-2'), crow('b3', 'B-3')]);
       t.fixture.detectChanges();
-      t.fixture.componentRef.setInput('rows', [crow('b1', 'A-1'), crow('b2', 'A-2'), crow('b3', 'B-3')]);
+      t.fixture.componentRef.setInput('rows', [{ ...crow('b1', 'A-1'), paid: 999 }, crow('b2', 'A-2'), crow('b3', 'B-3')]);
       t.fixture.detectChanges();
-      expect(t.fixture.componentInstance.comparedRows.map(r => r.key)).toEqual(['b2']);
-      expect(t.ticks()[0].checked).toBeFalse();
+      expect(t.fixture.componentInstance.compared.get('b1')!.paid).toBe(999);
+    });
+
+    it('cannot compare more than 4 plots', () => {
+      const t = setup(true, ['b1', 'b2', 'b3', 'b4', 'b5'].map((k, i) => crow(k, 'P-' + i)));
+      [0, 1, 2, 3].forEach(i => t.tick(i));
+      expect(t.fixture.componentInstance.atMax).toBeTrue();
+      expect(t.ticks().map(c => c.disabled)).toEqual([false, false, false, false, true]);
+      t.fixture.componentInstance.toggleCompare('b5');
+      expect(t.fixture.componentInstance.compared.size).toBe(4);
+      t.tick(0);
+      expect(t.ticks()[4].disabled).toBeFalse();
+    });
+
+    it('add control is hidden at 4', () => {
+      const t = setup(true, ['b1', 'b2', 'b3', 'b4', 'b5'].map((k, i) => crow(k, 'P-' + i)));
+      [0, 1].forEach(i => t.tick(i));
+      expect(t.el.querySelector('.plot-compare__add')).not.toBeNull();
+      [2, 3].forEach(i => t.tick(i));
+      expect(t.el.querySelector('.plot-compare__add')).toBeNull();
     });
 
     it('the compare dropdown lists unticked plots that have installments, and adding one adds a card', () => {

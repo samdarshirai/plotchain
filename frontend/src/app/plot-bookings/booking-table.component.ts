@@ -8,6 +8,8 @@ import { paymentsOf } from './booking-view.util';
 import { PlotCompareComponent } from './plot-compare.component';
 import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
+export const MAX_COMPARE = 4;
+
 // One row shape for every Associate /plot-bookings table (team, left, right, mine, my-sales).
 export interface BookingRow {
   key: string;
@@ -96,7 +98,7 @@ export const saleRow = (s: Sale): BookingRow => ({
           <ng-container *ngFor="let r of visibleRows; let idx = index; trackBy: trackKey">
             <tr [class.booking-table__row--selected]="r.key === selectedKey" [attr.data-booking-id]="r.key">
               <td class="booking-table__tick" *ngIf="compare" [attr.data-label]="'plotBookings.table.compare' | translate">
-                <input type="checkbox" *ngIf="r.installments" [checked]="compared.has(r.key)" (change)="toggleCompare(r.key)"
+                <input type="checkbox" *ngIf="r.installments" [checked]="compared.has(r.key)" [disabled]="!compared.has(r.key) && atMax" (change)="toggleCompare(r.key)"
                   [attr.aria-label]="'plotBookings.compare.select' | translate: { plot: r.plotNo || '' }">
               </td>
               <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ idx + 1 }}</td>
@@ -191,22 +193,26 @@ export class BookingTableComponent implements OnChanges {
 
   expandedKey: string | null = null;
 
-  // Compare mode (Team / Left / Right): ticked row keys. Kept across filter changes; a key that leaves `rows` drops out.
+  // Compare mode (Team / Left / Right): compared plots are kept as row snapshots, so a comparison survives filter and
+  // date changes. A snapshot is refreshed when its booking is in `rows` again. At most MAX_COMPARE.
   @Input() compare = false;
-  compared = new Set<string>();
+  compared = new Map<string, BookingRow>();
 
-  // A key that left `rows` is unticked for good, so it does not reappear ticked when the booking comes back.
   ngOnChanges(c: SimpleChanges): void {
     if (c['rows'] && this.compared.size) {
-      const keys = new Set(this.rows.map(r => r.key));
-      this.compared.forEach(k => { if (!keys.has(k)) { this.compared.delete(k); } });
+      this.rows.forEach(r => { if (this.compared.has(r.key)) { this.compared.set(r.key, r); } });
     }
   }
 
   get colCount(): number { return 17 + (this.compare ? 1 : 0); }
-  get availableRows(): BookingRow[] { return this.rows.filter(r => r.installments && !this.compared.has(r.key)); }
-  get comparedRows(): BookingRow[] { return this.rows.filter(r => this.compared.has(r.key)); }
-  toggleCompare(key: string): void { if (!this.compared.delete(key)) { this.compared.add(key); } }
+  get atMax(): boolean { return this.compared.size >= MAX_COMPARE; }
+  get availableRows(): BookingRow[] { return this.atMax ? [] : this.rows.filter(r => r.installments && !this.compared.has(r.key)); }
+  get comparedRows(): BookingRow[] { return Array.from(this.compared.values()); }
+  toggleCompare(key: string): void {
+    if (this.compared.delete(key)) { return; }
+    const row = this.rows.find(r => r.key === key);
+    if (row && !this.atMax) { this.compared.set(key, row); }
+  }
   removeCompared(key: string): void { this.compared.delete(key); }
   clearCompared(): void { this.compared.clear(); }
 
