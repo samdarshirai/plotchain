@@ -66,8 +66,10 @@ app-booking-table { display: contents; }
 .booking-table .booking-table__tick { text-align: center; }
 .booking-page app-plot-compare { display: block; flex: 1 1 100%; min-width: 0; order: 3; }
 .plot-compare {
-  &__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
+  &__header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
   &__title { margin: 0; font-family: var(--font-display); font-size: 1.125rem; font-weight: 600; color: var(--text-primary); }
+  &__add { min-height: 40px; max-width: 100%; margin-left: auto; padding: 0 0.75rem; font: inherit; color: var(--text-primary); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 5px; }
+  &__scroll { max-height: 16rem; overflow-y: auto; }
   &__clear { min-height: 40px; padding: 0 1rem; cursor: pointer; font: inherit; color: var(--text-primary); background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 5px; }
   &__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; }
   &__card { min-width: 0; padding: 1rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 5px; }

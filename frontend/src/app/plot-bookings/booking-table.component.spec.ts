@@ -189,6 +189,20 @@ describe('BookingTableComponent', () => {
       expect(t.ticks()[0].checked).toBeFalse();
     });
 
+    it('the compare dropdown lists unticked plots that have installments, and adding one adds a card', () => {
+      const t = setup(true, [crow('b1', 'A-1'), crow('b2', 'A-2'), crow('b3', 'B-3'), crow('b4', 'B-4', false)]);
+      t.tick(0);
+      t.tick(1);
+      const select = t.el.querySelector('select.plot-compare__add') as HTMLSelectElement;
+      expect(Array.from(select.options).map(o => o.value)).toEqual(['', 'b3']);
+      select.value = 'b3';
+      select.dispatchEvent(new Event('change'));
+      t.fixture.detectChanges();
+      expect(t.cards()).toBe(3);
+      expect(t.ticks()[2].checked).toBeTrue();
+      expect(t.el.querySelector('select.plot-compare__add')).toBeNull();
+    });
+
     it('removing from a card unticks it and clearing empties the selection', () => {
       const t = setup(true);
       t.tick(0);

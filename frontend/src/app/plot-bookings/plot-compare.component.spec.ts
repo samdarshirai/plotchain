@@ -50,4 +50,23 @@ describe('PlotCompareComponent', () => {
     expect(removed).toEqual(['b1']);
     expect(cleared).toBe(1);
   });
+
+  it('offers the plots not yet compared in a dropdown and emits add with the chosen key', () => {
+    const fixture = render([row('b1', 'A-1', 'Green'), row('b2', 'B-2', 'Sun')]);
+    fixture.componentRef.setInput('available', [row('b3', 'C-3', 'Moon'), row('b4', 'D-4', 'Star')]);
+    fixture.detectChanges();
+    const added: string[] = [];
+    fixture.componentInstance.add.subscribe(k => added.push(k));
+    const select = (fixture.nativeElement as HTMLElement).querySelector('select.plot-compare__add') as HTMLSelectElement;
+    expect(Array.from(select.options).map(o => o.textContent!.trim())).toEqual(['plotBookings.compare.addPlot', 'Moon · C-3', 'Star · D-4']);
+    select.value = 'b4';
+    select.dispatchEvent(new Event('change'));
+    expect(added).toEqual(['b4']);
+    expect(select.value).toBe('');
+  });
+
+  it('hides the dropdown when there is nothing left to add', () => {
+    const el = render([row('b1', 'A-1', 'Green'), row('b2', 'B-2', 'Sun')]).nativeElement as HTMLElement;
+    expect(el.querySelector('select.plot-compare__add')).toBeNull();
+  });
 });

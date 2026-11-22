@@ -60,7 +60,7 @@ export const saleRow = (s: Sale): BookingRow => ({
         <input type="search" [value]="associateFilter" (input)="associateFilter = $any($event.target).value" [placeholder]="'plotBookings.filter.associateIdPlaceholder' | translate" autocomplete="off">
       </label>
     </div>
-    <app-plot-compare *ngIf="comparedRows.length >= 2" [rows]="comparedRows" (remove)="removeCompared($event)" (clear)="clearCompared()"></app-plot-compare>
+    <app-plot-compare *ngIf="comparedRows.length >= 2" [rows]="comparedRows" [available]="availableRows" (add)="toggleCompare($event)" (remove)="removeCompared($event)" (clear)="clearCompared()"></app-plot-compare>
     <div class="booking-table__scroll">
       <app-table-tools filename="plot-bookings"></app-table-tools>
       <table class="booking-table" [attr.aria-label]="label">
@@ -201,6 +201,7 @@ export class BookingTableComponent implements OnChanges {
   }
 
   get colCount(): number { return 17 + (this.compare ? 1 : 0); }
+  get availableRows(): BookingRow[] { return this.rows.filter(r => r.installments && !this.compared.has(r.key)); }
   get comparedRows(): BookingRow[] { return this.rows.filter(r => this.compared.has(r.key)); }
   toggleCompare(key: string): void { if (!this.compared.delete(key)) { this.compared.add(key); } }
   removeCompared(key: string): void { this.compared.delete(key); }

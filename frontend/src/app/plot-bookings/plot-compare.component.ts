@@ -17,6 +17,10 @@ import type { BookingRow } from './booking-table.component';
     <section class="plot-compare" [attr.aria-label]="'plotBookings.compare.title' | translate: { count: rows.length }">
       <div class="plot-compare__header">
         <h2 class="plot-compare__title">{{ 'plotBookings.compare.title' | translate: { count: rows.length } }}</h2>
+        <select class="plot-compare__add" *ngIf="available.length" [attr.aria-label]="'plotBookings.compare.addPlot' | translate" (change)="onAdd($event)">
+          <option value="">{{ 'plotBookings.compare.addPlot' | translate }}</option>
+          <option *ngFor="let a of available; trackBy: trackKey" [value]="a.key">{{ a.projectName || '—' }} · {{ a.plotNo || '—' }}</option>
+        </select>
         <button type="button" class="plot-compare__clear" (click)="clear.emit()">{{ 'plotBookings.compare.clear' | translate }}</button>
       </div>
       <div class="plot-compare__grid">
@@ -31,6 +35,7 @@ import type { BookingRow } from './booking-table.component';
             <div><dt>{{ 'plotBookings.table.paid' | translate }}</dt><dd>{{ money(r.paid) }}</dd></div>
             <div><dt>{{ 'plotBookings.table.rest' | translate }}</dt><dd>{{ money(r.rest) }}</dd></div>
           </dl>
+          <div class="plot-compare__scroll">
           <table class="plot-compare__payments" [attr.aria-label]="'plotBookings.compare.payments' | translate">
             <thead><tr>
               <th scope="col" class="table__sno">{{ 'common.serialNo' | translate }}</th>
@@ -54,6 +59,7 @@ import type { BookingRow } from './booking-table.component';
               </tr>
             </tbody>
           </table>
+          </div>
         </article>
       </div>
     </section>
@@ -61,8 +67,17 @@ import type { BookingRow } from './booking-table.component';
 })
 export class PlotCompareComponent {
   @Input({ required: true }) rows: BookingRow[] = [];
+  // Plots that can still be added (not yet in the comparison); the dropdown is hidden when empty.
+  @Input() available: BookingRow[] = [];
+  @Output() add = new EventEmitter<string>();
   @Output() remove = new EventEmitter<string>();
   @Output() clear = new EventEmitter<void>();
+
+  onAdd(e: Event): void {
+    const select = e.target as HTMLSelectElement;
+    if (select.value) { this.add.emit(select.value); }
+    select.value = '';
+  }
 
   money = formatInr;
   payments = (r: BookingRow): EmiInstallment[] => paymentsOf(r.installments);
