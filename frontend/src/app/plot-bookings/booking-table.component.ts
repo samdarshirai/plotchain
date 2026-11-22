@@ -66,7 +66,7 @@ export const saleRow = (s: Sale): BookingRow => ({
       <table class="booking-table" [attr.aria-label]="label">
         <thead>
           <tr>
-            <th scope="col" class="booking-table__tick" *ngIf="compare">{{ 'plotBookings.table.compare' | translate }}</th>
+            <th scope="col" class="booking-table__tick" *ngIf="compare"><span class="material-symbols-outlined th-icon" aria-hidden="true">check_box</span>{{ 'plotBookings.table.compare' | translate }}</th>
             <th scope="col" class="table__sno">{{ 'common.serialNo' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.table.bookingDate' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'plotBookings.table.associateId' | translate }}</th>

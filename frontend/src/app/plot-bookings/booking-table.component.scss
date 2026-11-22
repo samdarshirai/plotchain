@@ -61,7 +61,9 @@ app-booking-table { display: contents; }
 }
 
 // Compare mode (Team / Left / Right): tick column + side-by-side plot cards above the table.
-.booking-table__tick { width: 1%; text-align: center; }
+// Global table rules let headers break anywhere; the Compare label must only break between words.
+.booking-table th.booking-table__tick { overflow-wrap: normal; text-align: center; }
+.booking-table .booking-table__tick { text-align: center; }
 .booking-page app-plot-compare { display: block; flex: 1 1 100%; min-width: 0; order: 3; }
 .plot-compare {
   &__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
