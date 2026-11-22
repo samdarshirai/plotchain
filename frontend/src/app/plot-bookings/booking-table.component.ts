@@ -5,6 +5,7 @@ import { formatArea, formatInr } from '../shared/utils/plot-grid.util';
 import { Booking, EmiInstallment } from './models/associate-booking-page.model';
 import { Sale } from '../admin/models/sale.model';
 import { paymentsOf } from './booking-view.util';
+import { PlotCompareComponent } from './plot-compare.component';
 import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 // One row shape for every Associate /plot-bookings table (team, left, right, mine, my-sales).
@@ -45,7 +46,7 @@ export const saleRow = (s: Sale): BookingRow => ({
 @Component({
   selector: 'app-booking-table',
   standalone: true,
-  imports: [TableToolsComponent, CommonModule, TranslateModule],
+  imports: [TableToolsComponent, CommonModule, TranslateModule, PlotCompareComponent],
   encapsulation: ViewEncapsulation.None,
   styleUrl: './booking-table.component.scss',
   template: `
@@ -59,11 +60,13 @@ export const saleRow = (s: Sale): BookingRow => ({
         <input type="search" [value]="associateFilter" (input)="associateFilter = $any($event.target).value" [placeholder]="'plotBookings.filter.associateIdPlaceholder' | translate" autocomplete="off">
       </label>
     </div>
+    <app-plot-compare *ngIf="comparedRows.length >= 2" [rows]="comparedRows" (remove)="removeCompared($event)" (clear)="clearCompared()"></app-plot-compare>
     <div class="booking-table__scroll">
       <app-table-tools filename="plot-bookings"></app-table-tools>
       <table class="booking-table" [attr.aria-label]="label">
         <thead>
           <tr>
+            <th scope="col" class="booking-table__tick" *ngIf="compare">{{ 'plotBookings.table.compare' | translate }}</th>
             <th scope="col" class="table__sno">{{ 'common.serialNo' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.table.bookingDate' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'plotBookings.table.associateId' | translate }}</th>
@@ -85,10 +88,14 @@ export const saleRow = (s: Sale): BookingRow => ({
         </thead>
         <tbody>
           <tr class="booking-table__empty" *ngIf="!visibleRows.length">
-            <td colspan="17">{{ 'plotBookings.table.empty' | translate }}</td>
+            <td [attr.colspan]="colCount">{{ 'plotBookings.table.empty' | translate }}</td>
           </tr>
           <ng-container *ngFor="let r of visibleRows; let idx = index; trackBy: trackKey">
             <tr [class.booking-table__row--selected]="r.key === selectedKey" [attr.data-booking-id]="r.key">
+              <td class="booking-table__tick" *ngIf="compare" [attr.data-label]="'plotBookings.table.compare' | translate">
+                <input type="checkbox" *ngIf="r.installments" [checked]="compared.has(r.key)" (change)="toggleCompare(r.key)"
+                  [attr.aria-label]="'plotBookings.compare.select' | translate: { plot: r.plotNo || '' }">
+              </td>
               <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ idx + 1 }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.bookingDate' | translate">{{ r.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
               <td class="booking-table__mono editable-table__cell--bold" [attr.data-label]="'plotBookings.table.associateId' | translate">{{ r.associateCode || '—' }}</td>
@@ -116,6 +123,7 @@ export const saleRow = (s: Sale): BookingRow => ({
         </tbody>
         <tfoot *ngIf="visibleRows.length">
           <tr class="editable-table__total">
+            <td *ngIf="compare"></td>
             <td class="table__sno"></td>
             <td>{{ 'common.total' | translate }}</td>
             <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
@@ -179,6 +187,16 @@ export class BookingTableComponent {
   @Output() details = new EventEmitter<string>();
 
   expandedKey: string | null = null;
+
+  // Compare mode (Team / Left / Right): ticked row keys. Kept across filter changes; a key that leaves `rows` drops out.
+  @Input() compare = false;
+  compared = new Set<string>();
+
+  get colCount(): number { return 17 + (this.compare ? 1 : 0); }
+  get comparedRows(): BookingRow[] { return this.rows.filter(r => this.compared.has(r.key)); }
+  toggleCompare(key: string): void { if (!this.compared.delete(key)) { this.compared.add(key); } }
+  removeCompared(key: string): void { this.compared.delete(key); }
+  clearCompared(): void { this.compared.clear(); }
 
   money = (n: number | null | undefined): string => (n == null ? '—' : formatInr(n));
   area = formatArea;

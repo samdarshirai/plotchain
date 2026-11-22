@@ -118,4 +118,80 @@ describe('BookingTableComponent', () => {
       expect(t.el.querySelector('.booking-table__empty')).toBeTruthy();
     });
   });
+
+  describe('compare mode', () => {
+    const crow = (key: string, plotNo: string, withInst = true) =>
+      ({ key, bookedAt: '2026-10-01', plotNo, projectName: 'P', total: 0, paid: 0, rest: 0, ...(withInst ? { installments: [] } : {}) });
+    function setup(compare: boolean, rows: any[] = [crow('b1', 'A-1'), crow('b2', 'A-2'), crow('b3', 'B-3')]) {
+      TestBed.configureTestingModule({ imports: [BookingTableComponent, TranslateModule.forRoot()] });
+      const fixture = TestBed.createComponent(BookingTableComponent);
+      fixture.componentRef.setInput('compare', compare);
+      fixture.componentRef.setInput('rows', rows);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const ticks = () => Array.from(el.querySelectorAll<HTMLInputElement>('tbody input[type=checkbox]'));
+      const tick = (i: number) => { ticks()[i].click(); fixture.detectChanges(); };
+      const cards = () => el.querySelectorAll('.plot-compare__card').length;
+      return { fixture, el, ticks, tick, cards };
+    }
+
+    it('compare off: no tick column', () => {
+      const t = setup(false);
+      expect(t.el.querySelectorAll('thead th').length).toBe(17);
+      expect(t.ticks().length).toBe(0);
+    });
+
+    it('compare on: ticks appear only on rows with installments', () => {
+      const t = setup(true, [crow('b1', 'A-1'), crow('b2', 'A-2'), crow('b3', 'B-3', false)]);
+      expect(t.ticks().length).toBe(2);
+      expect(t.el.querySelectorAll('thead th').length).toBe(18);
+      expect(t.el.querySelector('tfoot tr')!.children.length).toBe(18);
+    });
+
+    it('no compare view with one plot ticked, cards appear at two, a third adds a card', () => {
+      const t = setup(true);
+      t.tick(0);
+      expect(t.el.querySelector('app-plot-compare')).toBeNull();
+      t.tick(1);
+      expect(t.cards()).toBe(2);
+      t.tick(2);
+      expect(t.cards()).toBe(3);
+    });
+
+    it('ticks survive a plot filter', () => {
+      const t = setup(true);
+      t.tick(0);
+      t.tick(1);
+      t.fixture.componentInstance.plotFilter = 'B-3';
+      t.fixture.detectChanges();
+      expect(t.cards()).toBe(2);
+    });
+
+    it('a ticked plot that leaves rows drops out of the comparison', () => {
+      const t = setup(true);
+      t.tick(0);
+      t.tick(1);
+      t.fixture.componentRef.setInput('rows', [crow('b2', 'A-2'), crow('b3', 'B-3')]);
+      t.fixture.detectChanges();
+      expect(t.fixture.componentInstance.comparedRows.length).toBe(1);
+      expect(t.el.querySelector('app-plot-compare')).toBeNull();
+    });
+
+    it('removing from a card unticks it and clearing empties the selection', () => {
+      const t = setup(true);
+      t.tick(0);
+      t.tick(1);
+      t.fixture.componentInstance.removeCompared('b1');
+      t.fixture.detectChanges();
+      expect(t.ticks()[0].checked).toBeFalse();
+      t.fixture.componentInstance.clearCompared();
+      expect(t.fixture.componentInstance.compared.size).toBe(0);
+    });
+
+    it('empty-state colspan follows the column count', () => {
+      expect(setup(true, []).el.querySelector('td[colspan]')!.getAttribute('colspan')).toBe('18');
+      TestBed.resetTestingModule();
+      expect(setup(false, []).el.querySelector('td[colspan]')!.getAttribute('colspan')).toBe('17');
+    });
+  });
 });
