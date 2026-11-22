@@ -198,22 +198,28 @@ const keyOf = (r: PaymentRow): string => `${r.bookingId}#${r.installmentNumber}`
           <div><dt>{{ 'admin.viewConfirmedPlot.col.paymentDate' | translate }}</dt><dd>{{ r.paymentDate ? (r.paymentDate | date: 'd MMM y, h:mm a' : '+0530') : '—' }}</dd></div>
         </dl>
         <app-inline-banner *ngIf="deleteKey === key(r)" tone="warning">{{ 'admin.addPlotEmi.deleteConfirm' | translate: { amount: money(r.amount) } }}</app-inline-banner>
-        <app-inline-banner *ngIf="cancelAsk" tone="warning">{{ 'admin.viewConfirmedPlot.cancelAsk' | translate: { plot: cancelAsk.plotNo } }}</app-inline-banner>
         <div class="add-plot-emi__footer">
-          <ng-container *ngIf="cancelAsk">
-            <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="busy" (click)="keepBooking()">{{ 'admin.viewConfirmedPlot.cancelNo' | translate }}</button>
-            <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" [disabled]="busy" (click)="cancelBooking()">{{ 'admin.viewConfirmedPlot.cancelYes' | translate }}</button>
-          </ng-container>
-          <ng-container *ngIf="!cancelAsk && deleteKey !== key(r)">
+          <ng-container *ngIf="deleteKey !== key(r)">
             <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" (click)="closeDetail()">{{ 'admin.addPlotEmi.close' | translate }}</button>
             <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" [disabled]="busy" (click)="deleteKey = key(r)">{{ 'admin.addPlotEmi.deletePayment' | translate }}</button>
             <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" *ngIf="canEditPlot(r)" [disabled]="busy" (click)="openEditBooking(r)">{{ 'admin.addPlotEmi.editBooking.button' | translate }}</button>
             <button type="button" class="brand-button add-plot-emi__btn" [disabled]="busy" (click)="openEditPayment(r)">{{ 'admin.addPlotEmi.editPayment' | translate }}</button>
           </ng-container>
-          <ng-container *ngIf="!cancelAsk && deleteKey === key(r)">
+          <ng-container *ngIf="deleteKey === key(r)">
             <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="busy" (click)="deleteKey = null">{{ 'admin.addPlotEmi.deleteNo' | translate }}</button>
             <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" [disabled]="busy" (click)="confirmDelete(r)">{{ 'admin.addPlotEmi.deleteYes' | translate }}</button>
           </ng-container>
+        </div>
+      </div>
+    </div>
+
+    <div class="add-plot-emi__overlay" *ngIf="cancelAsk as a" (keydown.escape)="keepBooking()">
+      <div class="add-plot-emi__modal add-plot-emi__modal--ask" role="alertdialog" aria-modal="true" aria-labelledby="cancel-ask-title">
+        <h2 id="cancel-ask-title" class="add-plot-emi__modal-title"><span class="material-symbols-outlined" aria-hidden="true">warning</span> {{ 'admin.viewConfirmedPlot.cancelTitle' | translate }}</h2>
+        <p>{{ 'admin.viewConfirmedPlot.cancelAsk' | translate: { plot: a.plotNo } }}</p>
+        <div class="add-plot-emi__footer">
+          <button type="button" class="brand-button brand-button--secondary add-plot-emi__btn" [disabled]="busy" (click)="keepBooking()">{{ 'admin.viewConfirmedPlot.cancelNo' | translate }}</button>
+          <button type="button" class="brand-button brand-button--danger add-plot-emi__btn" [disabled]="busy" (click)="cancelBooking()">{{ 'admin.viewConfirmedPlot.cancelYes' | translate }}</button>
         </div>
       </div>
     </div>
@@ -564,6 +570,7 @@ export class ViewConfirmedPlotComponent implements OnInit {
         if (b?.installments && !left.some(i => i.status === 'PAID' || i.status === 'ENTERED')) {
           this.busy = false;
           this.deleteKey = null;
+          this.detailRow = null;
           this.cancelAsk = { bookingId: r.bookingId, plotNo: r.plotNo ?? '' };
         } else {
           this.done('admin.addPlotEmi.deleted', r.plotNo ?? '');

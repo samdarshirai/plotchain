@@ -87,3 +87,7 @@
 @media print {
   .add-plot-emi__noprint { display: none !important; }
 }
+
+.add-plot-emi__modal--ask { width: 440px; }
+.add-plot-emi__modal--ask .add-plot-emi__modal-title { display: flex; align-items: center; gap: 8px; }
+.add-plot-emi__modal--ask .add-plot-emi__modal-title .material-symbols-outlined { color: var(--warning, #b45309); font-size: 28px; }

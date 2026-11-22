@@ -1372,7 +1372,7 @@
       "col": { "transferDate": "ट्रांसफर तिथि", "newPlot": "नया प्लॉट नं.", "oldPlot": "पुराना प्लॉट नं.", "paid": "भुगतान राशि", "rest": "ट्रांसफर शेष राशि" }
     },
     "viewConfirmedPlot": {
-      "cancelAsk": "No payment is left on plot {{plot}}. Cancel the booking and make the plot available for booking again?", "cancelYes": "Yes, cancel booking", "cancelNo": "No, keep booking", "autoCancelReason": "Cancelled: last payment was deleted", "bookingCancelled": "Booking cancelled; plot {{plot}} is available again.",
+      "cancelTitle": "Cancel booking?", "cancelAsk": "No payment is left on plot {{plot}}. Cancel the booking and make the plot available for booking again?", "cancelYes": "Yes, cancel booking", "cancelNo": "No, keep booking", "autoCancelReason": "Cancelled: last payment was deleted", "bookingCancelled": "Booking cancelled; plot {{plot}} is available again.",
       "title": "भुगतान पुष्टि", "subtitle": "भुगतान तिथि और प्रोजेक्ट के अनुसार भुगतान। अपुष्ट और पुष्ट के बीच बदलें; अपुष्ट भुगतानों को एक साथ पुष्ट करने के लिए चुनें।",
       "from": "भुगतान से", "to": "भुगतान तक", "pending": "अपुष्ट", "confirmed": "पुष्ट", "emptyPending": "इन फ़िल्टर के लिए कोई अपुष्ट भुगतान नहीं।", "emptyConfirmed": "इन फ़िल्टर के लिए कोई पुष्ट भुगतान नहीं।",
       "col": { "paymentDate": "भुगतान तिथि", "amount": "राशि", "mode": "मोड", "status": "स्थिति", "select": "चुनें", "actions": "Actions" },
