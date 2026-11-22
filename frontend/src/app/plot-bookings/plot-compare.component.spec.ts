@@ -44,7 +44,8 @@ describe('PlotCompareComponent', () => {
       inst(1, 'PENDING', { dueDate: '2026-12-05', amount: 30000 }),
       inst(2, 'PENDING', { dueDate: '2026-10-05', amount: 30000, overdue: true }),
       inst(3, 'PENDING', { dueDate: '2026-11-05', amount: 30000, overdue: true })] }), row('b2', 'B-2')]);
-    expect(text()).toContain('5 Oct 2026');
+    expect(text()).toContain('5 Dec 2026');
+    expect(text()).not.toContain('5 Oct 2026');
     expect(text()).toContain('plotBookings.compare.overdue');
   });
 
@@ -106,5 +107,25 @@ describe('PlotCompareComponent', () => {
     const atMax = render([row('b1', 'A-1'), row('b2', 'B-2')], { available: [row('b3', 'C-3')], atMax: true });
     expect(atMax.el.querySelector('input.plot-compare__add')).toBeNull();
     expect(atMax.text()).toContain('plotBookings.compare.maxNote');
+  });
+
+  it('two available bookings with the same plot, buyer and day get different option labels and both can be added', () => {
+    const a = row('b3', 'A-2', { associateCode: 'VSA9', bookedAt: '2026-10-20T04:20:00Z' });
+    const b = row('b4', 'A-2', { associateCode: 'VSA9', bookedAt: '2026-10-20T09:45:00Z' });
+    const { fixture, el } = render([row('b1', 'A-1'), row('b2', 'B-2')], { available: [a, b] });
+    const added: string[] = [];
+    fixture.componentInstance.add.subscribe(k => added.push(k));
+    const labels = Array.from(el.querySelectorAll('datalist option')).map(o => (o as HTMLOptionElement).value);
+    expect(new Set(labels).size).toBe(2);
+    const input = el.querySelector('input.plot-compare__add') as HTMLInputElement;
+    input.value = labels[1];
+    input.dispatchEvent(new Event('change'));
+    expect(added).toEqual(['b4']);
+  });
+
+  it('cancelled booking without a refund amount shows a dash, not the old rest', () => {
+    const { el } = render([row('b1', 'A-1', { status: 'CANCELLED', refundAmount: null, rest: 750 }), row('b2', 'B-2')]);
+    const rest = Array.from(el.querySelectorAll('table.plot-compare__summary tbody tr')).find(r => r.textContent!.includes('plotBookings.compare.metric.rest'))!;
+    expect(rest.children[1].textContent!.trim()).toBe('—');
   });
 });

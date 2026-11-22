@@ -89,6 +89,14 @@ describe('booking-view.util', () => {
       expect(summarize({ ...base, installments: [inst({ status: 'PAID', paidAt: '2026-10-02T00:00:00Z' })] }).nextDue).toBeNull();
     });
 
+    it('next due skips overdue installments so a past date is never called next due', () => {
+      const s = summarize({ ...base, installments: [
+        inst({ installmentNumber: 1, status: 'PENDING', overdue: true, dueDate: '2026-10-05', amount: 30000 }),
+        inst({ installmentNumber: 2, status: 'PENDING', dueDate: '2026-12-05', amount: 40000 })] });
+      expect(s.nextDue).toEqual({ dueDate: '2026-12-05', amount: 40000 });
+      expect(summarize({ ...base, installments: [inst({ status: 'PENDING', overdue: true })] }).nextDue).toBeNull();
+    });
+
     it('overdue count and amount come from isOverdueRow', () => {
       const s = summarize({ ...base, installments: [
         inst({ installmentNumber: 1, status: 'PENDING', overdue: true, amount: 30000 }),

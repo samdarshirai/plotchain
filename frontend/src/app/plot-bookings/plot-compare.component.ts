@@ -20,7 +20,7 @@ import type { BookingRow } from './booking-table.component';
         <input class="plot-compare__add" *ngIf="available.length && !atMax" list="plot-compare-add-list" autocomplete="off"
           [placeholder]="'plotBookings.compare.addPlot' | translate" [attr.aria-label]="'plotBookings.compare.addPlot' | translate" (change)="onAdd($event)">
         <datalist id="plot-compare-add-list">
-          <option *ngFor="let a of available" [value]="label(a)"></option>
+          <option *ngFor="let a of available" [value]="optionLabel(a)"></option>
         </datalist>
         <span class="plot-compare__max" *ngIf="atMax" role="status">{{ 'plotBookings.compare.maxNote' | translate }}</span>
         <button type="button" class="plot-compare__clear" (click)="clear.emit()">{{ 'plotBookings.compare.clear' | translate }}</button>
@@ -53,7 +53,7 @@ import type { BookingRow } from './booking-table.component';
           <tr>
             <td class="plot-compare__k">{{ 'plotBookings.compare.metric.rest' | translate }}</td>
             <td *ngFor="let r of rows" class="plot-compare__num" [attr.data-label]="label(r)">
-              <ng-container *ngIf="r.status === 'CANCELLED' && r.refundAmount != null; else rest">{{ 'plotBookings.compare.refund' | translate: { amount: money(r.refundAmount) } }}</ng-container>
+              <ng-container *ngIf="r.status === 'CANCELLED'; else rest">{{ r.refundAmount != null ? ('plotBookings.compare.refund' | translate: { amount: money(r.refundAmount) }) : '—' }}</ng-container>
               <ng-template #rest>{{ money(r.rest) }}</ng-template>
             </td>
           </tr>
@@ -129,9 +129,16 @@ export class PlotCompareComponent {
     return [r.plotNo || '—', r.associateCode || '—', formatDate(r.bookedAt, 'd MMM', 'en-US', '+0530')].join(' · ');
   }
 
+  // Add-control option text: the label, plus the booking time when two available bookings would otherwise look identical.
+  optionLabel(r: BookingRow): string {
+    const base = this.label(r);
+    const clash = this.available.some(a => a.key !== r.key && this.label(a) === base);
+    return clash ? `${base} · ${formatDate(r.bookedAt, 'h:mm a', 'en-US', '+0530')}` : base;
+  }
+
   onAdd(e: Event): void {
     const input = e.target as HTMLInputElement;
-    const hit = this.available.find(a => this.label(a) === input.value);
+    const hit = this.available.find(a => this.optionLabel(a) === input.value);
     if (hit) { this.add.emit(hit.key); }
     input.value = '';
   }

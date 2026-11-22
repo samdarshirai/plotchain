@@ -87,7 +87,7 @@ app-booking-table { display: contents; }
     &--1 { background: #4a1626; } &--2 { background: #c28a1a; } &--3 { background: #2b6f8a; } &--4 { background: #5b7f3a; } }
   &__cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; margin-top: 1rem; }
   &__col { min-width: 0; padding: 0.75rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 5px; h3 { margin: 0 0 0.5rem; font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); } }
-  &__scroll { max-height: 60vh; overflow-y: auto; }
+  &__scroll { max-height: 60vh; overflow-y: auto; overflow-x: hidden; }
   &__payments { width: 100%; border-collapse: collapse; font-size: 0.75rem;
     th, td { padding: 0.5rem 0.625rem; text-align: left; border-bottom: 1px solid var(--border-subtle); }
     th { white-space: normal; overflow-wrap: normal; font-size: 0.6875rem; text-transform: uppercase; color: var(--text-muted); } }

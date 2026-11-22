@@ -34,7 +34,7 @@ export function summarize(row: { total: number; paid: number; installments?: Emi
   const installments = row.installments ?? [];
   const payments = paymentsOf(installments);
   const overdue = installments.filter(isOverdueRow);
-  const nextDue = installments.filter(i => i.status === 'PENDING').sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
+  const nextDue = installments.filter(i => i.status === 'PENDING' && !isOverdueRow(i)).sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
   return {
     paidPct: row.total > 0 ? Math.min(100, Math.max(0, Math.round((row.paid / row.total) * 100))) : 0,
     paymentCount: payments.length,
