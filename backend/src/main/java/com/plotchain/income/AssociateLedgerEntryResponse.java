@@ -32,7 +32,7 @@ public record AssociateLedgerEntryResponse(
     // DIRECT rows: the sponsee who made the sale (= sourceRef). Null otherwise, or on a lookup miss.
     String sponseeUserId,
     BigDecimal sponseeMatchingAmount,
-    // DIRECT rows only: the seller's name and the sale amount the 6% was taken from.
+    // SPONSOR_MATCHING rows: the sponsee's name. DIRECT rows: the seller's name and the sale amount the 6% was taken from.
     String sponseeName,
     BigDecimal saleAmount) {
 

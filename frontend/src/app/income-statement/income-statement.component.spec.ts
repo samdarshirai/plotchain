@@ -125,7 +125,7 @@ describe('IncomeStatementComponent', () => {
         columnNewLeftBusiness: 'New Left Business', columnNewRightBusiness: 'New Right Business',
         columnNewMatchingBusiness: 'New Matching Business', columnRoyaltyBase: 'Royalty Base', columnSlabPct: 'Slab %', columnRoyaltyBonus: 'Royalty Bonus',
         columnPeriod: 'Period', columnMatchingBusiness: 'Matching Business', columnMatchingIncome: 'Matching Income',
-        columnMemberId: 'Member ID', columnSponsorMatchingIncome: 'Sponsor Matching Income',
+        columnSponsorMatchingIncome: 'Sponsor Matching Income',
         columnReward: 'Reward', columnRequiredLeft: 'Required Left Business', columnRequiredRight: 'Required Right Business',
         columnAchievedDate: 'Achieved Date', statusNotAchieved: 'Not Achieved',
         columnDesignation: 'Designation', columnDate: 'Date', columnPayStatus: 'Pay Status',
@@ -566,23 +566,23 @@ describe('IncomeStatementComponent', () => {
     expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '₹500,000', '1%', '₹5,000']));
   });
 
-  it('Sponsor Matching tab shows Date, Member ID, Matching Income and Sponsor Matching Income', () => {
+  it('Sponsor Matching tab shows Date, Associate ID, Name, Matching Income and Sponsor Matching Income', () => {
     flushInitialRequests();
     routeData$.next({ incomeType: 'SPONSOR_MATCHING' });
     httpMock
       .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'SPONSOR_MATCHING')
       .flush({
-        entries: [{ ...sampleEntry, incomeType: 'SPONSOR_MATCHING', grossAmount: 3500, sponseeUserId: 'PC200', sponseeMatchingAmount: 35000 }],
+        entries: [{ ...sampleEntry, incomeType: 'SPONSOR_MATCHING', grossAmount: 3500, sponseeUserId: 'PC200', sponseeName: 'Sita', sponseeMatchingAmount: 35000 }],
         page: 0, size: 20, totalElements: 1, totalGrossAmount: 0
       });
     fixture.detectChanges();
 
     expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'Date', 'Member ID', 'Matching Income', 'Sponsor Matching Income'
+      'Date', 'Associate ID', 'Name', 'Matching Income', 'Sponsor Matching Income'
     ]);
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['PC200', '₹35,000', '₹3,500']));
+    expect(cells).toEqual(jasmine.arrayContaining(['PC200', 'Sita', '₹35,000', '₹3,500']));
   });
 
   const tier = (n: number, threshold: number, reqL: number, reqR: number, achieved: boolean) => ({

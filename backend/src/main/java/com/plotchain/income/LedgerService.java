@@ -208,7 +208,7 @@ public class LedgerService {
                 return toAssociateResponse(e, cyclesById.get(e.getCycleId()), breakdowns.get(e.getSourceRef()),
                     sponsee != null ? sponsee.getUserId() : seller == null ? null : seller.getUserId(),
                     src == null ? null : src.getGrossAmount(),
-                    seller == null ? null : seller.getName(),
+                    sponsee != null ? sponsee.getName() : seller == null ? null : seller.getName(),
                     sale == null ? null : sale.getAmount());
             })
             .toList();

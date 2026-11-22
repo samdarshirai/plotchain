@@ -264,6 +264,7 @@ class LedgerServiceTest {
         AssociateLedgerEntryResponse row = service.myList(associateId, null, null, null, null, null, 0, 20).entries().get(0);
 
         assertThat(row.sponseeUserId()).isEqualTo("PC200");
+        assertThat(row.sponseeName()).isEqualTo("Sponsee");
         assertThat(row.sponseeMatchingAmount()).isEqualByComparingTo("100.00");
     }
 

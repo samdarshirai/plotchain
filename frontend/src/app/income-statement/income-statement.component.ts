@@ -442,8 +442,8 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   private buildSponsorMatchingColumns(): void {
-    const keys = ['Date', 'MemberId', 'MatchingIncome', 'SponsorMatchingIncome'];
-    const rowKeys = ['date', 'memberId', 'matchingIncome', 'sponsorMatchingIncome'];
+    const keys = ['Date', 'AssociateId', 'AssociateName', 'MatchingIncome', 'SponsorMatchingIncome'];
+    const rowKeys = ['date', 'associateId', 'name', 'matchingIncome', 'sponsorMatchingIncome'];
     this.translate
       .get(keys.map(k => 'incomeStatement.column' + k))
       .pipe(takeUntil(this.destroyed$))
@@ -749,11 +749,12 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     if (this.activeIncomeType === 'SPONSOR_MATCHING') {
       this.statementRows = (this.page?.entries ?? []).map(entry => ({
         date: formatIst(entry.createdAt),
-        memberId: entry.sponseeUserId ?? '',
+        associateId: entry.sponseeUserId ?? '',
+        name: entry.sponseeName ?? '',
         matchingIncome: entry.sponseeMatchingAmount == null ? '' : this.formatCurrency(entry.sponseeMatchingAmount),
         sponsorMatchingIncome: this.formatCurrency(entry.grossAmount)
       }));
-      this.statementRows = this.withTotal(this.statementRows, ['date', 'memberId', 'matchingIncome', 'sponsorMatchingIncome'], {
+      this.statementRows = this.withTotal(this.statementRows, ['date', 'associateId', 'name', 'matchingIncome', 'sponsorMatchingIncome'], {
         matchingIncome: this.sum(e => e.sponseeMatchingAmount),
         sponsorMatchingIncome: this.sum(e => e.grossAmount)
       });
