@@ -123,7 +123,7 @@ describe('IncomeStatementComponent', () => {
         columnSourceRef: 'Source Ref',
         columnCreatedAt: 'Created At',
         columnNewLeftBusiness: 'New Left Business', columnNewRightBusiness: 'New Right Business',
-        columnNewMatchingBusiness: 'New Matching Business', columnRoyaltyBonus: 'Royalty Bonus',
+        columnNewMatchingBusiness: 'New Matching Business', columnRoyaltyBase: 'Royalty Base', columnSlabPct: 'Slab %', columnRoyaltyBonus: 'Royalty Bonus',
         columnPeriod: 'Period', columnMatchingBusiness: 'Matching Business', columnMatchingIncome: 'Matching Income',
         columnMemberId: 'Member ID', columnSponsorMatchingIncome: 'Sponsor Matching Income',
         columnReward: 'Reward', columnRequiredLeft: 'Required Left Business', columnRequiredRight: 'Required Right Business',
@@ -551,7 +551,7 @@ describe('IncomeStatementComponent', () => {
       .flush({
         entries: [{
           ...sampleEntry, incomeType: 'ROYALTY', cyclePeriodStart: '2026-06-02', cyclePeriodEnd: '2026-06-16', grossAmount: 5000,
-          legBreakdown: { bfLeft: 1000000, bfRight: 0, newLeft: 0, newRight: 500000, totalLeft: 1000000, totalRight: 500000,
+          legBreakdown: { bfLeft: 0, bfRight: 0, newLeft: 500000, newRight: 500000, totalLeft: 500000, totalRight: 500000,
             calcLeft: 500000, calcRight: 500000, matchingBusiness: 500000 }
         }],
         page: 0, size: 20, totalElements: 1, totalGrossAmount: 0
@@ -559,11 +559,11 @@ describe('IncomeStatementComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'Date', 'New Left Business', 'New Right Business', 'New Matching Business', 'Royalty Bonus'
+      'Date', 'New Left Business', 'New Right Business', 'New Matching Business', 'Royalty Base', 'Slab %', 'Royalty Bonus'
     ]);
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
-    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '₹0', '₹500,000']));
+    expect(cells).toEqual(jasmine.arrayContaining(['02 Jun 2026 – 16 Jun 2026', '₹500,000', '1%', '₹5,000']));
   });
 
   it('Sponsor Matching tab shows Date, Member ID, Matching Income and Sponsor Matching Income', () => {
@@ -664,5 +664,23 @@ describe('IncomeStatementComponent', () => {
     expect(c.currentRank).toBe('T2');
     expect(c.rewardTierRows.every(t => t['status'] === 'Achieved')).toBeTrue();
     expect(c.rewardTierRows[0]['left']).toBe('₹0 L');
+  });
+
+  it('Royalty tab shows the royalty base and the slab % it was paid at', () => {
+    flushInitialRequests();
+    routeData$.next({ incomeType: 'ROYALTY' });
+    httpMock
+      .expectOne(r => r.url === '/api/associates/me/ledger' && r.params.get('incomeType') === 'ROYALTY')
+      .flush({
+        entries: [{
+          ...sampleEntry, incomeType: 'ROYALTY', grossAmount: 60000,
+          legBreakdown: { bfLeft: 0, bfRight: 0, newLeft: 5000000, newRight: 4000000, totalLeft: 5000000, totalRight: 4000000, calcLeft: 4000000, calcRight: 4000000, matchingBusiness: 4000000 }
+        }],
+        page: 0, size: 20, totalElements: 1, totalGrossAmount: 60000
+      });
+    const row = fixture.componentInstance.statementRows[0];
+    expect(row['royaltyBase']).toBe('₹4,000,000');
+    expect(row['slabPct']).toBe('1.5%');
+    expect(row['royaltyBonus']).toBe('₹60,000');
   });
 });

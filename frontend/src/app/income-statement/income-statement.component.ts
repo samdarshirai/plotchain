@@ -431,8 +431,8 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   private buildRoyaltyColumns(): void {
-    const keys = ['Date', 'NewLeftBusiness', 'NewRightBusiness', 'NewMatchingBusiness', 'RoyaltyBonus'];
-    const rowKeys = ['date', 'newLeft', 'newRight', 'newMatching', 'royaltyBonus'];
+    const keys = ['Date', 'NewLeftBusiness', 'NewRightBusiness', 'NewMatchingBusiness', 'RoyaltyBase', 'SlabPct', 'RoyaltyBonus'];
+    const rowKeys = ['date', 'newLeft', 'newRight', 'newMatching', 'royaltyBase', 'slabPct', 'royaltyBonus'];
     this.translate
       .get(keys.map(k => 'incomeStatement.column' + k))
       .pipe(takeUntil(this.destroyed$))
@@ -695,6 +695,18 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Royalty is paid on this cycle's matched volume (carry-in excluded): min(new left, new right).
+  private royaltyBase(entry: AssociateLedgerEntry): number {
+    const b = entry.legBreakdown;
+    return b ? Math.min(b.newLeft, b.newRight) : 0;
+  }
+
+  // The slab % is not stored on the row; gross = base x slab %, so it is recovered as gross / base.
+  private slabPct(entry: AssociateLedgerEntry): string {
+    const base = this.royaltyBase(entry);
+    return base > 0 ? `${parseFloat(((entry.grossAmount / base) * 100).toFixed(2))}%` : '';
+  }
+
   private updateTableRows(): void {
     if (this.activeIncomeType === 'MATCHING') {
       this.updateMatchingRows();
@@ -707,9 +719,11 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         newLeft: n(entry.legBreakdown?.newLeft),
         newRight: n(entry.legBreakdown?.newRight),
         newMatching: n(entry.legBreakdown?.matchingBusiness),
+        royaltyBase: n(this.royaltyBase(entry)),
+        slabPct: this.slabPct(entry),
         royaltyBonus: this.formatCurrency(entry.grossAmount)
       }));
-      this.statementRows = this.withTotal(this.statementRows, ['date', 'newLeft', 'newRight', 'newMatching', 'royaltyBonus'], {
+      this.statementRows = this.withTotal(this.statementRows, ['date', 'newLeft', 'newRight', 'newMatching', 'royaltyBase', 'slabPct', 'royaltyBonus'], {
         newLeft: this.sum(e => e.legBreakdown?.newLeft),
         newRight: this.sum(e => e.legBreakdown?.newRight),
         newMatching: this.sum(e => e.legBreakdown?.matchingBusiness),

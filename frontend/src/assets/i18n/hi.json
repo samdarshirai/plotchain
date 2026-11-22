@@ -544,6 +544,8 @@
     "columnNewLeftBusiness": "New Left Business",
     "columnNewRightBusiness": "New Right Business",
     "columnNewMatchingBusiness": "New Matching Business",
+    "columnRoyaltyBase": "Royalty Base",
+    "columnSlabPct": "Slab %",
     "columnRoyaltyBonus": "Royalty Bonus",
     "columnReward": "Reward",
     "columnRequiredLeft": "Required Left Business",
