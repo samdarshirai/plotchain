@@ -59,8 +59,13 @@ describe('TeamPlotBookingsComponent', () => {
     const fixture = boot();
     const table = fixture.nativeElement.querySelector('table.booking-table');
     expect(table).toBeTruthy();
-    expect(table.querySelectorAll('thead th[scope="col"]').length).toBe(17);
+    expect(table.querySelectorAll('thead th[scope="col"]').length).toBe(18);
     table.querySelectorAll('tbody td').forEach((td: HTMLElement) => expect(td.getAttribute('data-label')).toBeTruthy());
+  });
+
+  it('shows a compare tick box on rows that have installments', () => {
+    const fixture = boot();
+    expect(fixture.nativeElement.querySelectorAll('table.booking-table tbody input[type=checkbox]').length).toBe(2);
   });
 
   it('formats money with formatInr and shows em dashes for missing plot/project/associate', () => {
@@ -77,7 +82,7 @@ describe('TeamPlotBookingsComponent', () => {
     expect(text).toContain('plotBookings.table.rate');
     expect(text).toContain('plotBookings.table.extraPrice');
     expect(text).not.toContain('phone');
-    expect(fixture.nativeElement.querySelectorAll('thead th').length).toBe(17);
+    expect(fixture.nativeElement.querySelectorAll('thead th').length).toBe(18);
   });
 
   it('ignores a stale response after the leg changed', () => {
