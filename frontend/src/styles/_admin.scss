@@ -4612,6 +4612,11 @@ button.tree-explorer__vacant-card {
     th { @extend %admin-screen-table-head; padding: 0.5rem 0.75rem; text-align: left; text-transform: none; letter-spacing: 0; font-size: 0.75rem; }
     td { @extend %admin-screen-table-cell; padding: 0.4375rem 0.75rem; border-bottom: 1px solid var(--border-subtle); }
     tbody tr:last-child td { border-bottom: none; }
+    // 9 columns, never stacked or scrolled: shrink + wrap on small screens.
+    @media (max-width: 900px) {
+      th, td { padding-inline: 3px; font-size: 0.625rem; overflow-wrap: anywhere; }
+      th .th-icon { display: none; }
+    }
   }
   &__row { cursor: pointer; &:hover { background: var(--surface-page); } &--selected, &--selected:hover { background: var(--brand-primary-soft); box-shadow: inset 3px 0 0 var(--brand-secondary); } }
   &__expired-date { color: var(--text-muted); }

@@ -51,6 +51,9 @@ export function fitTable(table: HTMLTableElement): void {
     return;
   }
   table.classList.remove(STACKED_CLASS);
+  if (table.hasAttribute('data-no-stack')) {
+    return; // explicit opt-out: this table must wrap its text to fit, never stack
+  }
   if (table.offsetWidth > parent.clientWidth + 1 || parent.scrollWidth > parent.clientWidth + 1) {
     labelCells(table);
     table.classList.add(STACKED_CLASS);

@@ -65,6 +65,10 @@ describe('EPinRegisterComponent', () => {
     expect(activated(rows[0])).toBe('—');
     expect(assigned(rows[1])).toBe('VP00001');
     expect(activated(rows[1])).toBe('VP00001');
+    const name = (r: Element, k: string) => r.querySelector(`[data-label="admin.epinRegister.${k}"]`)!.textContent!.trim();
+    expect(name(rows[0], 'colAssignedAssociateName')).toBe('Jane');
+    expect(name(rows[0], 'colActivatedAssociateName')).toBe('—');
+    expect(name(rows[1], 'colActivatedAssociateName')).toBe('Jane');
   });
 
   it('shows the expired chip key and class for an expired pin', () => {

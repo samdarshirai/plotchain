@@ -241,7 +241,7 @@ type Panel =
       <div class="epin-register__list">
           <div class="epin-register__table-wrap">
             <app-table-tools filename="epin-register"></app-table-tools>
-            <table class="epin-register__table">
+            <table class="epin-register__table" data-no-stack>
               <thead>
                 <tr>
                   <th class="table__sno">{{ 'common.serialNo' | translate }}</th>
@@ -250,7 +250,9 @@ type Panel =
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">payments</span>{{ 'admin.epinRegister.colAmount' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'admin.epinRegister.colCreated' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">groups</span>{{ 'admin.epinRegister.colAssignedAssociateId' | translate }}</th>
+                  <th>{{ 'admin.epinRegister.colAssignedAssociateName' | translate }}</th>
                   <th><span class="material-symbols-outlined th-icon" aria-hidden="true">how_to_reg</span>{{ 'admin.epinRegister.colActivatedAssociateId' | translate }}</th>
+                  <th>{{ 'admin.epinRegister.colActivatedAssociateName' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -262,10 +264,12 @@ type Panel =
                   <td class="epin-register__amount" [attr.data-label]="'admin.epinRegister.colAmount' | translate">{{ amount(p) | currency:'INR':'symbol':'1.0-0' }}</td>
                   <td [attr.data-label]="'admin.epinRegister.colCreated' | translate">{{ datePipe.transform(p.generatedAt, 'd MMM y, h:mm:ss a', '+0530') }}</td>
                   <td class="editable-table__cell--bold" [attr.data-label]="'admin.epinRegister.colAssignedAssociateId' | translate">{{ userId(p.allocatedTo) }}</td>
+                  <td [attr.data-label]="'admin.epinRegister.colAssignedAssociateName' | translate">{{ assocName(p.allocatedTo) }}</td>
                   <td class="editable-table__cell--bold" [attr.data-label]="'admin.epinRegister.colActivatedAssociateId' | translate">{{ userId(p.redeemedTo) }}</td>
+                  <td [attr.data-label]="'admin.epinRegister.colActivatedAssociateName' | translate">{{ assocName(p.redeemedTo) }}</td>
                 </tr>
                 <tr *ngIf="!page?.epins?.length">
-                  <td colspan="7">{{ 'admin.epinRegister.emptyState' | translate }}</td>
+                  <td colspan="9">{{ 'admin.epinRegister.emptyState' | translate }}</td>
                 </tr>
               </tbody>
             </table>
@@ -373,6 +377,10 @@ export class EPinRegisterComponent implements OnInit {
   userId(id: string | null): string {
     if (!id) return '—';
     return this.associates.find(a => a.id === id)?.userId ?? id.slice(0, 8);
+  }
+
+  assocName(id: string | null): string {
+    return (id && this.associates.find(a => a.id === id)?.name) || '—';
   }
 
   onStatusChange(v: string): void { this.status = v; this.loadPage(0); }

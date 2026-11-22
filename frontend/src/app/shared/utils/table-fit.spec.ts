@@ -44,6 +44,13 @@ describe('fitTable', () => {
     expect(table.tBodies[0].rows[1].cells[0].hasAttribute('data-label')).toBeFalse();
   });
 
+  it('never stacks a table marked data-no-stack', () => {
+    const table = mount(60);
+    table.setAttribute('data-no-stack', '');
+    fitTable(table);
+    expect(table.classList).not.toContain(STACKED_CLASS);
+  });
+
   it('unstacks once the container is wide enough again', () => {
     const table = mount(60);
     fitTable(table);
