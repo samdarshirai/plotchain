@@ -90,9 +90,15 @@ export function startTableFit(root: HTMLElement = document.body): () => void {
   const mutations = new MutationObserver(schedule(queueMicrotask));
   mutations.observe(root, { childList: true, subtree: true, characterData: true });
   schedule(requestAnimationFrame)();
+  // Web fonts (text and icon ligatures) change column widths after the first measurement without touching the DOM,
+  // so a table stacked on a pre-font measurement would stay stacked. Re-fit whenever fonts finish loading.
+  const refit = schedule(requestAnimationFrame);
+  document.fonts?.addEventListener('loadingdone', refit);
+  document.fonts?.ready.then(refit);
 
   return () => {
     resize.disconnect();
     mutations.disconnect();
+    document.fonts?.removeEventListener('loadingdone', refit);
   };
 }

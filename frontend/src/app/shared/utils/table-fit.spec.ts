@@ -1,4 +1,4 @@
-import { STACKED_CLASS, fitTable } from './table-fit';
+import { STACKED_CLASS, fitTable, startTableFit } from './table-fit';
 
 describe('fitTable', () => {
   let box: HTMLDivElement;
@@ -57,5 +57,25 @@ describe('fitTable', () => {
     box.style.width = '800px';
     fitTable(table);
     expect(table.classList).not.toContain(STACKED_CLASS);
+  });
+});
+
+describe('startTableFit', () => {
+  it('re-fits when web fonts finish loading, so a table stacked on a pre-font measurement un-stacks', async () => {
+    const box = document.createElement('div');
+    box.style.width = '600px';
+    box.innerHTML = '<table style="min-width:2000px"><thead><tr><th>A</th></tr></thead><tbody><tr><td>x</td></tr></tbody></table>';
+    document.body.appendChild(box);
+    const table = box.querySelector('table')!;
+    const stop = startTableFit(box);
+    await new Promise(r => requestAnimationFrame(() => r(null)));
+    expect(table.classList).toContain(STACKED_CLASS);
+    // Simulates the font swap making the table narrower: an attribute change, which no observer watches.
+    table.style.minWidth = '';
+    document.fonts.dispatchEvent(new Event('loadingdone'));
+    await new Promise(r => requestAnimationFrame(() => r(null)));
+    expect(table.classList).not.toContain(STACKED_CLASS);
+    stop();
+    box.remove();
   });
 });

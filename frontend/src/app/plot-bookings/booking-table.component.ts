@@ -71,8 +71,8 @@ export const saleRow = (s: Sale): BookingRow => ({
       <table class="booking-table" [attr.aria-label]="label">
         <thead>
           <tr>
-            <th scope="col" class="booking-table__tick" *ngIf="compare"><span class="material-symbols-outlined th-icon" aria-hidden="true">check_box</span>{{ 'plotBookings.table.compare' | translate }}</th>
             <th scope="col" class="table__sno">{{ 'common.serialNo' | translate }}</th>
+            <th scope="col" class="booking-table__tick" *ngIf="compare"><span class="material-symbols-outlined th-icon" aria-hidden="true">check_box</span><span class="booking-table__sr">{{ 'plotBookings.table.compare' | translate }}</span></th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">calendar_today</span>{{ 'plotBookings.table.bookingDate' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">badge</span>{{ 'plotBookings.table.associateId' | translate }}</th>
             <th scope="col"><span class="material-symbols-outlined th-icon" aria-hidden="true">person</span>{{ 'plotBookings.table.name' | translate }}</th>
@@ -97,11 +97,11 @@ export const saleRow = (s: Sale): BookingRow => ({
           </tr>
           <ng-container *ngFor="let r of visibleRows; let idx = index; trackBy: trackKey">
             <tr [class.booking-table__row--selected]="r.key === selectedKey" [attr.data-booking-id]="r.key">
+              <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ idx + 1 }}</td>
               <td class="booking-table__tick" *ngIf="compare" [attr.data-label]="'plotBookings.table.compare' | translate">
                 <input type="checkbox" *ngIf="r.installments" [checked]="compared.has(r.key)" [disabled]="!compared.has(r.key) && atMax" (change)="toggleCompare(r.key)"
                   [attr.aria-label]="'plotBookings.compare.select' | translate: { plot: r.plotNo || '' }">
               </td>
-              <td class="table__sno" [attr.data-label]="'common.serialNo' | translate">{{ idx + 1 }}</td>
               <td class="booking-table__mono" [attr.data-label]="'plotBookings.table.bookingDate' | translate">{{ r.bookedAt | date: 'd MMM y, h:mm:ss a' : '+0530' }}</td>
               <td class="booking-table__mono editable-table__cell--bold" [attr.data-label]="'plotBookings.table.associateId' | translate">{{ r.associateCode || '—' }}</td>
               <td class="editable-table__cell--bold" [attr.data-label]="'plotBookings.table.name' | translate">{{ r.associateName || '—' }}</td>
@@ -128,8 +128,8 @@ export const saleRow = (s: Sale): BookingRow => ({
         </tbody>
         <tfoot *ngIf="visibleRows.length">
           <tr class="editable-table__total">
-            <td *ngIf="compare"></td>
             <td class="table__sno"></td>
+            <td *ngIf="compare"></td>
             <td>{{ 'common.total' | translate }}</td>
             <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
             <td class="booking-table__num" [attr.data-label]="'plotBookings.table.area' | translate">{{ area(sum('areaSqft')) }}</td>

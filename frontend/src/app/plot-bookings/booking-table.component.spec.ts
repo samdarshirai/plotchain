@@ -146,6 +146,21 @@ describe('BookingTableComponent', () => {
       expect(t.ticks().length).toBe(0);
     });
 
+    it('the compare column sits after S NO, so S NO stays the first cell of header, rows and footer', () => {
+      const t = setup(true);
+      const cls = (cells: ArrayLike<Element>) => Array.from(cells).slice(0, 2).map(c => c.classList.contains('table__sno') ? 'sno' : c.classList.contains('booking-table__tick') ? 'tick' : 'other');
+      expect(cls(t.el.querySelectorAll('thead th'))).toEqual(['sno', 'tick']);
+      expect(cls(t.el.querySelector('tbody tr[data-booking-id]')!.children)).toEqual(['sno', 'tick']);
+      expect(t.el.querySelector('tfoot tr')!.children[0].classList.contains('table__sno')).toBeTrue();
+    });
+
+    it('compare header is an icon with a visually hidden label, so the column stays narrow', () => {
+      const th = setup(true).el.querySelector('th.booking-table__tick')!;
+      expect(th.querySelector('.th-icon')).not.toBeNull();
+      const label = th.querySelector('.booking-table__sr')!;
+      expect(label.textContent!.trim()).toBe('plotBookings.table.compare');
+    });
+
     it('compare on: ticks appear only on rows with installments', () => {
       const t = setup(true, [crow('b1', 'A-1'), crow('b2', 'A-2'), crow('b3', 'B-3', false)]);
       expect(t.ticks().length).toBe(2);

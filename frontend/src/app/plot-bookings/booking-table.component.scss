@@ -62,7 +62,9 @@ app-booking-table { display: contents; }
 
 // Compare mode (Team / Left / Right): tick column + side-by-side plot cards above the table.
 // Global table rules let headers break anywhere; the Compare label must only break between words.
-.booking-table th.booking-table__tick { overflow-wrap: normal; text-align: center; }
+// Icon-only header: a text label here made the column wide enough to push the whole table into stacked cards on laptops.
+.booking-table__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.booking-table th.booking-table__tick { text-align: center; width: 1%; }
 .booking-table .booking-table__tick { text-align: center; }
 .booking-page app-plot-compare { display: block; flex: 1 1 100%; min-width: 0; order: 3; }
 .plot-compare {
