@@ -1,5 +1,5 @@
 import { Booking, EmiInstallment } from './models/associate-booking-page.model';
-import { isOverdueRow, overdueCount, paidPercent, paymentsOf, plotLabel } from './booking-view.util';
+import { isOverdueRow, overdueCount, paidPercent, paymentsOf, plotLabel, summarize } from './booking-view.util';
 
 const inst = (over: Partial<EmiInstallment> = {}): EmiInstallment =>
   ({ installmentNumber: 1, amount: 100, dueDate: '2026-01-01', status: 'PENDING', paidAt: null, overdue: false, ...over });
@@ -59,6 +59,48 @@ describe('booking-view.util', () => {
       const input = [a, b];
       paymentsOf(input);
       expect(input).toEqual([a, b]);
+    });
+  });
+
+  describe('summarize', () => {
+    const base = { total: 400, paid: 100 };
+
+    it('computes paid percent, clamped, 0 when total is 0', () => {
+      expect(summarize({ total: 400, paid: 100 }).paidPct).toBe(25);
+      expect(summarize({ total: 0, paid: 0 }).paidPct).toBe(0);
+      expect(summarize({ total: 400, paid: 500 }).paidPct).toBe(100);
+    });
+
+    it('counts payments, pending ones and the newest paid date', () => {
+      const s = summarize({ ...base, installments: [
+        inst({ installmentNumber: 1, status: 'PAID', paidAt: '2026-10-02T00:00:00Z' }),
+        inst({ installmentNumber: 2, status: 'PAID', paidAt: '2026-10-09T00:00:00Z' }),
+        inst({ installmentNumber: 3, status: 'ENTERED', paidAt: '2026-10-05T00:00:00Z' })] });
+      expect(s.paymentCount).toBe(3);
+      expect(s.pendingCount).toBe(1);
+      expect(s.lastPaidAt).toBe('2026-10-09T00:00:00Z');
+    });
+
+    it('next due is the earliest PENDING installment', () => {
+      const s = summarize({ ...base, installments: [
+        inst({ installmentNumber: 2, status: 'PENDING', dueDate: '2027-01-05', amount: 50000 }),
+        inst({ installmentNumber: 1, status: 'PENDING', dueDate: '2026-12-05', amount: 30000 })] });
+      expect(s.nextDue).toEqual({ dueDate: '2026-12-05', amount: 30000 });
+      expect(summarize({ ...base, installments: [inst({ status: 'PAID', paidAt: '2026-10-02T00:00:00Z' })] }).nextDue).toBeNull();
+    });
+
+    it('overdue count and amount come from isOverdueRow', () => {
+      const s = summarize({ ...base, installments: [
+        inst({ installmentNumber: 1, status: 'PENDING', overdue: true, amount: 30000 }),
+        inst({ installmentNumber: 2, status: 'PENDING', overdue: true, amount: 30000 }),
+        inst({ installmentNumber: 3, status: 'PAID', overdue: true, paidAt: '2026-10-02T00:00:00Z' })] });
+      expect(s.overdueCount).toBe(2);
+      expect(s.overdueAmount).toBe(60000);
+    });
+
+    it('handles missing installments', () => {
+      const s = summarize({ total: 100, paid: 0 });
+      expect([s.paymentCount, s.pendingCount, s.nextDue, s.lastPaidAt, s.overdueCount]).toEqual([0, 0, null, null, 0]);
     });
   });
 });

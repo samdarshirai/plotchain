@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewE
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { formatArea, formatInr } from '../shared/utils/plot-grid.util';
-import { Booking, EmiInstallment } from './models/associate-booking-page.model';
+import { Booking, BookingStatus, EmiInstallment } from './models/associate-booking-page.model';
 import { Sale } from '../admin/models/sale.model';
 import { paymentsOf } from './booking-view.util';
 import { PlotCompareComponent } from './plot-compare.component';
@@ -27,13 +27,16 @@ export interface BookingRow {
   paid: number;
   rest: number;
   installments?: EmiInstallment[];
+  status?: BookingStatus;
+  refundAmount?: number | null;
+  cancellationCharge?: number | null;
 }
 
 export const bookingRow = (b: Booking): BookingRow => ({
   key: b.id, bookedAt: b.bookedAt, associateCode: b.associateCode, associateName: b.associateName, associatePhone: b.associatePhone,
   projectName: b.projectName, plotType: b.plotType, plotNo: b.plotNo, roadSizeFt: b.roadSizeFt, rate: b.rate, areaSqft: b.areaSqft,
   price: b.listPrice, extraPrice: b.extraPrice, total: b.totalAmount, paid: b.paidAmount, rest: b.dueAmount,
-  installments: b.installments
+  installments: b.installments, status: b.status, refundAmount: b.refundAmount, cancellationCharge: b.cancellationCharge
 });
 
 // A recorded sale is a completed purchase: fully paid, nothing left.

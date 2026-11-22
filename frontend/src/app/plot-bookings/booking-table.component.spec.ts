@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { TranslateModule } from '@ngx-translate/core';
-import { BookingTableComponent } from './booking-table.component';
+import { BookingTableComponent, bookingRow } from './booking-table.component';
 
 describe('BookingTableComponent', () => {
   function render(plotType: string | null) {
@@ -117,6 +117,11 @@ describe('BookingTableComponent', () => {
       expect(t.dataRows()).toBe(0);
       expect(t.el.querySelector('.booking-table__empty')).toBeTruthy();
     });
+  });
+
+  it('bookingRow maps status, refund and cancellation charge', () => {
+    const row = bookingRow({ id: 'b1', status: 'CANCELLED', refundAmount: 270000, cancellationCharge: 30000, totalAmount: 1, paidAmount: 0, dueAmount: 1, bookedAt: '2026-10-01', installments: [] } as any);
+    expect([row.status, row.refundAmount, row.cancellationCharge]).toEqual(['CANCELLED', 270000, 30000]);
   });
 
   describe('compare mode', () => {

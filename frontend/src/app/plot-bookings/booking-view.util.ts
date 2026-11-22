@@ -18,3 +18,30 @@ export const plotLabel = (b: Booking): string => b.plotNo ?? b.plotId.slice(0, 8
 export const paymentsOf = (installments: EmiInstallment[] | undefined): EmiInstallment[] =>
   (installments ?? []).filter(i => (i.status === 'ENTERED' || i.status === 'PAID') && i.paidAt)
     .sort((a, c) => (c.paidAt ?? '').localeCompare(a.paidAt ?? ''));
+
+export interface PlotSummary {
+  paidPct: number;
+  paymentCount: number;
+  pendingCount: number;
+  lastPaidAt: string | null;
+  nextDue: { dueDate: string; amount: number } | null;
+  overdueCount: number;
+  overdueAmount: number;
+}
+
+// Headline numbers for the compare view. Overdue comes from the API flag (see isOverdueRow), so no clock is needed here.
+export function summarize(row: { total: number; paid: number; installments?: EmiInstallment[] }): PlotSummary {
+  const installments = row.installments ?? [];
+  const payments = paymentsOf(installments);
+  const overdue = installments.filter(isOverdueRow);
+  const nextDue = installments.filter(i => i.status === 'PENDING').sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
+  return {
+    paidPct: row.total > 0 ? Math.min(100, Math.max(0, Math.round((row.paid / row.total) * 100))) : 0,
+    paymentCount: payments.length,
+    pendingCount: payments.filter(i => i.status === 'ENTERED').length,
+    lastPaidAt: payments[0]?.paidAt ?? null,
+    nextDue: nextDue ? { dueDate: nextDue.dueDate, amount: nextDue.amount } : null,
+    overdueCount: overdue.length,
+    overdueAmount: overdue.reduce((sum, i) => sum + i.amount, 0)
+  };
+}
