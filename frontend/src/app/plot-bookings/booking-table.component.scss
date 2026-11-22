@@ -62,7 +62,7 @@ app-booking-table { display: contents; }
 
 // Compare mode (Team / Left / Right): tick column + side-by-side plot cards above the table.
 .booking-table__tick { width: 1%; text-align: center; }
-.booking-page app-plot-compare { display: block; order: 3; }
+.booking-page app-plot-compare { display: block; flex: 1 1 100%; min-width: 0; order: 3; }
 .plot-compare {
   &__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
   &__title { margin: 0; font-family: var(--font-display); font-size: 1.125rem; font-weight: 600; color: var(--text-primary); }

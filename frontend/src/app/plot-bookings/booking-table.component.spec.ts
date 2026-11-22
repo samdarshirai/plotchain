@@ -177,6 +177,18 @@ describe('BookingTableComponent', () => {
       expect(t.el.querySelector('app-plot-compare')).toBeNull();
     });
 
+    it('a plot that left rows and returns later does not come back ticked', () => {
+      const t = setup(true);
+      t.tick(0);
+      t.tick(1);
+      t.fixture.componentRef.setInput('rows', [crow('b2', 'A-2'), crow('b3', 'B-3')]);
+      t.fixture.detectChanges();
+      t.fixture.componentRef.setInput('rows', [crow('b1', 'A-1'), crow('b2', 'A-2'), crow('b3', 'B-3')]);
+      t.fixture.detectChanges();
+      expect(t.fixture.componentInstance.comparedRows.map(r => r.key)).toEqual(['b2']);
+      expect(t.ticks()[0].checked).toBeFalse();
+    });
+
     it('removing from a card unticks it and clearing empties the selection', () => {
       const t = setup(true);
       t.tick(0);

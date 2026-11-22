@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { formatArea, formatInr } from '../shared/utils/plot-grid.util';
@@ -174,7 +174,7 @@ export const saleRow = (s: Sale): BookingRow => ({
     </div>
   `
 })
-export class BookingTableComponent {
+export class BookingTableComponent implements OnChanges {
   @Input({ required: true }) rows: BookingRow[] = [];
   @Input() label = '';
   // inline: Details opens the installment schedule in a popup; otherwise it just emits.
@@ -191,6 +191,14 @@ export class BookingTableComponent {
   // Compare mode (Team / Left / Right): ticked row keys. Kept across filter changes; a key that leaves `rows` drops out.
   @Input() compare = false;
   compared = new Set<string>();
+
+  // A key that left `rows` is unticked for good, so it does not reappear ticked when the booking comes back.
+  ngOnChanges(c: SimpleChanges): void {
+    if (c['rows'] && this.compared.size) {
+      const keys = new Set(this.rows.map(r => r.key));
+      this.compared.forEach(k => { if (!keys.has(k)) { this.compared.delete(k); } });
+    }
+  }
 
   get colCount(): number { return 17 + (this.compare ? 1 : 0); }
   get comparedRows(): BookingRow[] { return this.rows.filter(r => this.compared.has(r.key)); }
