@@ -474,6 +474,25 @@ class LedgerEntryRepositoryTest {
         assertThat(rowA.getPaidAt()).isEqualTo(paidAt);
     }
 
+    // All-tab Total Income = Direct + Matching + Sponsor + Royalty; Reward has no column there.
+    @Test
+    void summariseExcludesRewardFromTotalsAndCounts() {
+        Associate a = seedAssociate();
+        Cycle cycle = seedCycle();
+        for (IncomeType type : IncomeType.values()) {
+            ledgerEntryRepository.save(newEntry(a.getId(), cycle.getId(), type, UUID.randomUUID()));
+        }
+        ledgerEntryRepository.flush();
+
+        LedgerSummaryRow row = ledgerEntryRepository.summarise(a.getId(), cycle.getId(), null, null).get(0);
+        assertThat(row.getTotalGross()).isEqualByComparingTo("400.00");
+        assertThat(row.getTds()).isEqualByComparingTo("20.00");
+        assertThat(row.getAdminCharges()).isEqualByComparingTo("16.00");
+        assertThat(row.getTotalNet()).isEqualByComparingTo("364.00");
+        assertThat(row.getEntryCount()).isEqualTo(4);
+        assertThat(row.getReward()).isEqualByComparingTo("0");
+    }
+
     @Test
     void summariseDownlineCoversFourIncomeTypesAndExcludesUnlistedAssociatesAndSponsorMatching() {
         Associate a = seedAssociate();

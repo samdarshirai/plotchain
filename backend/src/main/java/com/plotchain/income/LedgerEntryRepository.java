@@ -184,7 +184,7 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         return sumGrossAmount(associateId, incomeType, cycleId, status, from, toExclusive, false);
     }
 
-    // Admin Summary tab: gross income per type, plus gross/TDS/admin/net totals, one row per associate x cycle. Unpaged on purpose
+    // Admin/associate All tab (REWARD excluded: no column there): gross income per type, plus gross/TDS/admin/net totals, one row per associate x cycle. Unpaged on purpose
     // (ponytail: rows = associates x cycles; LedgerService pages in memory -- push paging into SQL
     // if that count ever gets large).
     @Query("""
@@ -198,7 +198,8 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
           COALESCE(SUM(l.adminDeduction), 0) AS adminCharges, COALESCE(SUM(l.netAmount), 0) AS totalNet,
           COUNT(l) AS entryCount, COUNT(l.fulfilledAt) AS paidCount, MAX(l.fulfilledAt) AS paidAt
         FROM LedgerEntry l
-        WHERE (:associateId IS NULL OR l.associateId = :associateId)
+        WHERE l.incomeType <> com.plotchain.income.IncomeType.REWARD
+        AND (:associateId IS NULL OR l.associateId = :associateId)
         AND (:cycleId IS NULL OR l.cycleId = :cycleId)
         AND (CAST(:from AS timestamp) IS NULL OR l.createdAt >= :from)
         AND (CAST(:toExclusive AS timestamp) IS NULL OR l.createdAt < :toExclusive)
