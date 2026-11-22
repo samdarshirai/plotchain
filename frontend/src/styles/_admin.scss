@@ -4609,7 +4609,7 @@ button.tree-explorer__vacant-card {
   &__table-wrap { @extend %admin-screen-card; background: var(--surface-card); }
   &__table {
     width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums;
-    th { @extend %admin-screen-table-head; padding: 0.5rem 0.75rem; text-align: left; text-transform: none; letter-spacing: 0; font-size: 0.75rem; }
+    th { @extend %admin-screen-table-head; padding: 0.5rem 0.75rem; text-align: left; text-transform: uppercase; vertical-align: bottom; letter-spacing: 0; font-size: 0.75rem; }
     td { @extend %admin-screen-table-cell; padding: 0.4375rem 0.75rem; border-bottom: 1px solid var(--border-subtle); }
     tbody tr:last-child td { border-bottom: none; }
     // 9 columns, never stacked or scrolled: shrink + wrap on small screens.
