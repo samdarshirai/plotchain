@@ -149,11 +149,11 @@ class DashboardServiceTest {
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, closedCycleId)).thenReturn(Optional.of(legVolume));
 
         // open-cycle income exists but must stay hidden; the tiles show the last CLOSED cycle's values
-        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.DIRECT)).thenReturn(BigDecimal.valueOf(9999));
-        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.DIRECT)).thenReturn(BigDecimal.valueOf(1000));
-        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.MATCHING)).thenReturn(BigDecimal.valueOf(500));
-        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.valueOf(300));
-        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.ROYALTY)).thenReturn(BigDecimal.valueOf(400));
+        lenient().when(ledgerEntryRepository.sumGrossAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.DIRECT)).thenReturn(BigDecimal.valueOf(9999));
+        lenient().when(ledgerEntryRepository.sumGrossAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.DIRECT)).thenReturn(BigDecimal.valueOf(1000));
+        lenient().when(ledgerEntryRepository.sumGrossAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.MATCHING)).thenReturn(BigDecimal.valueOf(500));
+        lenient().when(ledgerEntryRepository.sumGrossAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.valueOf(300));
+        lenient().when(ledgerEntryRepository.sumGrossAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.ROYALTY)).thenReturn(BigDecimal.valueOf(400));
         lenient().when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycleId)).thenReturn(BigDecimal.valueOf(2400));
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, closedCycleId)).thenReturn(BigDecimal.valueOf(1800));
 

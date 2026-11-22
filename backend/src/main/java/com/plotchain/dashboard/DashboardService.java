@@ -81,7 +81,7 @@ public class DashboardService {
         Optional<Cycle> openCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN);
         UUID openCycleId = openCycle.map(Cycle::getId).orElse(null);
 
-        // Associates see the last CLOSED cycle's income only: the open cycle's live income is admin-only
+        // Associates see the last CLOSED cycle's gross income only: the open cycle's live income is admin-only
         // and lifetime is not shown. No closed cycle yet -> cycleIncome(null) = ZERO.
         Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
         UUID closedCycleId = latestClosedCycle.map(Cycle::getId).orElse(null);
@@ -207,6 +207,6 @@ public class DashboardService {
     private BigDecimal cycleIncome(UUID associateId, UUID cycleId, IncomeType type) {
         return cycleId == null
             ? BigDecimal.ZERO
-            : ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, type);
+            : ledgerEntryRepository.sumGrossAmountByAssociateCycleAndType(associateId, cycleId, type);
     }
 }

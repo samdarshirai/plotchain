@@ -23,6 +23,9 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         + "AND l.sourceRef IN (SELECT s.id FROM com.plotchain.sales.Sale s WHERE s.cycleId = :toCycleId)")
     int moveSaleEntries(@Param("fromCycleId") UUID fromCycleId, @Param("toCycleId") UUID toCycleId);
 
+    @Query("SELECT COALESCE(SUM(l.grossAmount), 0) FROM LedgerEntry l WHERE l.associateId = :associateId AND l.cycleId = :cycleId AND l.incomeType = :type")
+    BigDecimal sumGrossAmountByAssociateCycleAndType(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId, @Param("type") IncomeType type);
+
     @Query("SELECT COALESCE(SUM(l.netAmount), 0) FROM LedgerEntry l WHERE l.associateId = :associateId AND l.cycleId = :cycleId AND l.incomeType = :type")
     BigDecimal sumNetAmountByAssociateCycleAndType(@Param("associateId") UUID associateId, @Param("cycleId") UUID cycleId, @Param("type") IncomeType type);
 
