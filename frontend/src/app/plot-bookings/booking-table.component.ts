@@ -4,6 +4,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { formatArea, formatInr } from '../shared/utils/plot-grid.util';
 import { Booking, EmiInstallment } from './models/associate-booking-page.model';
 import { Sale } from '../admin/models/sale.model';
+import { paymentsOf } from './booking-view.util';
 import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 // One row shape for every Associate /plot-bookings table (team, left, right, mine, my-sales).
@@ -199,11 +200,7 @@ export class BookingTableComponent {
     return this.rows.find(r => r.key === this.expandedKey && r.installments);
   }
 
-  // Payments are the ENTERED/PAID rows (the rest of the schedule is future EMIs), newest first.
-  payments(r: BookingRow): EmiInstallment[] {
-    return (r.installments ?? []).filter(i => (i.status === 'ENTERED' || i.status === 'PAID') && i.paidAt)
-      .sort((a, c) => (c.paidAt ?? '').localeCompare(a.paidAt ?? ''));
-  }
+  payments = (r: BookingRow): EmiInstallment[] => paymentsOf(r.installments);
 
   toggle(r: BookingRow): void {
     this.expandedKey = r.key;

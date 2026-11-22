@@ -1,5 +1,5 @@
 import { Booking, EmiInstallment } from './models/associate-booking-page.model';
-import { isOverdueRow, overdueCount, paidPercent, plotLabel } from './booking-view.util';
+import { isOverdueRow, overdueCount, paidPercent, paymentsOf, plotLabel } from './booking-view.util';
 
 const inst = (over: Partial<EmiInstallment> = {}): EmiInstallment =>
   ({ installmentNumber: 1, amount: 100, dueDate: '2026-01-01', status: 'PENDING', paidAt: null, overdue: false, ...over });
@@ -36,5 +36,29 @@ describe('booking-view.util', () => {
   it('labels the plot by plotNo when present, else the first 8 chars of the plot id', () => {
     expect(plotLabel(booking())).toBe('123e4567');
     expect(plotLabel(booking({ plotNo: 'A-12' }))).toBe('A-12');
+  });
+
+  describe('paymentsOf', () => {
+    it('keeps only ENTERED/PAID rows that have paidAt, newest first', () => {
+      const out = paymentsOf([
+        inst({ installmentNumber: 1, status: 'PAID', paidAt: '2026-10-02T00:00:00Z' }),
+        inst({ installmentNumber: 2, status: 'ENTERED', paidAt: '2026-10-05T00:00:00Z' }),
+        inst({ installmentNumber: 3, status: 'PENDING' }),
+        inst({ installmentNumber: 4, status: 'PAID', paidAt: null })
+      ]);
+      expect(out.map(i => i.installmentNumber)).toEqual([2, 1]);
+    });
+
+    it('returns [] for undefined', () => {
+      expect(paymentsOf(undefined)).toEqual([]);
+    });
+
+    it('does not reorder the input array', () => {
+      const a = inst({ installmentNumber: 1, status: 'PAID', paidAt: '2026-10-02T00:00:00Z' });
+      const b = inst({ installmentNumber: 2, status: 'PAID', paidAt: '2026-10-05T00:00:00Z' });
+      const input = [a, b];
+      paymentsOf(input);
+      expect(input).toEqual([a, b]);
+    });
   });
 });
