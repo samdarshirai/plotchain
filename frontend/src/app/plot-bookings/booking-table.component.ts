@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewEncapsulation } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, NgZone, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, ViewEncapsulation, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { formatArea, formatInr } from '../shared/utils/plot-grid.util';
@@ -143,6 +143,11 @@ export const saleRow = (s: Sale): BookingRow => ({
         </tfoot>
       </table>
     </div>
+    <div class="booking-compare-bar" *ngIf="compare && comparedRows.length >= 2 && !panelVisible" role="region" [attr.aria-label]="'plotBookings.compare.title' | translate: { count: comparedRows.length }">
+      <span>{{ 'plotBookings.compare.title' | translate: { count: comparedRows.length } }}</span>
+      <button type="button" class="booking-compare-bar__view" (click)="viewComparison()">{{ 'plotBookings.compare.view' | translate }}</button>
+      <button type="button" class="booking-compare-bar__clear" (click)="clearCompared()">{{ 'plotBookings.compare.clear' | translate }}</button>
+    </div>
     <div class="booking-modal" *ngIf="inline && popupRow as r" (keydown.escape)="expandedKey = null"
          (click)="$event.target === $event.currentTarget && (expandedKey = null)">
       <div class="booking-modal__box" role="dialog" aria-modal="true" aria-labelledby="booking-modal-title">
@@ -179,7 +184,7 @@ export const saleRow = (s: Sale): BookingRow => ({
     </div>
   `
 })
-export class BookingTableComponent implements OnChanges {
+export class BookingTableComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) rows: BookingRow[] = [];
   @Input() label = '';
   // inline: Details opens the installment schedule in a popup; otherwise it just emits.
@@ -203,6 +208,26 @@ export class BookingTableComponent implements OnChanges {
       this.rows.forEach(r => { if (this.compared.has(r.key)) { this.compared.set(r.key, r); } });
     }
   }
+
+  // Sticky bar: shown when the compare panel is scrolled out of view. Without IntersectionObserver it is never shown.
+  panelVisible = true;
+  private panelEl: HTMLElement | null = null;
+  private observer: IntersectionObserver | null = null;
+  private zone = inject(NgZone);
+
+  @ViewChild(PlotCompareComponent, { read: ElementRef }) set panel(el: ElementRef<HTMLElement> | undefined) {
+    this.observer?.disconnect();
+    this.observer = null;
+    this.panelEl = el?.nativeElement ?? null;
+    if (this.panelEl && typeof IntersectionObserver !== 'undefined') {
+      this.observer = new IntersectionObserver(([e]) => this.zone.run(() => this.setPanelVisible(e.isIntersecting)));
+      this.observer.observe(this.panelEl);
+    }
+  }
+
+  setPanelVisible(v: boolean): void { this.panelVisible = v; }
+  viewComparison(): void { this.panelEl?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  ngOnDestroy(): void { this.observer?.disconnect(); }
 
   get colCount(): number { return 17 + (this.compare ? 1 : 0); }
   get atMax(): boolean { return this.compared.size >= MAX_COMPARE; }

@@ -228,6 +228,48 @@ describe('BookingTableComponent', () => {
       expect(t.el.querySelector('input.plot-compare__add')).toBeNull();
     });
 
+    it('no sticky bar while the panel is visible', () => {
+      const t = setup(true);
+      t.tick(0);
+      t.tick(1);
+      expect(t.el.querySelector('.booking-compare-bar')).toBeNull();
+    });
+
+    it('sticky bar shows when the panel is out of view and two plots are compared', () => {
+      const t = setup(true);
+      t.tick(0);
+      t.fixture.componentInstance.setPanelVisible(false);
+      t.fixture.detectChanges();
+      expect(t.el.querySelector('.booking-compare-bar')).toBeNull();
+      t.tick(1);
+      t.fixture.componentInstance.setPanelVisible(false);
+      t.fixture.detectChanges();
+      expect(t.el.querySelector('.booking-compare-bar')!.textContent).toContain('plotBookings.compare.title');
+    });
+
+    it('View comparison scrolls the panel into view', () => {
+      const t = setup(true);
+      t.tick(0);
+      t.tick(1);
+      t.fixture.componentInstance.setPanelVisible(false);
+      t.fixture.detectChanges();
+      const spy = spyOn(t.el.querySelector('app-plot-compare') as HTMLElement, 'scrollIntoView');
+      (t.el.querySelector('.booking-compare-bar__view') as HTMLButtonElement).click();
+      expect(spy).toHaveBeenCalledOnceWith({ behavior: 'smooth', block: 'start' });
+    });
+
+    it('Clear all in the bar empties the selection and removes the bar', () => {
+      const t = setup(true);
+      t.tick(0);
+      t.tick(1);
+      t.fixture.componentInstance.setPanelVisible(false);
+      t.fixture.detectChanges();
+      (t.el.querySelector('.booking-compare-bar__clear') as HTMLButtonElement).click();
+      t.fixture.detectChanges();
+      expect(t.fixture.componentInstance.compared.size).toBe(0);
+      expect(t.el.querySelector('.booking-compare-bar')).toBeNull();
+    });
+
     it('removing from a card unticks it and clearing empties the selection', () => {
       const t = setup(true);
       t.tick(0);
