@@ -23,7 +23,17 @@ describe('BookingTableComponent', () => {
     fixture.detectChanges();
     const cell = (fixture.nativeElement as HTMLElement).querySelector('tfoot [data-label="plotBookings.table.area"]')!;
     expect(cell.textContent!.trim()).toBe('2,200.5');
-    expect(cell.parentElement!.children.length).toBe(19);
+    expect(cell.parentElement!.children.length).toBe(17);
+  });
+
+  it('has no sponsor columns', () => {
+    TestBed.configureTestingModule({ imports: [BookingTableComponent, TranslateModule.forRoot()] });
+    const fixture = TestBed.createComponent(BookingTableComponent);
+    fixture.componentRef.setInput('rows', [{ key: 'b1', bookedAt: '2026-10-01', total: 0, paid: 0, rest: 0 }]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).not.toContain('plotBookings.table.sponsor');
+    expect(el.querySelectorAll('thead th').length).toBe(17);
   });
 
   it('View popup lists only payments, with receipt no and a dash for an unconfirmed payment date', () => {

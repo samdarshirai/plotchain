@@ -217,6 +217,43 @@ class BookingServiceTest {
         assertThat(bookingService.getTeamBookings(otherCaller, null, null, null, 0, 20).bookings().get(0).associatePhone()).isEqualTo("8888888888");
     }
 
+    private PlotBooking bookingWithSponsor() {
+        PlotBooking booking = richBooking();
+        UUID sponsorId = UUID.randomUUID();
+        booking.setSponsorId(sponsorId);
+        Associate seller = associateWithId(ASSOCIATE_ID);
+        seller.setUserId("VP00042");
+        Associate sponsor = associateWithId(sponsorId);
+        sponsor.setUserId("VP00001");
+        sponsor.setName("Sponsor Person");
+        sponsor.setPhone("7777777777");
+        when(associateRepository.findAllById(any())).thenReturn(List.of(seller, sponsor));
+        return booking;
+    }
+
+    @Test
+    void associateBookingViewsHideSponsorButAdminKeepsIt() {
+        PlotBooking booking = bookingWithSponsor();
+        stubOwnPage(booking, List.of());
+        when(plotBookingRepository.findByDownline(any(), eq(null), any(), any(), any()))
+            .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 20), 1));
+        when(plotBookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
+        when(emiInstallmentRepository.findByBookingIdInOrderByInstallmentNumberAsc(any())).thenReturn(forBooking(booking, List.of()));
+        when(emiInstallmentRepository.findByBookingIdOrderByInstallmentNumberAsc(booking.getId())).thenReturn(List.of());
+
+        BookingResponse mine = bookingService.getMyBookings(ASSOCIATE_ID, null, null, 0, 20).bookings().get(0);
+        BookingResponse team = bookingService.getTeamBookings(ASSOCIATE_ID, null, null, null, 0, 20).bookings().get(0);
+        BookingResponse admin = bookingService.getBooking(booking.getId());
+
+        for (BookingResponse r : List.of(mine, team)) {
+            assertThat(r.sponsorCode()).isNull();
+            assertThat(r.sponsorName()).isNull();
+            assertThat(r.sponsorPhone()).isNull();
+        }
+        assertThat(admin.sponsorCode()).isEqualTo("VP00001");
+        assertThat(admin.sponsorName()).isEqualTo("Sponsor Person");
+    }
+
     @Test
     void adminGetBookingStillExposesBuyerPhoneAndRate() {
         PlotBooking booking = richBooking();

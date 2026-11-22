@@ -161,12 +161,22 @@ public record BookingResponse(
     }
 
     // Team (upline) view must not carry the buyer's phone; associate phone only for the caller's own sponsorees; rate and prices are shown.
+    // Sponsor is never shown to associates (admin screens use the unredacted response).
     public BookingResponse withoutBuyerPhone(boolean keepAssociatePhone) {
         return new BookingResponse(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
             paidAmount, dueAmount, installments, plotNo, projectName, associateName,
             null, listPrice, discount, areaSqft, rate, cancelledAt, associateCode, plotType, extraPrice, keepAssociatePhone ? associatePhone : null, cancelReason, roadSizeFt,
             cancellationChargePct, cancellationCharge, refundAmount, buyerAssociateId,
-            sponsorCode, sponsorName, keepAssociatePhone ? sponsorPhone : null);
+            null, null, null);
+    }
+
+    // Associate's own bookings keep every field except the sponsor.
+    public BookingResponse withoutSponsor() {
+        return new BookingResponse(id, plotId, associateId, status, buyerName, totalAmount, installmentCount, bookedAt,
+            paidAmount, dueAmount, installments, plotNo, projectName, associateName,
+            buyerPhone, listPrice, discount, areaSqft, rate, cancelledAt, associateCode, plotType, extraPrice, associatePhone, cancelReason, roadSizeFt,
+            cancellationChargePct, cancellationCharge, refundAmount, buyerAssociateId,
+            null, null, null);
     }
 
     // Labels are additive (unit 14b); null when the referent is gone or the caller has no lookup.

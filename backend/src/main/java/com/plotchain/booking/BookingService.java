@@ -1040,7 +1040,8 @@ public class BookingService {
         List<BookingResponse> bookings = toResponses(result.getContent(), emiInstallmentRepository
             .findByBookingIdInOrderByInstallmentNumberAsc(
                 result.getContent().stream().map(PlotBooking::getId).toList()).stream()
-            .collect(java.util.stream.Collectors.groupingBy(EmiInstallment::getBookingId)));
+            .collect(java.util.stream.Collectors.groupingBy(EmiInstallment::getBookingId)))
+            .stream().map(BookingResponse::withoutSponsor).toList();
 
         return new AssociateBookingPageResponse(bookings, page, size, result.getTotalElements());
     }
