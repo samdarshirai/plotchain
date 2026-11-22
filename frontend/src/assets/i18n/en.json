@@ -1463,6 +1463,7 @@
       "col": { "transferDate": "Transfer Date", "newPlot": "New Plot No", "oldPlot": "Old Plot No", "paid": "Paid Amount", "rest": "Transfer Rest Amount" }
     },
     "viewConfirmedPlot": {
+      "cancelAsk": "No payment is left on plot {{plot}}. Cancel the booking and make the plot available for booking again?", "cancelYes": "Yes, cancel booking", "cancelNo": "No, keep booking", "autoCancelReason": "Cancelled: last payment was deleted", "bookingCancelled": "Booking cancelled; plot {{plot}} is available again.",
       "title": "Confirm Payments", "subtitle": "Payments by payment date and project. Switch between Unconfirmed and Confirmed; select Unconfirmed payments to confirm them together.",
       "from": "Payment from", "to": "Payment to", "pending": "Unconfirmed", "confirmed": "Confirmed", "emptyPending": "No unconfirmed payments for these filters.", "emptyConfirmed": "No confirmed payments for these filters.",
       "col": { "paymentDate": "Payment Date", "amount": "Amount", "mode": "Mode", "status": "Status", "select": "Select", "actions": "Actions" },

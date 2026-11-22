@@ -85,6 +85,113 @@ describe('ViewConfirmedPlotComponent', () => {
     listReq().flush(pageOf([]));
   });
 
+  it('delete with nothing paid asks to cancel; Yes cancels the booking', () => {
+    boot();
+    component.confirmDelete(row('b1', 1) as any);
+    http.expectOne('/api/admin/bookings/b1/payments/1').flush({ id: 'b1', installments: [{ installmentNumber: 1, amount: 5, status: 'VOID' }, { installmentNumber: 2, amount: 5, status: 'PENDING' }] });
+    expect(component.cancelAsk).toEqual({ bookingId: 'b1', plotNo: 'A-1' });
+    component.cancelBooking();
+    const req = http.expectOne('/api/admin/bookings/b1/cancel');
+    expect(req.request.method).toBe('POST');
+    req.flush({});
+    listReq().flush(pageOf([]));
+    expect(component.cancelAsk).toBeNull();
+  });
+
+  it('delete with nothing paid: No keeps the booking', () => {
+    boot();
+    component.confirmDelete(row('b1', 1) as any);
+    http.expectOne('/api/admin/bookings/b1/payments/1').flush({ id: 'b1', installments: [{ installmentNumber: 1, amount: 5, status: 'VOID' }] });
+    component.keepBooking();
+    listReq().flush(pageOf([]));
+    http.expectNone('/api/admin/bookings/b1/cancel');
+    expect(component.cancelAsk).toBeNull();
+  });
+
+  it('delete does not ask when confirmed money remains', () => {
+    boot();
+    component.confirmDelete(row('b1', 1) as any);
+    http.expectOne('/api/admin/bookings/b1/payments/1').flush({ id: 'b1', installments: [{ installmentNumber: 2, amount: 5, status: 'PAID' }] });
+    expect(component.cancelAsk).toBeNull();
+    listReq().flush(pageOf([]));
+  });
+
+  const assoc = [
+    { id: 'a1', userId: 'A001', name: 'Old', role: 'ASSOCIATE', status: 'ACTIVE', hasEpin: true },
+    { id: 'a2', userId: 'A002', name: 'New', role: 'ASSOCIATE', status: 'ACTIVE', hasEpin: true },
+    { id: 'a3', userId: 'A003', name: 'NoPin', role: 'ASSOCIATE', status: 'ACTIVE', hasEpin: false }];
+  const bookingOf = (status = 'ENTERED') => ({ id: 'b1', associateId: 'a1', buyerName: 'Old', installments: [
+    { installmentNumber: 1, amount: 250, status, paidAt: '2026-03-02T00:00:00Z', paymentMode: 'CASH', paymentRef: 'R', receiptNo: 'RC' }] });
+
+  function bootWithAssociates(): void {
+    boot();
+    component.associates = assoc as any;
+  }
+
+  it('edit plot sends the new buyer when the first payment is unconfirmed', () => {
+    bootWithAssociates();
+    component.openEditBooking(row('b1', 1) as any);
+    http.expectOne('/api/admin/bookings/b1').flush(bookingOf());
+    expect(component.canChangeBuyer).toBeTrue();
+    expect(component.buyerUserId).toBe('A001');
+    component.buyerUserId = 'a002';
+    component.lookupBuyer();
+    expect(component.buyerName).toBe('New');
+    component.saveBooking();
+    const req = http.expectOne('/api/admin/bookings/b1');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body.buyerAssociateId).toBe('a2');
+    req.flush({});
+    listReq().flush(pageOf([]));
+  });
+
+  it('edit payment updates the buyer first, then the payment', () => {
+    bootWithAssociates();
+    component.openEditPayment(row('b1', 1) as any);
+    http.expectOne('/api/admin/bookings/b1').flush(bookingOf());
+    component.buyerUserId = 'A002';
+    component.lookupBuyer();
+    component.savePayment();
+    const b = http.expectOne('/api/admin/bookings/b1');
+    expect(b.request.method).toBe('PUT');
+    expect(b.request.body).toEqual({ buyerAssociateId: 'a2' });
+    http.expectNone('/api/admin/bookings/b1/payments/1');
+    b.flush({});
+    http.expectOne('/api/admin/bookings/b1/payments/1').flush({});
+    listReq().flush(pageOf([]));
+  });
+
+  it('edit payment does not send the payment when the buyer change is rejected', () => {
+    bootWithAssociates();
+    component.openEditPayment(row('b1', 1) as any);
+    http.expectOne('/api/admin/bookings/b1').flush(bookingOf());
+    component.buyerUserId = 'A002';
+    component.lookupBuyer();
+    component.savePayment();
+    http.expectOne('/api/admin/bookings/b1').flush({ error: 'bad buyer' }, { status: 400, statusText: 'Bad Request' });
+    http.expectNone('/api/admin/bookings/b1/payments/1');
+    expect(component.formError).toBe('bad buyer');
+  });
+
+  it('buyer field is hidden when a payment is confirmed; invalid buyer blocks save', () => {
+    bootWithAssociates();
+    component.openEditBooking(row('b1', 1) as any);
+    http.expectOne('/api/admin/bookings/b1').flush(bookingOf('PAID'));
+    expect(component.bookingForm).toBeNull(); // existing PAID refusal
+    component.openEditPayment(row('b1', 1) as any);
+    http.expectOne('/api/admin/bookings/b1').flush({ ...bookingOf(), installments: [...bookingOf().installments, { installmentNumber: 2, amount: 1, status: 'PAID' }] });
+    expect(component.canChangeBuyer).toBeFalse();
+    component.canChangeBuyer = true;
+    component.buyerUserId = 'A003';
+    component.lookupBuyer();
+    expect(component.buyerErrorKey).toBe('buyerNoEpin');
+    expect(component.buyerValid).toBeFalse();
+    component.buyerUserId = 'ZZZ';
+    component.lookupBuyer();
+    expect(component.buyerErrorKey).toBe('buyerNotFound');
+    listReq().flush(pageOf([]));
+  });
+
   it('edit plot is refused client-side when the booking has a PAID row', () => {
     boot();
     component.openEditBooking(row('b1', 1) as any);
