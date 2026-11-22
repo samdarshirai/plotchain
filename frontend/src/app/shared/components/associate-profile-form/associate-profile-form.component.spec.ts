@@ -39,10 +39,11 @@ describe('AssociateProfileFormComponent placement', () => {
     return c;
   }
 
-  it('offers only associates with a free leg and requires a placement', () => {
+  it('offers only associates with a free leg; placement optional, position required', () => {
     const c = create();
     expect(c.placementOptions.map(o => o.userId)).toEqual(['VP1', 'VP2']);
-    expect(c.form.controls.placementUserId.hasError('required')).toBeTrue();
+    expect(c.form.controls.placementUserId.hasError('required')).toBeFalse();
+    expect(c.form.controls.position.hasError('required')).toBeTrue();
   });
 
   it('auto-fills the single free leg and lets the admin pick when both are free', () => {

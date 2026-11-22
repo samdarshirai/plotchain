@@ -168,12 +168,33 @@ class AssociateProvisioningServiceTest {
     }
 
     @Test
-    void rejectsMissingPlacementOnceTheRootUserExists() {
-        when(associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE)).thenReturn(true);
-        when(associateRepository.findByUserId("VP00009")).thenReturn(Optional.of(new Associate()));
+    void autoPlacesDownSponsorLegWhenPlacementIsBlank() {
+        when(rankTierRepository.findAllByOrderByRankOrder()).thenReturn(List.of(lowestRank));
+        Associate sponsor = new Associate();
+        sponsor.setId(UUID.randomUUID());
+        Associate child = new Associate();
+        child.setId(UUID.randomUUID());
+        when(associateRepository.findByUserId("VP00009")).thenReturn(Optional.of(sponsor));
+        when(associateRepository.findFirstByParentIdAndPosition(sponsor.getId(), "L")).thenReturn(Optional.of(child));
+        when(associateRepository.findFirstByParentIdAndPosition(child.getId(), "L")).thenReturn(Optional.empty());
+        when(associateRepository.findById(child.getId())).thenReturn(Optional.of(child));
 
-        assertThatThrownBy(() -> service.create(req("VP00009", "L", "9990001111")))
-            .isInstanceOf(PlacementRequiredException.class);
+        service.create(req("VP00009", "L", "9990001111"));
+
+        ArgumentCaptor<Associate> saved = ArgumentCaptor.forClass(Associate.class);
+        org.mockito.Mockito.verify(associateRepository, org.mockito.Mockito.times(2)).save(saved.capture());
+        assertThat(saved.getValue().getParentId()).isEqualTo(child.getId());
+        assertThat(saved.getValue().getPosition()).isEqualTo("L");
+    }
+
+    @Test
+    void rejectsBlankPlacementWithoutPosition() {
+        Associate sponsor = new Associate();
+        sponsor.setId(UUID.randomUUID());
+        when(associateRepository.findByUserId("VP00009")).thenReturn(Optional.of(sponsor));
+
+        assertThatThrownBy(() -> service.create(req("VP00009", null, "9990001111")))
+            .isInstanceOf(PositionRequiredException.class);
     }
 
     @Test

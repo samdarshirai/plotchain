@@ -71,13 +71,17 @@ export interface AssociateProfileValue {
               <input class="associate-profile-form__input" [value]="sponsorName" readonly />
             </label>
             <label class="associate-profile-form__field" *ngIf="placementAssociates">
-              <span>{{ 'epinRegister.join.placementId' | translate }} <span class="associate-profile-form__req">*</span></span>
+              <span>{{ 'epinRegister.join.placementId' | translate }} <small>({{ 'epinRegister.join.optional' | translate }})</small></span>
               <input *ngIf="lockPlacement; else placementPicker" class="associate-profile-form__input" [value]="form.controls.placementUserId.value" readonly />
               <ng-template #placementPicker>
                 <app-associate-lookup [associates]="placementOptions" [value]="placementId"
                   [placeholder]="'epinRegister.join.selectPlacement' | translate" (selected)="onPlacement($event)"></app-associate-lookup>
               </ng-template>
               <app-field-error [message]="err('placementUserId')"></app-field-error>
+            </label>
+            <label class="associate-profile-form__field" *ngIf="placementFreeText && !placementAssociates">
+              <span>{{ 'epinRegister.join.placementId' | translate }} <small>({{ 'epinRegister.join.optional' | translate }})</small></span>
+              <input class="associate-profile-form__input" formControlName="placementUserId" />
             </label>
             <label class="associate-profile-form__field"><span>{{ 'epinRegister.join.position' | translate }} <span class="associate-profile-form__req" *ngIf="sponsorRequired || placementAssociates">*</span></span>
               <select class="associate-profile-form__input" formControlName="position">
@@ -231,6 +235,8 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   @Input() presetPlacementUserId = '';
   @Input() lockPlacement = false;
   /** Resolves a sponsor userId to a display name; join and admin use different endpoints. */
+  /** ePIN join: plain optional Placement ID box (no picker list available). */
+  @Input() placementFreeText = false;
   @Input() sponsorLookup: ((userId: string) => Observable<{ name: string } | null>) | null = null;
   /** Field errors from the server, keyed by control name. */
   @Input() serverErrors: Record<string, string> = {};
@@ -294,9 +300,9 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   private syncValidators(): void {
     const sponsorValidators = this.sponsorRequired && !this.lockSponsor ? [Validators.required] : [];
     this.form.controls.sponsorUserId.setValidators(sponsorValidators);
-    const placementValidators = this.placementAssociates && !this.lockSponsor ? [Validators.required] : [];
-    this.form.controls.placementUserId.setValidators(placementValidators);
-    this.form.controls.position.setValidators(sponsorValidators.length || placementValidators.length ? [Validators.required] : []);
+    // Placement is optional; position is always needed (it picks the leg to auto-place on).
+    this.form.controls.placementUserId.setValidators([]);
+    this.form.controls.position.setValidators(sponsorValidators.length || (this.placementAssociates && !this.lockSponsor) ? [Validators.required] : []);
     for (const c of [this.form.controls.sponsorUserId, this.form.controls.position]) {
       if (this.lockSponsor) { c.disable({ emitEvent: false }); } else { c.enable({ emitEvent: false }); }
     }

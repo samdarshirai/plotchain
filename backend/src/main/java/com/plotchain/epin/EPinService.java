@@ -290,7 +290,18 @@ public class EPinService {
             throw new AssociateNotFoundException(req.sponsorUserId());
         }
         provisioningService.assertIdentityUnique(req);
-        Associate parent = provisioningService.findFreeSlotParent(sponsor, req.position());
+        Associate parent;
+        if (req.placementUserId() != null && !req.placementUserId().isBlank()) {
+            // Explicit placement must be me or in my downline (no leak); createPending rejects an occupied slot.
+            String placementUserId = req.placementUserId().trim();
+            parent = associateRepository.findByUserId(placementUserId)
+                .orElseThrow(() -> new AssociateNotFoundException(placementUserId));
+            if (!associateRepository.findSelfAndDownline(callerId).contains(parent.getId())) {
+                throw new AssociateNotFoundException(placementUserId);
+            }
+        } else {
+            parent = provisioningService.findFreeSlotParent(sponsor, req.position());
+        }
 
         String email = req.email() == null || req.email().isBlank() ? null : req.email().trim();
         Associate member = provisioningService.createPending(req.name().trim(), email, req.phone(),

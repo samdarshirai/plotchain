@@ -10,7 +10,7 @@ export interface EPinUsedRow {
   usedDate: string | null; usedByUserId: string | null; usedByName: string | null;
 }
 export interface JoinRequest {
-  sponsorUserId: string; position: string; name: string; fatherHusbandName: string; panNumber: string;
+  sponsorUserId: string; placementUserId?: string; position: string; name: string; fatherHusbandName: string; panNumber: string;
   aadhaarNumber: string; dateOfBirth: string | null; gender: string; maritalStatus: string; email: string | null;
   phone: string; state: string; district: string; address: string; postalCode: string;
   nomineeName: string; nomineeRelation: string; transactionPassword: string;

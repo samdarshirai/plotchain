@@ -12,6 +12,7 @@ import java.time.LocalDate;
 public record JoinEPinRequest(
     @NotBlank String name,
     @NotBlank String sponsorUserId,
+    String placementUserId,
     @NotBlank @Pattern(regexp = "L|R", message = "position must be L or R") String position,
     String fatherHusbandName,
     @NotBlank @Pattern(regexp = "[A-Z]{5}[0-9]{4}[A-Z]", message = "PAN must be 5 capital letters, 4 digits, 1 capital letter (e.g. ABCDE1234F)") String panNumber,

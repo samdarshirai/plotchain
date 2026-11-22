@@ -282,7 +282,6 @@ export class NewAssociatePanelComponent implements OnInit, OnChanges {
 
   private conflictKey(backendMessage: string | undefined): string {
     if (backendMessage?.startsWith('Placement already occupied')) { return 'admin.validation.placementUnavailable'; }
-    if (backendMessage?.startsWith('A placement is required')) { return 'admin.validation.placementRequired'; }
     if (backendMessage?.startsWith('Position is required')) { return 'admin.validation.positionRequired'; }
     if (backendMessage === 'No rank tiers are configured; an associate cannot be created without a rank') {
       return 'admin.validation.noRankTiersConfigured';

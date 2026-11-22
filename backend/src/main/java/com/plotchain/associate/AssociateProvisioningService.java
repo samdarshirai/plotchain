@@ -37,21 +37,26 @@ public class AssociateProvisioningService {
     @Transactional
     public CreateAssociateResponse create(CreateAssociateRequest request) {
         assertIdentityUnique(request);
-        UUID sponsorId = null;
+        Associate sponsor = null;
         UUID parentId = null;
         boolean rootExists = associateRepository.existsByParentIdIsNullAndRole(AssociateRole.ASSOCIATE);
         if (request.sponsorUserId() != null && !request.sponsorUserId().isBlank()) {
-            sponsorId = associateRepository.findByUserId(request.sponsorUserId().trim())
-                .orElseThrow(() -> new AssociateNotFoundException(request.sponsorUserId())).getId();
+            sponsor = associateRepository.findByUserId(request.sponsorUserId().trim())
+                .orElseThrow(() -> new AssociateNotFoundException(request.sponsorUserId()));
         } else if (rootExists) {
             throw new SponsorRequiredException();
         }
+        UUID sponsorId = sponsor == null ? null : sponsor.getId();
         if (request.placementUserId() != null && !request.placementUserId().isBlank()) {
             // createPending validates position + slot occupancy; the unique index is the race guard.
             parentId = associateRepository.findByUserId(request.placementUserId().trim())
                 .orElseThrow(() -> new AssociateNotFoundException(request.placementUserId())).getId();
-        } else if (rootExists) {
-            throw new PlacementRequiredException();
+        } else if (sponsor != null) {
+            // No placement given: next free slot down the sponsor's chosen leg.
+            if (request.position() == null || request.position().isBlank()) {
+                throw new PositionRequiredException(sponsorId);
+            }
+            parentId = findFreeSlotParent(sponsor, request.position()).getId();
         }
         String email = request.email() == null || request.email().isBlank() ? null : request.email().trim();
         Associate associate = createPending(request.name().trim(), email, request.phone(),

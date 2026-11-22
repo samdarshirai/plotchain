@@ -74,7 +74,11 @@ class EPinJoinIntegrationTest {
     }
 
     private JoinEPinRequest req(String sponsor, String pos, String pan, String aadhaar) {
-        return new JoinEPinRequest("New Person", sponsor, pos, null, pan, aadhaar, null, null, null,
+        return req(sponsor, null, pos, pan, aadhaar);
+    }
+
+    private JoinEPinRequest req(String sponsor, String placement, String pos, String pan, String aadhaar) {
+        return new JoinEPinRequest("New Person", sponsor, placement, pos, null, pan, aadhaar, null, null, null,
             null, "9876543210", "Delhi", "Central", "Addr", null, "Nom", "Son", "pw");
     }
 
@@ -130,5 +134,28 @@ class EPinJoinIntegrationTest {
         assertThatThrownBy(() -> epinService.join(p2.getId(), req("JN6", "R", "ZZZZZ9999Z", "123456789012"), me.getId()))
             .isInstanceOf(EPinDuplicateIdentityException.class).hasMessage("AADHAAR_TAKEN");
         assertThat(epinRepository.findById(p2.getId()).orElseThrow().getStatus()).isEqualTo(EPinStatus.ALLOCATED);
+    }
+
+    @Test
+    void explicitPlacementInMyDownlineIsUsedDirectly() {
+        Associate me = member("JN7", null, null);
+        Associate left = member("JN8", me.getId(), "L");
+        member("JN9", left.getId(), "L");
+        EPin pin = pin(me.getId(), EPinType.REGISTRATION);
+
+        JoinEPinResponse res = epinService.join(pin.getId(), req("JN7", "JN8", "R", "ABCDE1234F", "123456789012"), me.getId());
+
+        Associate created = associateRepository.findByUserId(res.userId()).orElseThrow();
+        assertThat(created.getParentId()).isEqualTo(left.getId());
+        assertThat(created.getPosition()).isEqualTo("R");
+    }
+
+    @Test
+    void placementOutsideMyDownlineIsNotFound() {
+        Associate me = member("JN10", null, null);
+        member("JN11", null, null);
+        EPin pin = pin(me.getId(), EPinType.REGISTRATION);
+        assertThatThrownBy(() -> epinService.join(pin.getId(), req("JN10", "JN11", "L", "ABCDE1234F", "123456789012"), me.getId()))
+            .isInstanceOf(AssociateNotFoundException.class);
     }
 }
