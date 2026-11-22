@@ -136,7 +136,7 @@ describe('BookingTableComponent', () => {
       const el = fixture.nativeElement as HTMLElement;
       const ticks = () => Array.from(el.querySelectorAll<HTMLInputElement>('tbody input[type=checkbox]'));
       const tick = (i: number) => { ticks()[i].click(); fixture.detectChanges(); };
-      const cards = () => el.querySelectorAll('.plot-compare__card').length;
+      const cards = () => el.querySelectorAll('.plot-compare__cols section').length;
       return { fixture, el, ticks, tick, cards };
     }
 
@@ -207,23 +207,25 @@ describe('BookingTableComponent', () => {
     it('add control is hidden at 4', () => {
       const t = setup(true, ['b1', 'b2', 'b3', 'b4', 'b5'].map((k, i) => crow(k, 'P-' + i)));
       [0, 1].forEach(i => t.tick(i));
-      expect(t.el.querySelector('.plot-compare__add')).not.toBeNull();
+      expect(t.el.querySelector('input.plot-compare__add')).not.toBeNull();
       [2, 3].forEach(i => t.tick(i));
-      expect(t.el.querySelector('.plot-compare__add')).toBeNull();
+      expect(t.el.querySelector('input.plot-compare__add')).toBeNull();
     });
 
-    it('the compare dropdown lists unticked plots that have installments, and adding one adds a card', () => {
+    it('the add control lists unticked plots that have installments, and adding one adds a column', () => {
       const t = setup(true, [crow('b1', 'A-1'), crow('b2', 'A-2'), crow('b3', 'B-3'), crow('b4', 'B-4', false)]);
       t.tick(0);
       t.tick(1);
-      const select = t.el.querySelector('select.plot-compare__add') as HTMLSelectElement;
-      expect(Array.from(select.options).map(o => o.value)).toEqual(['', 'b3']);
-      select.value = 'b3';
-      select.dispatchEvent(new Event('change'));
+      const labels = Array.from(t.el.querySelectorAll('datalist option')).map(o => (o as HTMLOptionElement).value);
+      expect(labels.length).toBe(1);
+      expect(labels[0]).toContain('B-3');
+      const input = t.el.querySelector('input.plot-compare__add') as HTMLInputElement;
+      input.value = labels[0];
+      input.dispatchEvent(new Event('change'));
       t.fixture.detectChanges();
       expect(t.cards()).toBe(3);
       expect(t.ticks()[2].checked).toBeTrue();
-      expect(t.el.querySelector('select.plot-compare__add')).toBeNull();
+      expect(t.el.querySelector('input.plot-compare__add')).toBeNull();
     });
 
     it('removing from a card unticks it and clearing empties the selection', () => {

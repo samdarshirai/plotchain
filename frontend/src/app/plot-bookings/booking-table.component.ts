@@ -65,7 +65,7 @@ export const saleRow = (s: Sale): BookingRow => ({
         <input type="search" [value]="associateFilter" (input)="associateFilter = $any($event.target).value" [placeholder]="'plotBookings.filter.associateIdPlaceholder' | translate" autocomplete="off">
       </label>
     </div>
-    <app-plot-compare *ngIf="comparedRows.length >= 2" [rows]="comparedRows" [available]="availableRows" (add)="toggleCompare($event)" (remove)="removeCompared($event)" (clear)="clearCompared()"></app-plot-compare>
+    <app-plot-compare *ngIf="comparedRows.length >= 2" [rows]="comparedRows" [available]="availableRows" [atMax]="atMax" (add)="toggleCompare($event)" (remove)="removeCompared($event)" (clear)="clearCompared()"></app-plot-compare>
     <div class="booking-table__scroll">
       <app-table-tools filename="plot-bookings"></app-table-tools>
       <table class="booking-table" [attr.aria-label]="label">
