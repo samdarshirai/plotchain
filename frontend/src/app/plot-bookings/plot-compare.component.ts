@@ -92,18 +92,15 @@ import type { BookingRow } from './booking-table.component';
                 <th scope="col">{{ 'plotBookings.payments.amount' | translate }}</th>
                 <th scope="col">{{ 'plotBookings.payments.mode' | translate }}</th>
                 <th scope="col">{{ 'plotBookings.payments.receiptNo' | translate }}</th>
-                <th scope="col">{{ 'plotBookings.compare.col.status' | translate }}</th>
               </tr></thead>
               <tbody>
-                <tr *ngIf="!payments(r).length"><td colspan="5">{{ 'plotBookings.payments.empty' | translate }}</td></tr>
+                <tr *ngIf="!payments(r).length"><td colspan="4">{{ 'plotBookings.payments.empty' | translate }}</td></tr>
                 <tr *ngFor="let p of payments(r)">
-                  <td class="plot-compare__mono" [attr.data-label]="'plotBookings.compare.date' | translate">{{ p.paidAt ? (p.paidAt | date: 'd MMM y' : '+0530') : '—' }}</td>
+                  <td class="plot-compare__mono" [attr.data-label]="'plotBookings.compare.date' | translate">{{ p.paidAt ? (p.paidAt | date: 'd MMM yy' : '+0530') : '—' }}
+                    <span class="plot-compare__badge plot-compare__badge--warn" *ngIf="p.status === 'ENTERED'">{{ 'plotBookings.compare.paymentStatus.ENTERED' | translate }}</span></td>
                   <td class="plot-compare__mono" [attr.data-label]="'plotBookings.payments.amount' | translate">{{ money(p.amount) }}</td>
                   <td [attr.data-label]="'plotBookings.payments.mode' | translate">{{ p.paymentMode ? ('admin.projectsPlots.paymentMode.' + p.paymentMode | translate) : '—' }}</td>
                   <td class="plot-compare__mono" [attr.data-label]="'plotBookings.payments.receiptNo' | translate">{{ p.receiptNo || '—' }}</td>
-                  <td [attr.data-label]="'plotBookings.compare.col.status' | translate">
-                    <span class="plot-compare__badge" [class.plot-compare__badge--warn]="p.status === 'ENTERED'">{{ 'plotBookings.compare.paymentStatus.' + p.status | translate }}</span>
-                  </td>
                 </tr>
               </tbody>
             </table>

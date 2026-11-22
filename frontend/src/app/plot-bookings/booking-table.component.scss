@@ -75,23 +75,23 @@ app-booking-table { display: contents; }
     th.plot-compare__plot { overflow-wrap: normal; font-size: 0.8125rem; text-transform: none; letter-spacing: 0; vertical-align: top; }
     td { white-space: normal; overflow-wrap: normal; } }
   &__plot { position: relative; padding-right: 2.25rem !important; }
-  &__sub { display: block; margin-top: 0.25rem; font-weight: 400; color: var(--text-muted); }
+  &__sub { display: block; margin-top: 0.25rem; font-weight: 400; color: inherit; opacity: 0.85; }
   &__k { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
   &__num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  &__remove { position: absolute; top: 0.375rem; right: 0.375rem; min-width: 28px; min-height: 28px; cursor: pointer; font: inherit; color: var(--text-muted); background: none; border: 1px solid var(--border-subtle); border-radius: 5px; }
+  &__remove { position: absolute; top: 0.375rem; right: 0.375rem; min-width: 28px; min-height: 28px; cursor: pointer; font: inherit; color: inherit; background: none; border: 1px solid var(--border-subtle); border-radius: 5px; }
   &__badge { display: inline-block; padding: 0 0.5rem; border-radius: 10px; font-size: 0.6875rem; font-weight: 600; background: var(--surface-raised); color: var(--text-primary);
     &--warn { background: #fdebc8; color: #8a5a00; }
     &--bad { background: #f6d9d9; color: #9a2b2b; } }
   &__bar { display: block; height: 6px; margin-top: 4px; background: var(--border-subtle); border-radius: 3px; overflow: hidden; i { display: block; height: 100%; background: var(--brand-secondary); } }
   &__dot { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 50%;
     &--1 { background: #4a1626; } &--2 { background: #c28a1a; } &--3 { background: #2b6f8a; } &--4 { background: #5b7f3a; } }
-  &__cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem; margin-top: 1rem; }
+  &__cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; margin-top: 1rem; }
   &__col { min-width: 0; padding: 0.75rem; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 5px; h3 { margin: 0 0 0.5rem; font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); } }
   &__scroll { max-height: 60vh; overflow-y: auto; }
-  &__payments { width: 100%; border-collapse: collapse; font-size: 0.8125rem;
+  &__payments { width: 100%; border-collapse: collapse; font-size: 0.75rem;
     th, td { padding: 0.5rem 0.625rem; text-align: left; border-bottom: 1px solid var(--border-subtle); }
     th { white-space: normal; overflow-wrap: normal; font-size: 0.6875rem; text-transform: uppercase; color: var(--text-muted); } }
-  &__mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  &__mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap !important; }
 }
 
 // Sticky bar: last item of the page flow, sticks to the bottom of the viewport while the compare panel is out of view.
