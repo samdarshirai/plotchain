@@ -167,13 +167,13 @@ export class DashboardComponent implements OnInit {
       },
       { labelKey: 'dashboard.salesThisCycleLabel', value: d.salesSummary.salesThisCycle.toString() },
       { labelKey: 'dashboard.newBookedAreaLabel', value: `${d.legVolumeSummary.newBookedAreaSqft.toLocaleString('en-IN')} Sq. Ft.`, noteKey: 'dashboard.thisCycle' },
-      { labelKey: 'dashboard.directIncomeLabel', value: this.formatCurrency(d.cycleIncome.directIncome), noteKey: 'dashboard.thisCycle' },
-      { labelKey: 'dashboard.matchingIncomeLabel', value: this.formatCurrency(d.cycleIncome.matchingIncomeLifetime), noteKey: 'dashboard.lifetime' },
-      { labelKey: 'dashboard.sponsorMatchingLabel', value: this.formatCurrency(d.cycleIncome.sponsorMatchingIncomeLifetime), noteKey: 'dashboard.lifetime' },
+      { labelKey: 'dashboard.directIncomeLabel', value: this.formatCurrency(d.cycleIncome.directIncome), noteKey: 'dashboard.lastCycle' },
+      { labelKey: 'dashboard.matchingIncomeLabel', value: this.formatCurrency(d.cycleIncome.matchingIncome), noteKey: 'dashboard.lastCycle' },
+      { labelKey: 'dashboard.sponsorMatchingLabel', value: this.formatCurrency(d.cycleIncome.sponsorMatchingIncome), noteKey: 'dashboard.lastCycle' },
       {
         labelKey: 'dashboard.currentRoyaltyBonusLabel',
         value: `${this.formatCurrency(d.cycleIncome.royaltyBonus)} (${d.cycleIncome.royaltyBonusPct}%)`,
-        noteKey: 'dashboard.rankBasedPoolShare'
+        noteKey: 'dashboard.lastCycle'
       },
       { labelKey: 'dashboard.walletBalanceLabel', value: this.formatCurrency(d.wallet.balance), noteKey: 'dashboard.withdrawContactAdmin' }
     ];

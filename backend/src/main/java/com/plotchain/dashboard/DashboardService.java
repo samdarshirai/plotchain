@@ -81,19 +81,20 @@ public class DashboardService {
         Optional<Cycle> openCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN);
         UUID openCycleId = openCycle.map(Cycle::getId).orElse(null);
 
-        // Associates see closed-cycle income only: the open cycle's live income is admin-only, so the
-        // current-cycle figures are zero (cycleIncome(null) = ZERO) until the cycle closes.
-        BigDecimal direct = cycleIncome(associateId, null, IncomeType.DIRECT);
-        BigDecimal matching = cycleIncome(associateId, null, IncomeType.MATCHING);
-        BigDecimal sponsorMatching = cycleIncome(associateId, null, IncomeType.SPONSOR_MATCHING);
+        // Associates see the last CLOSED cycle's income only: the open cycle's live income is admin-only
+        // and lifetime is not shown. No closed cycle yet -> cycleIncome(null) = ZERO.
+        Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
+        UUID closedCycleId = latestClosedCycle.map(Cycle::getId).orElse(null);
+        BigDecimal direct = cycleIncome(associateId, closedCycleId, IncomeType.DIRECT);
+        BigDecimal matching = cycleIncome(associateId, closedCycleId, IncomeType.MATCHING);
+        BigDecimal sponsorMatching = cycleIncome(associateId, closedCycleId, IncomeType.SPONSOR_MATCHING);
         BigDecimal total = BigDecimal.ZERO;
-        BigDecimal royaltyBonus = cycleIncome(associateId, null, IncomeType.ROYALTY);
+        BigDecimal royaltyBonus = cycleIncome(associateId, closedCycleId, IncomeType.ROYALTY);
 
         // leg_volume rows are only written at cycle close (CycleService#rollUpSubtree), so the leg
         // panel and the royalty slab are computed live the way close will: each leg is this cycle's
         // sales in that leg's subtree plus the carry-forward on the latest CLOSED cycle's row.
         // latestClosedCycle is also reused below for the income/revenue deltas.
-        Optional<Cycle> latestClosedCycle = cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED);
         Optional<LegVolume> latestLegVolume = latestClosedCycle
             .flatMap(closed -> legVolumeRepository.findByAssociateIdAndCycleId(associateId, closed.getId()));
         // Business and volumes are live for associates too (only income is closed-cycle).

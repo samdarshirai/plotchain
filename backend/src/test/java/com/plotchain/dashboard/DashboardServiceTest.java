@@ -148,11 +148,12 @@ class DashboardServiceTest {
         when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(closedCycle));
         when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, closedCycleId)).thenReturn(Optional.of(legVolume));
 
-        // live open-cycle income exists but must stay hidden from associates
-        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.DIRECT)).thenReturn(BigDecimal.valueOf(1000));
-        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.MATCHING)).thenReturn(BigDecimal.valueOf(500));
-        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.valueOf(300));
-        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.ROYALTY)).thenReturn(BigDecimal.valueOf(400));
+        // open-cycle income exists but must stay hidden; the tiles show the last CLOSED cycle's values
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, cycleId, IncomeType.DIRECT)).thenReturn(BigDecimal.valueOf(9999));
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.DIRECT)).thenReturn(BigDecimal.valueOf(1000));
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.MATCHING)).thenReturn(BigDecimal.valueOf(500));
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.valueOf(300));
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateCycleAndType(associateId, closedCycleId, IncomeType.ROYALTY)).thenReturn(BigDecimal.valueOf(400));
         lenient().when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, cycleId)).thenReturn(BigDecimal.valueOf(2400));
         when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(associateId, closedCycleId)).thenReturn(BigDecimal.valueOf(1800));
 
@@ -202,10 +203,11 @@ class DashboardServiceTest {
         assertThat(response.associate().lastLoginAt()).isEqualTo(lastLoginAt);
         assertThat(response.associate().sponsorAssociateId()).isEqualTo("SDI100001");
         assertThat(response.associate().sponsorName()).isEqualTo("Head Office Sponsor");
-        // Associates see closed-cycle income only: the open cycle's live income is hidden (zero).
-        assertThat(response.cycleIncome().directIncome()).isZero();
-        assertThat(response.cycleIncome().sponsorMatchingIncome()).isZero();
-        assertThat(response.cycleIncome().royaltyBonus()).isZero();
+        // Associates see the last closed cycle's income: open-cycle (9999) and lifetime are not shown.
+        assertThat(response.cycleIncome().directIncome()).isEqualByComparingTo("1000");
+        assertThat(response.cycleIncome().matchingIncome()).isEqualByComparingTo("500");
+        assertThat(response.cycleIncome().sponsorMatchingIncome()).isEqualByComparingTo("300");
+        assertThat(response.cycleIncome().royaltyBonus()).isEqualByComparingTo("400");
         assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("3.00");
         assertThat(response.cycleIncome().totalIncome()).isZero();
         assertThat(response.cycleIncome().previousCycleTotalIncome()).isEqualByComparingTo("1800");

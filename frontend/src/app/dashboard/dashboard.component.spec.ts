@@ -68,6 +68,7 @@ describe('DashboardComponent', () => {
         salesThisCycleLabel: 'Sales This Cycle',
         newBookedAreaLabel: 'New Booked Area',
         thisCycle: 'this cycle',
+        lastCycle: 'last closed cycle',
         lifetime: 'lifetime',
         directIncomeLabel: 'Direct Income',
         matchingIncomeLabel: 'Matching Income',
@@ -125,6 +126,14 @@ describe('DashboardComponent', () => {
     expect(sections[0].querySelectorAll('app-stat-tile').length).toBe(6);
     expect(sections[1].textContent).toContain('Network & Income');
     expect(sections[1].querySelectorAll('app-stat-tile').length).toBe(10);
+  });
+
+  it('income tiles show the last closed cycle values, not lifetime', () => {
+    loadDashboard();
+    const text = fixture.nativeElement.querySelectorAll('.dashboard__section')[1].textContent;
+    expect(text).toContain('last closed cycle');
+    expect(text).not.toContain('126,000');
+    expect(text).not.toContain('1,26,000');
   });
 
   it('both tile sections start expanded', () => {
@@ -213,7 +222,8 @@ describe('DashboardComponent', () => {
     expect(values[3].textContent?.trim()).toBe('6');
     expect(values[4].textContent).toContain('1,200');
     expect(values[5].textContent).toContain('1,000');
-    expect(values[6].textContent).toContain('126,000');
+    expect(values[6].textContent).toContain('500');
+    expect(values[7].textContent).toContain('300');
     expect(values[8].textContent).toContain('(3%)');
     expect(values[9].textContent).toContain('2,500');
 
