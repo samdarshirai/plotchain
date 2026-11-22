@@ -13,3 +13,8 @@ export const overdueCount = (b: Booking): number => b.installments.filter(isOver
 
 // Unit 14 adds plotNo to the response; until then the short plot id is the best label we have.
 export const plotLabel = (b: Booking): string => b.plotNo ?? b.plotId.slice(0, 8);
+
+// Payments are the ENTERED/PAID rows with a paid date (the rest of the schedule is future EMIs), newest first.
+export const paymentsOf = (installments: EmiInstallment[] | undefined): EmiInstallment[] =>
+  (installments ?? []).filter(i => (i.status === 'ENTERED' || i.status === 'PAID') && i.paidAt)
+    .sort((a, c) => (c.paidAt ?? '').localeCompare(a.paidAt ?? ''));
