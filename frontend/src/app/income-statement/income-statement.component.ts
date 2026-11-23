@@ -154,14 +154,16 @@ const DATE_FORMAT = 'dd MMM yyyy';
       </div>
 
       <ng-container *ngIf="activeIncomeType === 'REWARD'">
-        <div class="income-statement__cards">
+        <div class="income-statement__reward-stage">
           <div class="income-statement__reward-seal">
-            <span class="income-statement__reward-eyebrow"><i></i>{{ 'incomeStatement.currentRank' | translate }}<i></i></span>
+            <span class="income-statement__reward-eyebrow">{{ 'incomeStatement.currentRank' | translate }}</span>
             <span class="income-statement__reward-rank">{{ currentRank }}</span>
           </div>
-          <div class="income-statement__card" *ngFor="let c of rewardCards">
-            <span class="income-statement__card-label">{{ c.labelKey | translate }}</span>
-            <span class="income-statement__card-value">{{ c.value }}</span>
+          <div class="income-statement__cards income-statement__cards--legs">
+            <div class="income-statement__card" *ngFor="let c of rewardCards">
+              <span class="income-statement__card-label">{{ c.labelKey | translate }}</span>
+              <span class="income-statement__card-value">{{ c.value }}</span>
+            </div>
           </div>
         </div>
 
