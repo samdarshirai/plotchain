@@ -43,6 +43,7 @@ export class CycleSelectComponent {
 
   pick(id: string): void {
     const c = this.cycles.find(x => x.id === id);
-    if (c) { this.rangeChange.emit({ from: startOf(c), to: endOf(c) }); }
+    // Cycle and dates are alternatives, not AND filters: "All cycles" drops the date bounds too.
+    this.rangeChange.emit(c ? { from: startOf(c), to: endOf(c) } : { from: '', to: '' });
   }
 }

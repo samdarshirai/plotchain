@@ -41,11 +41,11 @@ describe('CycleSelectComponent', () => {
     expect(r.to >= r.from).toBeTrue();
   });
 
-  it('"All cycles" emits nothing', () => {
+  it('"All cycles" clears the date range', () => {
     const c = make();
     const spy = jasmine.createSpy();
     c.rangeChange.subscribe(spy);
     c.pick('');
-    expect(spy).not.toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledWith({ from: '', to: '' });
   });
 });
