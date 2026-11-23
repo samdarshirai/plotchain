@@ -2516,18 +2516,6 @@
   align-items: stretch;
 }
 
-.income-statement__reward-seal {
-  @include seal.frame;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.375rem;
-  margin: 4px;
-  padding: 1.75rem 2rem;
-  background: var(--surface-card);
-}
-
 .income-statement__reward-eyebrow {
   font-size: 0.875rem;
   font-weight: 500;
@@ -2544,17 +2532,109 @@
   color: var(--text-primary);
 }
 
-// Designation leads on the left; the six leg figures sit beside it as three rows of left | right.
-.income-statement__reward-stage {
+// One slim band: designation | next reward with a progress bar per leg (a tier needs both legs) |
+// business totals. Cells are divided by hairlines; below 900px they stack.
+.income-statement__band {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: 1.5rem;
-  align-items: stretch;
+  grid-template-columns: fit-content(16rem) minmax(0, 1fr) auto;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
 }
 
-.income-statement__cards--legs {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.income-statement__band-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 1.125rem 1.5rem;
+
+  & + & { border-left: 1px solid var(--border-subtle); }
+}
+
+.income-statement__band .income-statement__reward-rank {
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+}
+
+.income-statement__band-next {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.income-statement__band-next-name {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 500;
+  overflow-wrap: break-word;
+  color: var(--text-primary);
+}
+
+.income-statement__band-next-prize {
+  font-family: var(--font-body, inherit);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.income-statement__leg {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr) auto;
+  align-items: center;
   gap: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.income-statement__leg-name {
+  color: var(--text-muted);
+}
+
+.income-statement__leg-bar {
+  height: 0.5rem;
+  background: var(--surface-raised);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.income-statement__leg-fill {
+  display: block;
+  height: 100%;
+  background: var(--status-warning);
+  border-radius: inherit;
+}
+
+.income-statement__leg-togo {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.income-statement__business {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(2, max-content);
+  align-content: center;
+  column-gap: 1.25rem;
+  row-gap: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.income-statement__business-head {
+  font-size: 0.75rem;
+  text-align: right;
+  color: var(--text-muted);
+}
+
+.income-statement__business-row {
+  color: var(--text-muted);
+}
+
+.income-statement__business-value {
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-primary);
 }
 
 .income-statement__cards--summary {
@@ -2584,18 +2664,37 @@
   color: var(--text-primary);
 }
 
-.income-statement__reward-heading {
-  margin: 0.5rem 0 0;
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: var(--text-primary);
+// Mid widths: the totals (full, grouped figures) drop to their own row under the other two cells,
+// so long designations and 10-digit amounts never squeeze the progress bars.
+@media (max-width: 1200px) {
+  .income-statement__band { grid-template-columns: fit-content(16rem) minmax(0, 1fr); }
+  .income-statement__band-cell:nth-child(3) {
+    grid-column: 1 / -1;
+    border-left: 0;
+    border-top: 1px solid var(--border-subtle);
+  }
 }
 
 @media (max-width: 900px) {
-  .income-statement__reward-stage {
-    grid-template-columns: minmax(0, 1fr);
+  .income-statement__band { grid-template-columns: minmax(0, 1fr); }
+  .income-statement__band-cell + .income-statement__band-cell { border-left: 0; border-top: 1px solid var(--border-subtle); }
+}
+
+// Reward tier table: columns are 1 #, 2 Matching Volume, 3 Designation, 4 Reward, 5-6 leg remaining,
+// 7 Status. Figures line up on the right; stacked-card mode keeps its own layout.
+.income-statement[data-income-type='REWARD'] .editable-table:not(.table--stacked) {
+  thead th:is(:nth-child(2), :nth-child(5), :nth-child(6)),
+  tbody td:not(.editable-table__empty):is(:nth-child(2), :nth-child(5), :nth-child(6)) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
   }
+}
+
+// The tier being worked toward (its In Progress badge is the only warning chip in this table) gets a
+// quiet tint and a gold edge, so the next target reads at a glance.
+.income-statement__band + app-tab-bar + .income-statement__table .editable-table tbody tr:has(.editable-table__badge--warning) {
+  background: color-mix(in srgb, var(--status-warning) 8%, var(--surface-card));
+  box-shadow: inset 3px 0 0 var(--status-warning);
 }
 
 // Every itemised tab ends with a Total row (all except REWARD).

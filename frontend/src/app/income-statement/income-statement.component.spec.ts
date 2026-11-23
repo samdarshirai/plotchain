@@ -649,7 +649,11 @@ describe('IncomeStatementComponent', () => {
     expect(c.rewardTierRows[1]['right']).toBe('₹17 L');
     expect(c.achievedRows[0]['payStatus']).toBe('Unpaid');
     expect(c.achievedRows[0]['paymentDate']).toBe('—');
-    expect(fixture.nativeElement.querySelectorAll('.income-statement__table tbody tr').length).toBe(4);
+    const rows = () => fixture.nativeElement.querySelectorAll('.income-statement__table tbody tr').length;
+    expect(rows()).toBe(3); // tier table is the default tab
+    c.rewardView = 'achieved';
+    fixture.detectChanges();
+    expect(rows()).toBe(1);
   });
 
   it('Reward tab with no achieved tier shows em-dash rank and first tier in progress', () => {
