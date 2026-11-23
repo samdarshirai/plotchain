@@ -40,10 +40,12 @@ describe('MyTeamComponent', () => {
     expect(c.componentInstance.rows[1]['phone']).toBe('—');
   });
 
-  it('shows sponsor name, dash when missing', () => {
+  it('shows sponsor name only on sponsored tab, dash when missing', () => {
     list.and.returnValue(of({ associates: [{ ...row, sponsorName: 'Vee Pee' }, { ...row, userId: 'VP3' }], page: 0, size: 20, totalElements: 2 }));
     const c = TestBed.createComponent(MyTeamComponent);
     c.detectChanges();
+    expect(c.componentInstance.columns.map(x => x.key)).not.toContain('sponsorName');
+    c.componentInstance.onViewChange('sponsored');
     expect(c.componentInstance.columns.map(x => x.key)).toContain('sponsorName');
     expect(c.componentInstance.rows[0]['sponsorName']).toBe('Vee Pee');
     expect(c.componentInstance.rows[1]['sponsorName']).toBe('—');

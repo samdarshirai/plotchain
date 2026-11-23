@@ -110,9 +110,9 @@ export class MyTeamComponent implements OnInit {
     this.loadCounts();
   }
 
-  // Placement ID shows only on the Sponsored Associates tab.
+  // Placement ID and Sponsor name show only on the Sponsored Associates tab.
   private applyColumns(): void {
-    this.columns = this.allColumns.filter(c => c.key !== 'parentUserId' || this.view === 'sponsored');
+    this.columns = this.allColumns.filter(c => !['parentUserId', 'sponsorName'].includes(c.key) || this.view === 'sponsored');
   }
 
   onViewChange(view: string): void {
