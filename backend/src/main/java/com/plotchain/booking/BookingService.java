@@ -633,6 +633,15 @@ public class BookingService {
         booking.setCancelledAt(now);
         booking.setCancelReason(reason);
 
+        // Nothing confirmed, so no Sale/ledger/refund hangs off it (sales are written per confirmed payment): remove the
+        // booking outright so it leaves every sale/booking/purchase list. Money-bearing cancels are kept as CANCELLED.
+        if (paidExact.signum() == 0) {
+            emiInstallmentRepository.deleteByBookingId(bookingId);
+            bookingEventRepository.deleteByBookingId(bookingId);
+            plotBookingRepository.delete(booking);
+            return toResponse(booking, installments);
+        }
+
         String chargeNote = "";
         if (chargePct != null) {
             booking.setCancellationCharge(chargePct, charge, refund);

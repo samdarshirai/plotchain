@@ -311,6 +311,7 @@ class BookingCancelIntegrationTest {
     void cancelOfAnAlreadyCancelledBookingIs409AndWritesNoSecondEvent() {
         setConfig(true, 4);
         BookingResponse b = seedBooking();
+        payInstallment(b, 1);                                      // money received: stays as a CANCELLED row
         bookingService.cancelBooking(b.id(), new CancelBookingRequest("first"), associateId);
 
         assertThatThrownBy(() -> bookingService.cancelBooking(b.id(), new CancelBookingRequest("second"), associateId))
@@ -330,6 +331,7 @@ class BookingCancelIntegrationTest {
     void cancelWithASoldPlotSucceedsAndLeavesThePlotSold() {
         setConfig(true, 4);
         BookingResponse b = seedBooking();
+        payInstallment(b, 1);
         jdbc.update("UPDATE plot SET status = 'SOLD' WHERE id = ?", plotId);
 
         bookingService.cancelBooking(b.id(), new CancelBookingRequest("drift"), associateId);
@@ -343,6 +345,7 @@ class BookingCancelIntegrationTest {
     void cancelWithAnAvailablePlotSucceedsAndLeavesThePlotAvailable() {
         setConfig(true, 4);
         BookingResponse b = seedBooking();
+        payInstallment(b, 1);
         jdbc.update("UPDATE plot SET status = 'AVAILABLE' WHERE id = ?", plotId);
 
         bookingService.cancelBooking(b.id(), new CancelBookingRequest("drift"), associateId);
@@ -365,6 +368,7 @@ class BookingCancelIntegrationTest {
     void cancellingAStaleBookingDoesNotFreeAPlotHeldByAnotherActiveBooking() {
         setConfig(true, 4);
         BookingResponse a = seedBooking();
+        payInstallment(a, 1);
         BookingResponse b = reBookUnderneath(a);                  // plot BOOKED by B (ACTIVE)
 
         bookingService.cancelBooking(a.id(), new CancelBookingRequest("stale"), associateId);
@@ -385,6 +389,7 @@ class BookingCancelIntegrationTest {
     void cancellingAStaleBookingDoesNotFreeAPlotHeldByAConfirmedBooking() {
         setConfig(true, 4);
         BookingResponse a = seedBooking();
+        payInstallment(a, 1);
         BookingResponse b = reBookUnderneath(a);
         // CONFIRMED holder while the plot is still BOOKED (hand-set; a real confirm would make it SOLD,
         // which is the separate "plot left SOLD" path already covered above)
@@ -401,6 +406,7 @@ class BookingCancelIntegrationTest {
     void aCancelledOtherBookingOnThePlotDoesNotCountAsAHolder() {
         setConfig(true, 4);
         BookingResponse a = seedBooking();
+        payInstallment(a, 1);
         BookingResponse b = reBookUnderneath(a);
         bookingService.cancelBooking(b.id(), new CancelBookingRequest("b out"), associateId);   // frees plot
         jdbc.update("UPDATE plot SET status = 'BOOKED' WHERE id = ?", plotId);                  // A stale again
@@ -432,7 +438,7 @@ class BookingCancelIntegrationTest {
         BookingResponse b = seedBooking();
         bookingService.cancelBooking(b.id(), new CancelBookingRequest("x"), associateId);
 
-        assertThatThrownBy(() -> payInFull(b)).isInstanceOf(BookingNotActiveException.class);
+        assertThatThrownBy(() -> payInFull(b)).isInstanceOf(BookingNotFoundException.class);   // nothing confirmed: booking deleted
         assertThat(count("SELECT COUNT(*) FROM sale WHERE associate_id = ?", associateId)).isZero();
         assertThat(plotStatus()).isEqualTo("AVAILABLE");
     }
@@ -441,6 +447,7 @@ class BookingCancelIntegrationTest {
     void theFreedPlotCanBeBookedAgainAndTheCancelledBookingStaysCancelled() {
         setConfig(true, 4);
         BookingResponse first = seedBooking();
+        payInstallment(first, 1);
         bookingService.cancelBooking(first.id(), new CancelBookingRequest("x"), associateId);
 
         BookingResponse second = LegacyScheduleSeed.book(bookingService, jdbc, plotId, associateId, "New Buyer");
@@ -450,7 +457,7 @@ class BookingCancelIntegrationTest {
         assertThat(second.installments()).hasSize(4).allMatch(i -> i.status() == InstallmentStatus.PENDING);
         assertThat(plotStatus()).isEqualTo("BOOKED");
         assertThat(bookingStatus(first.id())).isEqualTo("CANCELLED");
-        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", first.id())).isEqualTo(4);
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", first.id())).isEqualTo(3);
         // and the new booking can itself be cancelled (full cycle)
         bookingService.cancelBooking(second.id(), new CancelBookingRequest("again"), associateId);
         assertThat(plotStatus()).isEqualTo("AVAILABLE");
@@ -543,12 +550,14 @@ class BookingCancelIntegrationTest {
         boolean cancelWon = r.get(0) == null;
         boolean payWon = r.get(1) == null;
         assertThat(cancelWon ^ payWon).as("exactly one winner").isTrue();
-        assertThat(cancelWon ? r.get(1) : r.get(0)).isInstanceOf(BookingNotActiveException.class);
+        assertThat(cancelWon ? r.get(1) : r.get(0))
+            .isInstanceOf(cancelWon ? BookingNotFoundException.class : BookingNotActiveException.class);
         if (cancelWon) {
-            assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
+            // nothing was confirmed, so the booking and its rows are deleted outright
+            assertThat(count("SELECT COUNT(*) FROM plot_booking WHERE id = ?", b.id())).isZero();
             assertThat(plotStatus()).isEqualTo("AVAILABLE");
-            assertThat(jdbc.queryForObject("SELECT status FROM emi_installment WHERE booking_id = ?", String.class, b.id())).isEqualTo("VOID");
-            assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAY_CONFIRMED'", b.id())).isZero();
+            assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ?", b.id())).isZero();
+            assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ?", b.id())).isZero();
             assertThat(count("SELECT COUNT(*) FROM sale WHERE booking_id = ?", b.id())).isZero();
         } else {
             assertThat(bookingStatus(b.id())).isEqualTo("CONFIRMED");
@@ -558,12 +567,10 @@ class BookingCancelIntegrationTest {
         }
     }
 
-    // Cancel vs entering a payment under MANUAL: enter-then-cancel both succeed (the ENTERED installment is
-    // voided and counted in the event), cancel-then-enter is 409 for the enter. Invariant under every
-    // interleaving: nothing is PAID or PENDING, every row is VOID, and the entered-event count equals the
-    // "unconfirmed payments voided" count.
+    // Cancel vs entering a payment under MANUAL: nothing is ever confirmed, so cancel deletes the booking.
+    // enter-then-cancel: both succeed and everything is gone; cancel-then-enter: the enter is a 404.
     @RepeatedTest(10)
-    void aCancelRacingAnEnteredPaymentNeverLosesTheUpdate() throws Exception {
+    void aCancelRacingAnEnteredPaymentNeverLeavesAnOrphan() throws Exception {
         setConfig(true, 4);
         BookingResponse b = seedBooking();
         BigDecimal amount = b.installments().get(0).amount();
@@ -574,13 +581,11 @@ class BookingCancelIntegrationTest {
 
         assertThat(r.get(0)).as("cancel always succeeds on an ACTIVE booking").isNull();
         if (r.get(1) != null) {
-            assertThat(r.get(1)).isInstanceOf(BookingNotActiveException.class);
+            assertThat(r.get(1)).isInstanceOf(BookingNotFoundException.class);
         }
-        int entered = r.get(1) == null ? 1 : 0;
-        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ? AND type = 'PAID'", b.id())).isEqualTo(entered);
-        assertThat(eventDetail(b.id(), "CANCELLED")).isEqualTo("reason: x; paid: 0; unconfirmed payments voided: " + entered);
-        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ? AND status = 'VOID'", b.id())).isEqualTo(4);
-        assertThat(bookingStatus(b.id())).isEqualTo("CANCELLED");
+        assertThat(count("SELECT COUNT(*) FROM plot_booking WHERE id = ?", b.id())).isZero();
+        assertThat(count("SELECT COUNT(*) FROM emi_installment WHERE booking_id = ?", b.id())).isZero();
+        assertThat(count("SELECT COUNT(*) FROM booking_event WHERE booking_id = ?", b.id())).isZero();
         assertThat(plotStatus()).isEqualTo("AVAILABLE");
     }
 
@@ -684,6 +689,7 @@ class BookingCancelIntegrationTest {
     void cancelWaitsForAHolderOfThePlotLockAndThenFreesThePlot() throws Exception {
         setConfig(true, 4);
         BookingResponse b = seedBooking();
+        payInstallment(b, 1);
 
         cancelWhileAnotherTransactionHoldsThePlotLock(b.id(), false);
 
@@ -695,6 +701,7 @@ class BookingCancelIntegrationTest {
     void cancelReadsThePlotAfterTheLockSoAHoldersSoldStatusIsNeverOverwritten() throws Exception {
         setConfig(true, 4);
         BookingResponse b = seedBooking();
+        payInstallment(b, 1);
 
         cancelWhileAnotherTransactionHoldsThePlotLock(b.id(), true);
 

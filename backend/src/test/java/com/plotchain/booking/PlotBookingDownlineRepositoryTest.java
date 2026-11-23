@@ -64,4 +64,21 @@ class PlotBookingDownlineRepositoryTest {
             .extracting(PlotBooking::getId).containsExactly(br.getId());
         // legs exclude own: asserted by the exact L/R lists above
     }
+
+    @Test
+    void cancelledBookingsAreHiddenFromTeamAndOwnLists() {
+        BookingRegisterTestData d = new BookingRegisterTestData(associates, projects, plots, repo, installments);
+        UUID project = d.project("Cancelled P");
+        UUID root = d.associate();
+        UUID left = child(d, root, "L");
+        PlotBooking live = d.booking(left, project, BookingStatus.ACTIVE, 1);
+        d.booking(left, project, BookingStatus.CANCELLED, 2);
+        d.booking(root, project, BookingStatus.CANCELLED, 3);
+        java.time.Instant to = java.time.Instant.parse("9999-01-01T00:00:00Z");
+
+        Page<PlotBooking> team = repo.findByDownline(root, null, java.time.Instant.EPOCH, to, PageRequest.of(0, 50));
+        assertThat(team.getContent()).extracting(PlotBooking::getId).containsExactly(live.getId());
+        assertThat(team.getTotalElements()).isEqualTo(1);
+        assertThat(repo.findByAssociateIdOrderByBookedAtDesc(root, java.time.Instant.EPOCH, to, PageRequest.of(0, 50)).getContent()).isEmpty();
+    }
 }

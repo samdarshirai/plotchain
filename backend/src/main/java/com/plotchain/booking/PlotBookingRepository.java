@@ -22,7 +22,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
     // "own + descendant" like the Sales row's "team-volume reports" wording -- so, unlike
     // SaleRepository.findByAssociateIdInOrderByRecordedAtDesc, this takes a single associateId,
     // never a self-plus-downline ID list.
-    @Query("SELECT b FROM PlotBooking b WHERE b.associateId = :associateId AND b.bookedAt >= :from AND b.bookedAt < :to ORDER BY b.bookedAt DESC")
+    @Query("SELECT b FROM PlotBooking b WHERE b.associateId = :associateId AND b.status <> com.plotchain.booking.BookingStatus.CANCELLED AND b.bookedAt >= :from AND b.bookedAt < :to ORDER BY b.bookedAt DESC")
     Page<PlotBooking> findByAssociateIdOrderByBookedAtDesc(@Param("associateId") UUID associateId,
             @Param("from") Instant from, @Param("to") Instant to, Pageable pageable);
 
@@ -94,6 +94,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         SELECT b.* FROM plot_booking b LEFT JOIN downline d ON b.associate_id = d.id
         WHERE (d.id IS NOT NULL OR (CAST(:position AS text) IS NULL AND b.associate_id = :associateId))
           AND b.booked_at >= :from AND b.booked_at < :to
+          AND b.status <> 'CANCELLED'
         ORDER BY b.booked_at DESC, b.id DESC
         """,
         countQuery = """
@@ -106,6 +107,7 @@ public interface PlotBookingRepository extends JpaRepository<PlotBooking, UUID> 
         SELECT count(*) FROM plot_booking b LEFT JOIN downline d ON b.associate_id = d.id
         WHERE (d.id IS NOT NULL OR (CAST(:position AS text) IS NULL AND b.associate_id = :associateId))
           AND b.booked_at >= :from AND b.booked_at < :to
+          AND b.status <> 'CANCELLED'
         """,
         nativeQuery = true)
     Page<PlotBooking> findByDownline(@Param("associateId") UUID associateId, @Param("position") String position,

@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface EmiInstallmentRepository extends JpaRepository<EmiInstallment, UUID> {
+    void deleteByBookingId(UUID bookingId);
+
 
     List<EmiInstallment> findByBookingIdOrderByInstallmentNumberAsc(UUID bookingId);
 

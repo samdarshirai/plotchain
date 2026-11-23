@@ -13,6 +13,8 @@ import java.util.UUID;
 public interface BookingEventRepository extends JpaRepository<BookingEvent, UUID> {
     List<BookingEvent> findByBookingIdOrderByCreatedAtAsc(UUID bookingId);
 
+    void deleteByBookingId(UUID bookingId);
+
     // Admin plot-transfers list. Pre-V62 transfers have no old_plot_id snapshot and are skipped.
     // Pageable must be UNSORTED: order is fixed here.
     @Query(value = """

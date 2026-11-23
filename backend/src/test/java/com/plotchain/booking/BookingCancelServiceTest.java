@@ -165,15 +165,18 @@ class BookingCancelServiceTest {
     }
 
     @Test
-    void cancelWithNothingPaidRecordsZeroPaid() {
+    void cancelWithNothingPaidDeletesTheBookingItsInstallmentsAndEventsAndFreesThePlot() {
         PlotBooking b = locked(PlotStatus.BOOKED,
             inst(1, "600000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PENDING));
 
-        bookingService.cancelBooking(b.getId(), req("x"), ACTOR_ID);
+        BookingResponse r = bookingService.cancelBooking(b.getId(), req("x"), ACTOR_ID);
 
-        ArgumentCaptor<BookingEvent> ev = ArgumentCaptor.forClass(BookingEvent.class);
-        verify(bookingEventRepository).save(ev.capture());
-        assertThat(ev.getValue().getDetail()).isEqualTo("reason: x; paid: 0; unconfirmed payments voided: 0");
+        verify(emiInstallmentRepository).deleteByBookingId(b.getId());
+        verify(bookingEventRepository).deleteByBookingId(b.getId());
+        verify(plotBookingRepository).delete(b);
+        verify(plotBookingRepository, never()).save(b);
+        verify(bookingEventRepository, never()).save(any());
+        assertThat(r.status()).isEqualTo(BookingStatus.CANCELLED);
     }
 
     @Test
@@ -220,7 +223,7 @@ class BookingCancelServiceTest {
     @Test
     void cancelWithASoldPlotSucceedsLeavesThePlotSoldAndNotesItInTheEvent() {
         PlotBooking b = locked(PlotStatus.SOLD,
-            inst(1, "600000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PENDING));
+            inst(1, "600000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID));
         Plot sold = plot(PlotStatus.SOLD);
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(sold));
 
@@ -231,13 +234,13 @@ class BookingCancelServiceTest {
         verify(plotRepository, never()).save(any());
         ArgumentCaptor<BookingEvent> ev = ArgumentCaptor.forClass(BookingEvent.class);
         verify(bookingEventRepository).save(ev.capture());
-        assertThat(ev.getValue().getDetail()).isEqualTo("reason: drift; paid: 0; unconfirmed payments voided: 0; plot left SOLD");
+        assertThat(ev.getValue().getDetail()).isEqualTo("reason: drift; paid: 600000; unconfirmed payments voided: 0; plot left SOLD");
     }
 
     @Test
     void cancelWithAnAlreadyAvailablePlotLeavesItAvailableAndNotesIt() {
         PlotBooking b = locked(PlotStatus.AVAILABLE,
-            inst(1, "600000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PENDING));
+            inst(1, "600000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID));
 
         bookingService.cancelBooking(b.getId(), req("drift"), ACTOR_ID);
 
@@ -251,7 +254,7 @@ class BookingCancelServiceTest {
     @Test
     void cancelKeepsTheBookedPlotWhenAnotherLiveBookingHoldsItAndNotesTheHolder() {
         PlotBooking b = locked(PlotStatus.BOOKED,
-            inst(1, "600000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PENDING));
+            inst(1, "600000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID));
         Plot booked = plot(PlotStatus.BOOKED);
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(booked));
         PlotBooking other = new PlotBooking();
@@ -269,7 +272,7 @@ class BookingCancelServiceTest {
         ArgumentCaptor<BookingEvent> ev = ArgumentCaptor.forClass(BookingEvent.class);
         verify(bookingEventRepository).save(ev.capture());
         assertThat(ev.getValue().getDetail())
-            .isEqualTo("reason: stale; paid: 0; unconfirmed payments voided: 0; plot kept: held by booking " + other.getId());
+            .isEqualTo("reason: stale; paid: 600000; unconfirmed payments voided: 0; plot kept: held by booking " + other.getId());
     }
 
     // Normal case: no other holder -> plot freed, no suffix. The guard query is asked with exactly
@@ -277,7 +280,7 @@ class BookingCancelServiceTest {
     @Test
     void cancelFreesTheBookedPlotWhenNoOtherLiveBookingHoldsIt() {
         PlotBooking b = locked(PlotStatus.BOOKED,
-            inst(1, "600000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PENDING));
+            inst(1, "600000.00", LocalDate.of(2026, 7, 1), InstallmentStatus.PAID));
         Plot booked = plot(PlotStatus.BOOKED);
         when(plotRepository.findByIdForUpdate(PLOT_ID)).thenReturn(Optional.of(booked));
         when(plotBookingRepository.findFirstByPlotIdAndIdNotAndStatusIn(
