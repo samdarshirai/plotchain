@@ -15,6 +15,8 @@ const KEYS = {
   admin: { token: 'plotchain.auth.admin.token', mustChange: 'plotchain.auth.admin.mustChange', role: 'plotchain.auth.admin.role' }
 } as const;
 const IMPERSONATING_KEY = 'plotchain.auth.impersonating';
+const HANDOFF_KEY = 'plotchain.auth.impersonationHandoff';
+const HANDOFF_TTL_MS = 2 * 60 * 1000;
 
 // An impersonation session lives in the impersonated tab's own sessionStorage, so several can run
 // side by side (and beside a real associate login in localStorage). Reads prefer the tab's slot.
@@ -27,7 +29,9 @@ function tabIsImpersonating(): boolean {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router) {
+    this.claimImpersonationHandoff();
+  }
 
   // Uses the navigation target while one is in flight so guards see the realm of the page being
   // opened, not the page being left.
@@ -84,6 +88,39 @@ export class AuthService {
         target.sessionStorage.setItem(IMPERSONATING_KEY, displayName);
       })
     );
+  }
+
+  // sessionStorage is per tab, so a link opened in a new tab starts signed out. While impersonating,
+  // a link gesture leaves this session in localStorage for HANDOFF_TTL_MS; the next tab with no
+  // impersonation of its own claims it once (constructor) and it is deleted.
+  stageImpersonationHandoff(): void {
+    if (!tabIsImpersonating()) {
+      return;
+    }
+    const items: Record<string, string> = {};
+    [...Object.values(KEYS.associate), IMPERSONATING_KEY].forEach(key => {
+      const value = sessionStorage.getItem(key);
+      if (value !== null) {
+        items[key] = value;
+      }
+    });
+    localStorage.setItem(HANDOFF_KEY, JSON.stringify({ at: Date.now(), items }));
+  }
+
+  private claimImpersonationHandoff(): void {
+    const raw = localStorage.getItem(HANDOFF_KEY);
+    if (raw === null || tabIsImpersonating()) {
+      return;
+    }
+    localStorage.removeItem(HANDOFF_KEY);
+    try {
+      const { at, items } = JSON.parse(raw) as { at: number; items: Record<string, string> };
+      if (Date.now() - at < HANDOFF_TTL_MS) {
+        Object.entries(items).forEach(([k, v]) => sessionStorage.setItem(k, v));
+      }
+    } catch {
+      // malformed handoff: ignore
+    }
   }
 
   isImpersonating(): boolean {

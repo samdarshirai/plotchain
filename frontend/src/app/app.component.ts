@@ -1,4 +1,4 @@
-import { Component, HostBinding, NgZone, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, HostBinding, HostListener, NgZone, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -85,6 +85,18 @@ export class AppComponent implements OnInit, OnDestroy {
     this.mobileQuery?.removeEventListener('change', this.onMobileChange);
     this.navigationSubscription?.unsubscribe();
     this.stopTableFit?.();
+  }
+
+  // Right-click / middle-click / ctrl-click on any link while impersonating: the browser's own
+  // "open in new tab" starts with empty sessionStorage, so leave the session for that tab to claim.
+  @HostListener('document:contextmenu', ['$event'])
+  @HostListener('document:auxclick', ['$event'])
+  @HostListener('document:click', ['$event'])
+  onLinkGesture(e: MouseEvent): void {
+    const isLink = (e.target as Element | null)?.closest?.('a[href]');
+    if (isLink && (e.type !== 'click' || e.ctrlKey || e.metaKey)) {
+      this.authService.stageImpersonationHandoff();
+    }
   }
 
   onExitImpersonation(): void {

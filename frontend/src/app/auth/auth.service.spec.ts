@@ -174,6 +174,25 @@ describe('AuthService', () => {
       expect(service.getToken('admin')).toBe('admin-token');
     });
 
+    it('a staged handoff is claimed once by a tab with no impersonation, never the admin session', () => {
+      startImpersonation('a-1', 'Jane Doe', 'imp-token');
+      service.stageImpersonationHandoff();
+      sessionStorage.clear(); // simulate the fresh new tab
+      expect(service.getToken('associate')).toBeNull();
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ imports: [HttpClientTestingModule, RouterTestingModule] });
+      const fresh = TestBed.inject(AuthService);
+      expect(fresh.getToken('associate')).toBe('imp-token');
+      expect(fresh.getImpersonatedName()).toBe('Jane Doe');
+      expect(sessionStorage.getItem('plotchain.auth.admin.token')).toBeNull();
+      expect(localStorage.getItem('plotchain.auth.impersonationHandoff')).toBeNull();
+    });
+
+    it('stageImpersonationHandoff does nothing when this tab is not impersonating', () => {
+      service.stageImpersonationHandoff();
+      expect(localStorage.getItem('plotchain.auth.impersonationHandoff')).toBeNull();
+    });
+
     it('keeps a separate session per target tab and leaves a real associate login alone', () => {
       localStorage.setItem('plotchain.auth.token', 'real-token');
       const tabA = { sessionStorage: window.sessionStorage } as Window;
