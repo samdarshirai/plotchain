@@ -4,7 +4,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { FieldErrorComponent } from '../shared/components/field-error/field-error.component';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { formatInr } from '../shared/utils/plot-grid.util';
-import { BusinessReport, BusinessReportRow, ReportsService } from './reports.service';
+import { BusinessReport, BusinessReportRow, CycleOption, ReportsService } from './reports.service';
 import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 // Left and Right business tables for a booked-date range.
@@ -16,11 +16,17 @@ import { TableToolsComponent } from '../shared/components/table-tools/table-tool
     <div class="report" [attr.aria-busy]="loading">
       <h1>{{ 'reports.myBusiness.title' | translate }}</h1>
       <div class="report__filters">
+        <label>{{ 'reports.emi.cycle' | translate }}
+          <select name="cycle" [value]="cycleId" (change)="onCycle($any($event.target).value)">
+            <option value="">{{ 'reports.emi.allCycles' | translate }}</option>
+            <option *ngFor="let c of cycles" [value]="c.id">{{ c.periodStart }} – {{ c.periodEnd || ('reports.emi.open' | translate) }}</option>
+          </select>
+        </label>
         <label>{{ 'reports.from' | translate }}
-          <input type="date" [value]="from" (change)="from = $any($event.target).value; load()">
+          <input type="date" [value]="from" (change)="from = $any($event.target).value; cycleId = ''; load()">
         </label>
         <label>{{ 'reports.to' | translate }}
-          <input type="date" [value]="to" (change)="to = $any($event.target).value; load()">
+          <input type="date" [value]="to" (change)="to = $any($event.target).value; cycleId = ''; load()">
         </label>
         <label>{{ 'admin.salesRegister.plotNoFilterLabel' | translate }}
           <input type="text" name="plotNo" [value]="plotNo" [placeholder]="'reports.emiReport.plotIdPlaceholder' | translate"
@@ -84,6 +90,8 @@ export class MyBusinessReportComponent {
   from = '';
   to = '';
   plotNo = '';
+  cycles: CycleOption[] = [];
+  cycleId = '';
   report: BusinessReport | null = null;
   loading = false;
   error = false;
@@ -94,7 +102,20 @@ export class MyBusinessReportComponent {
   }
   private seq = 0;
 
-  constructor() { this.load(); }
+  constructor() {
+    // A failed cycle lookup only leaves the dropdown at "All cycles".
+    this.service.getCycles().subscribe({ next: c => (this.cycles = c), error: () => (this.cycles = []) });
+    this.load();
+  }
+
+  // A cycle is just a booked-date range: fill From/To from its period (open cycle = no end).
+  onCycle(id: string): void {
+    const c = this.cycles.find(x => x.id === id);
+    this.cycleId = id;
+    this.from = c?.periodStart ?? '';
+    this.to = c?.periodEnd ?? '';
+    this.load();
+  }
 
   legs(): { key: 'left' | 'right'; rows: BusinessReportRow[] }[] {
     const m = (rows: BusinessReportRow[]) => this.plotNo

@@ -83,6 +83,28 @@ describe('Reports screens', () => {
     expect(reqs[reqs.length - 1].request.params.get('plotNo')).toBe('A-12');
   });
 
+  it('my business: picking a cycle loads its period; editing a date clears the cycle', () => {
+    const fixture = TestBed.createComponent(MyBusinessReportComponent);
+    fixture.detectChanges();
+    http.expectOne('/api/associates/me/cycles').flush([{ id: 'c1', periodStart: '2026-06-01', periodEnd: '2026-06-15', status: 'CLOSED' }]);
+    http.expectOne(r => r.url === '/api/associates/me/reports/business').flush({ left: [], right: [] });
+    fixture.detectChanges();
+    const select = fixture.nativeElement.querySelector('select[name=cycle]') as HTMLSelectElement;
+    select.value = 'c1';
+    select.dispatchEvent(new Event('change'));
+    const req = http.expectOne(r => r.url === '/api/associates/me/reports/business');
+    expect(req.request.params.get('from')).toBe('2026-06-01');
+    expect(req.request.params.get('to')).toBe('2026-06-15');
+    req.flush({ left: [], right: [] });
+    expect(fixture.componentInstance.cycleId).toBe('c1');
+    fixture.componentInstance.from = '2026-06-02';
+    const input = fixture.nativeElement.querySelectorAll('input[type=date]')[0] as HTMLInputElement;
+    input.value = '2026-06-03';
+    input.dispatchEvent(new Event('change'));
+    http.expectOne(r => r.url === '/api/associates/me/reports/business').flush({ left: [], right: [] });
+    expect(fixture.componentInstance.cycleId).toBe('');
+  });
+
   it('my business: plot no filter keeps only matching rows in both legs', () => {
     const fixture = TestBed.createComponent(MyBusinessReportComponent);
     fixture.detectChanges();
