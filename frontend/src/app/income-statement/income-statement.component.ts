@@ -154,35 +154,60 @@ const DATE_FORMAT = 'dd MMM yyyy';
       </div>
 
       <ng-container *ngIf="activeIncomeType === 'REWARD'">
-        <div class="income-statement__reward-stage">
-          <div class="income-statement__reward-seal">
+        <section class="income-statement__band">
+          <div class="income-statement__band-cell">
             <span class="income-statement__reward-eyebrow">{{ 'incomeStatement.currentRank' | translate }}</span>
             <span class="income-statement__reward-rank">{{ currentRank }}</span>
           </div>
-          <div class="income-statement__cards income-statement__cards--legs">
-            <div class="income-statement__card" *ngFor="let c of rewardCards">
-              <span class="income-statement__card-label">{{ c.labelKey | translate }}</span>
-              <span class="income-statement__card-value">{{ c.value }}</span>
+          <div class="income-statement__band-cell" *ngIf="nextTier as n; else allDone">
+            <div class="income-statement__band-next">
+              <span class="income-statement__reward-eyebrow">{{ 'incomeStatement.nextReward' | translate }}</span>
+              <strong class="income-statement__band-next-name">{{ n.designation }}<span class="income-statement__band-next-prize"> {{ n.reward }}</span></strong>
+            </div>
+            <div class="income-statement__leg" *ngFor="let leg of n.legs">
+              <span class="income-statement__leg-name">{{ leg.labelKey | translate }}</span>
+              <span class="income-statement__leg-bar" role="progressbar" [attr.aria-valuenow]="leg.pct" aria-valuemin="0" aria-valuemax="100">
+                <span class="income-statement__leg-fill" [style.width.%]="leg.pct"></span>
+              </span>
+              <span class="income-statement__leg-togo">{{ leg.toGo }} {{ 'incomeStatement.toGo' | translate }}</span>
             </div>
           </div>
-        </div>
+          <ng-template #allDone>
+            <div class="income-statement__band-cell">
+              <strong class="income-statement__band-next-name">{{ 'incomeStatement.allRewardsDone' | translate }}</strong>
+            </div>
+          </ng-template>
+          <div class="income-statement__band-cell income-statement__business" *ngIf="rewardCards.length === 6">
+            <span></span>
+            <span class="income-statement__business-head">{{ 'incomeStatement.colLeftLeg' | translate }}</span>
+            <span class="income-statement__business-head">{{ 'incomeStatement.colRightLeg' | translate }}</span>
+            <ng-container *ngFor="let row of businessRows; let i = index">
+              <span class="income-statement__business-row">{{ row | translate }}</span>
+              <span class="income-statement__business-value">{{ rewardCards[i * 2].value }}</span>
+              <span class="income-statement__business-value">{{ rewardCards[i * 2 + 1].value }}</span>
+            </ng-container>
+          </div>
+        </section>
 
-        <div class="income-statement__table">
+        <app-tab-bar [tabs]="rewardTabs" [activeTabId]="rewardView" (tabChange)="rewardView = $any($event)"></app-tab-bar>
+
+        <div class="income-statement__table" *ngIf="rewardView === 'tiers'">
           <app-table-tools filename="income-statement"></app-table-tools>
           <app-editable-table [readOnly]="true" [serial]="false" [columns]="rewardTierColumns" [rows]="rewardTierRows"></app-editable-table>
         </div>
 
-        <h2 class="income-statement__reward-heading">{{ 'incomeStatement.achievedRewardsTitle' | translate }}</h2>
-        <app-date-range [from]="dateFrom" [to]="dateTo" (rangeChange)="onDateRangeChange($event)"></app-date-range>
-        <div class="income-statement__table">
-          <app-table-tools filename="income-statement"></app-table-tools>
-          <app-editable-table
-            [readOnly]="true"
-            [columns]="achievedColumns"
-            [rows]="achievedRows"
-            [emptyStateLabel]="'incomeStatement.achievedEmptyState' | translate"
-          ></app-editable-table>
-        </div>
+        <ng-container *ngIf="rewardView === 'achieved'">
+          <app-date-range [from]="dateFrom" [to]="dateTo" (rangeChange)="onDateRangeChange($event)"></app-date-range>
+          <div class="income-statement__table">
+            <app-table-tools filename="income-statement"></app-table-tools>
+            <app-editable-table
+              [readOnly]="true"
+              [columns]="achievedColumns"
+              [rows]="achievedRows"
+              [emptyStateLabel]="'incomeStatement.achievedEmptyState' | translate"
+            ></app-editable-table>
+          </div>
+        </ng-container>
       </ng-container>
 
     </div>
@@ -209,7 +234,10 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   statementRows: Record<string, string>[] = [];
   currentRank = '—';
   rewardCards: { labelKey: string; value: string }[] = [];
+  readonly businessRows = ['incomeStatement.rowTotal', 'incomeStatement.rowPaid', 'incomeStatement.rowNew'];
+  nextTier: { designation: string; reward: string; legs: { labelKey: string; pct: number; toGo: string }[] } | null = null;
   rewardTierColumns: EditableTableColumn[] = [];
+  rewardView: 'tiers' | 'achieved' = 'tiers';
   rewardTierRows: Record<string, string>[] = [];
   achievedColumns: EditableTableColumn[] = [];
   achievedRows: Record<string, string>[] = [];
@@ -223,6 +251,13 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   summaryCycles: CycleOption[] = [];
   summaryCycleId = '';
   private summaryAll: IncomeSummaryRow[] = [];
+
+  get rewardTabs(): TabDefinition[] {
+    return [
+      { id: 'tiers', label: this.translate.instant('incomeStatement.tiersTitle') },
+      { id: 'achieved', label: this.translate.instant('incomeStatement.achievedRewardsTitle') }
+    ];
+  }
 
   get tabs(): TabDefinition[] {
     return TAB_ROUTES.filter(t => t.id !== 'DOWNLINE').map(t => ({ id: t.id, label: this.translate.instant(t.labelKey) }));
@@ -405,8 +440,9 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroyed$))
       .subscribe(t => {
         const label = (k: string) => (k === '#' ? '#' : t['incomeStatement.' + k]);
-        const done = t['incomeStatement.statusAchieved'];
-        const inProgress = t['incomeStatement.statusInProgress'];
+        // instant(), not t[...]: the get() above only fetches the column keys.
+        const done = this.translate.instant('incomeStatement.statusAchieved');
+        const inProgress = this.translate.instant('incomeStatement.statusInProgress');
         const tierTone = (v: string | number): BadgeTone => (v === done ? 'success' : v === inProgress ? 'warning' : 'default');
         const tierKeys = ['n', 'volume', 'designation', 'reward', 'left', 'right', 'status'];
         this.rewardTierColumns = tierKeys.map((key, i) => ({
@@ -481,6 +517,17 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
             status: this.translate.instant(state === 'achieved' ? 'incomeStatement.statusAchieved' : state === 'progress' ? 'incomeStatement.statusInProgress' : 'incomeStatement.statusPending')
           };
         });
+        // The tier being worked toward: its legs' remaining volume vs the tier's own threshold.
+        const next = tiers.find(t => !t.status);
+        const pct = (left: number) => (next && next.matchingBusiness > 0 ? Math.round(Math.min(100, Math.max(0, (1 - left / next.matchingBusiness) * 100))) : 0);
+        this.nextTier = next ? {
+          designation: next.designation ?? '—',
+          reward: this.rewardText(next.reward, next.perkDescription),
+          legs: [
+            { labelKey: 'incomeStatement.colLeftLeg', pct: pct(next.requiredLeftBusiness), toGo: this.shortInr(next.requiredLeftBusiness) },
+            { labelKey: 'incomeStatement.colRightLeg', pct: pct(next.requiredRightBusiness), toGo: this.shortInr(next.requiredRightBusiness) }
+          ]
+        } : null;
         const achievedTiers = tiers.filter(t => t.status);
         this.currentRank = achievedTiers.length ? (achievedTiers[achievedTiers.length - 1].designation ?? '—') : '—';
       },
