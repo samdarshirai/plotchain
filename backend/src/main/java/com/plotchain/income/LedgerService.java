@@ -372,7 +372,7 @@ public class LedgerService {
     public List<AssociateRewardTierRow> myRewardTiers(UUID associateId) {
         Map<Integer, LedgerEntry> byLevel = rewardEntriesByTierLevel(associateId);
         LegVolumeRepository.LegBusinessTotals closed = legVolumeRepository.totalBusiness(associateId);
-        // Volumes are live for associates; award status below stays closed-cycle only.
+        // Volumes are live for associates; award status below includes live open-cycle rows.
         BigDecimal openLeft = saleRepository.sumOpenCycleLegBusiness(associateId, "L");
         BigDecimal openRight = saleRepository.sumOpenCycleLegBusiness(associateId, "R");
         BigDecimal left = closed.left().add(openLeft);
@@ -494,7 +494,7 @@ public class LedgerService {
     // original award.
     private Map<Integer, LedgerEntry> rewardEntriesByTierLevel(UUID associateId) {
         Map<Integer, LedgerEntry> byLevel = new HashMap<>();
-        for (LedgerEntry e : ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(associateId, IncomeType.REWARD)) {
+        for (LedgerEntry e : ledgerEntryRepository.findByAssociateIdAndIncomeType(associateId, IncomeType.REWARD)) {
             if (e.getTierLevel() != null) {
                 byLevel.merge(e.getTierLevel(), e, (a, b) -> b.getCreatedAt().isBefore(a.getCreatedAt()) ? b : a);
             }

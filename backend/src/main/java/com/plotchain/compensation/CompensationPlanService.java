@@ -121,7 +121,7 @@ public class CompensationPlanService {
         }
 
         return new AssociateRankProgressResponse(
-            designationService.closedDesignationOf(associateId),
+            designationService.designationOf(associateId),
             nextTier == null ? null : nextTier.getDesignation(),
             progressPercent,
             cumulative,

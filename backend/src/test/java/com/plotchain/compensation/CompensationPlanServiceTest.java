@@ -145,7 +145,7 @@ class CompensationPlanServiceTest {
         RewardTier unreachedTier = new RewardTier(
             UUID.randomUUID(), version.getId(), 2, new BigDecimal("10000"), new BigDecimal("500"), "Tier 2", "Area Manager");
 
-        when(designationService.closedDesignationOf(associateId)).thenReturn("Sales Manager");
+        when(designationService.designationOf(associateId)).thenReturn("Sales Manager");
         stubLifetimeLegs(associateId, "4000", "4000", "0", "0");
         when(versionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
             .thenReturn(Optional.of(version));

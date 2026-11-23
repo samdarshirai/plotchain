@@ -271,24 +271,11 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, UUID> 
         """)
     List<AwardedRewardLevelRow> findAwardedRewardLevels(@Param("associateIds") Collection<UUID> associateIds);
 
-    // Associate-facing: only levels awarded in a CLOSED cycle (live rows are admin-only).
-    @Query("""
-        SELECT l.associateId AS associateId, l.tierLevel AS tierLevel
-        FROM LedgerEntry l
-        WHERE l.incomeType = com.plotchain.income.IncomeType.REWARD AND l.tierLevel IS NOT NULL
-        AND l.associateId IN :associateIds
-        AND l.cycleId IN (SELECT c.id FROM Cycle c WHERE c.status = com.plotchain.cycle.CycleStatus.CLOSED)
-        """)
-    List<AwardedRewardLevelRow> findClosedAwardedRewardLevels(@Param("associateIds") Collection<UUID> associateIds);
 
     // Associate-facing lifetime sum, CLOSED cycles only.
     @Query("SELECT COALESCE(SUM(l.netAmount), 0) FROM LedgerEntry l WHERE l.associateId = :associateId AND l.incomeType = :type "
         + "AND l.cycleId IN (SELECT c.id FROM Cycle c WHERE c.status = com.plotchain.cycle.CycleStatus.CLOSED)")
     BigDecimal sumClosedNetAmountByAssociateAndType(@Param("associateId") UUID associateId, @Param("type") IncomeType type);
-
-    @Query("SELECT l FROM LedgerEntry l WHERE l.associateId = :associateId AND l.incomeType = :type "
-        + "AND l.cycleId IN (SELECT c.id FROM Cycle c WHERE c.status = com.plotchain.cycle.CycleStatus.CLOSED)")
-    List<LedgerEntry> findClosedByAssociateIdAndIncomeType(@Param("associateId") UUID associateId, @Param("type") IncomeType type);
 
     // Every awarded reward level across all associates; RewardPerkExpenseService reconciles perk expenses against it.
     @Query("""

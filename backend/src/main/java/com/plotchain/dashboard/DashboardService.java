@@ -186,7 +186,7 @@ public class DashboardService {
 
         return new DashboardResponse(
             new DashboardResponse.AssociateSummary(
-                associate.getUserId(), associate.getName(), designationService.closedDesignationOf(associateId),
+                associate.getUserId(), associate.getName(), designationService.designationOf(associateId),
                 associate.getPhone(), associate.getJoinedAt(),
                 sponsor.map(Associate::getUserId).orElse(null), sponsor.map(Associate::getName).orElse(null),
                 associate.getPreviousLoginAt()),

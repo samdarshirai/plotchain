@@ -193,7 +193,7 @@ class DashboardServiceTest {
         when(ledgerEntryRepository.sumClosedNetAmountByAssociateAndType(associateId, IncomeType.MATCHING)).thenReturn(new BigDecimal("126000"));
         when(ledgerEntryRepository.sumClosedNetAmountByAssociateAndType(associateId, IncomeType.SPONSOR_MATCHING)).thenReturn(BigDecimal.ZERO);
 
-        when(designationService.closedDesignationOf(associateId)).thenReturn("Sales Manager");
+        when(designationService.designationOf(associateId)).thenReturn("Sales Manager");
         DashboardResponse response = dashboardService.getDashboard(associateId);
 
         assertThat(response.kycPendingBannerVisible()).isTrue();

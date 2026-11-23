@@ -260,11 +260,9 @@ class LedgerEntryRepositoryTest {
             .extracting(LedgerSummaryRow::getCycleId).containsExactly(closed.getId());
         assertThat(ledgerEntryRepository.summarise(a.getId(), null, null, null)).hasSize(2);
 
-        assertThat(ledgerEntryRepository.findClosedAwardedRewardLevels(List.of(a.getId()))).isEmpty();
         assertThat(ledgerEntryRepository.findAwardedRewardLevels(List.of(a.getId()))).hasSize(1);
         assertThat(ledgerEntryRepository.sumClosedNetAmountByAssociateAndType(a.getId(), IncomeType.MATCHING)).isEqualByComparingTo("0");
         assertThat(ledgerEntryRepository.sumNetAmountByAssociateAndType(a.getId(), IncomeType.MATCHING)).isEqualByComparingTo("91.00");
-        assertThat(ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(a.getId(), IncomeType.REWARD)).isEmpty();
     }
 
     @Test

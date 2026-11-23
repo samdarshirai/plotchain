@@ -459,7 +459,7 @@ class LedgerServiceTest {
             new com.plotchain.compensation.RewardTier(UUID.randomUUID(), planId, 1, new BigDecimal("1000000"), new BigDecimal("1"), null),
             new com.plotchain.compensation.RewardTier(UUID.randomUUID(), planId, 2, new BigDecimal("2000000"), new BigDecimal("2"), null),
             new com.plotchain.compensation.RewardTier(UUID.randomUUID(), planId, 3, new BigDecimal("3000000"), new BigDecimal("3"), null)));
-        when(ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of());
+        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of());
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("4500000"), new BigDecimal("1200000")));
 
@@ -505,7 +505,7 @@ class LedgerServiceTest {
         LedgerEntry e = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), t1);
         e.setIncomeType(IncomeType.REWARD);
         e.setTierLevel(1);
-        when(ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(e));
+        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(e));
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("1600000"), new BigDecimal("300000")));
 
@@ -545,7 +545,7 @@ class LedgerServiceTest {
         LedgerEntry r2 = newEntry(UUID.randomUUID(), me, UUID.randomUUID(), oldT2);
         r2.setIncomeType(IncomeType.REWARD);
         r2.setTierLevel(2);
-        when(ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(r1, r2));
+        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(r1, r2));
         when(legVolumeRepository.totalBusiness(me)).thenReturn(
             new com.plotchain.legvolume.LegVolumeRepository.LegBusinessTotals(new BigDecimal("6300000"), new BigDecimal("5700000")));
 
@@ -589,7 +589,7 @@ class LedgerServiceTest {
         paid.setTierLevel(1);
         paid.setFulfilledAt(Instant.parse("2026-06-20T00:00:00Z"));
         paid.setFulfilmentRemark("Watch couriered");
-        when(ledgerEntryRepository.findClosedByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(paid));
+        when(ledgerEntryRepository.findByAssociateIdAndIncomeType(me, IncomeType.REWARD)).thenReturn(List.of(paid));
 
         List<AssociateRewardAchievedRow> rows = service.myRewardsAchieved(me, null, null);
 

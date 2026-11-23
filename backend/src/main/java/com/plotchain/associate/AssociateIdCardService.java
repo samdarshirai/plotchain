@@ -57,7 +57,7 @@ public class AssociateIdCardService {
         return new AssociateIdCardResponse(
             associate.getUserId(),
             associate.getName(),
-            designationService.closedDesignationOf(associateId),
+            designationService.designationOf(associateId),
             null,
             associate.getUserId()
         );
