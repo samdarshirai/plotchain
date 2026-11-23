@@ -30,6 +30,17 @@ describe('CycleSelectComponent', () => {
     expect(c.selectedId).toBe('');
   });
 
+  it('open cycle starting after today never emits from > to', () => {
+    const c = make();
+    const future = new Date(Date.now() + 3 * 864e5).toISOString();
+    c.cycles = [{ id: 'f', periodStart: future, periodEnd: null }];
+    const spy = jasmine.createSpy();
+    c.rangeChange.subscribe(spy);
+    c.pick('f');
+    const r = spy.calls.mostRecent().args[0];
+    expect(r.to >= r.from).toBeTrue();
+  });
+
   it('"All cycles" emits nothing', () => {
     const c = make();
     const spy = jasmine.createSpy();

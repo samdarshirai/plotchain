@@ -1,5 +1,6 @@
 package com.plotchain.auth;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.List;
@@ -440,6 +441,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/admin/advance-loans", "/api/admin/advance-loans/dues", "/api/admin/advance-loans/*",
                     "/api/admin/loan-repayments", "/api/admin/loan-repayments/*")
                     .hasAuthority("ADMIN")
+                // sendError(4xx/5xx) forwards to /error as an anonymous ERROR dispatch; without this it
+                // became a 401 and the client logged the user out on a plain 400.
+                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
                 (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))

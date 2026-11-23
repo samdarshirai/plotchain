@@ -9,7 +9,8 @@ const isoDate = (d: Date): string => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
 const startOf = (c: CycleLike) => c.periodStart.slice(0, 10);
-const endOf = (c: CycleLike) => (c.periodEnd ? c.periodEnd.slice(0, 10) : isoDate(new Date())); // open cycle runs to today
+// open cycle runs to today, but never before its own start (a cycle starting tomorrow would invert the range)
+const endOf = (c: CycleLike) => (c.periodEnd ? c.periodEnd.slice(0, 10) : [startOf(c), isoDate(new Date())].sort()[1]);
 
 // Bookings/payments carry no cycle, so a cycle is a shortcut for its date range. The selection is
 // derived from from/to, so hand-editing the dates automatically falls back to "All cycles".
