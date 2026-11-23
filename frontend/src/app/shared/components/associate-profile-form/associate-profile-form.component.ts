@@ -79,10 +79,6 @@ export interface AssociateProfileValue {
               </ng-template>
               <app-field-error [message]="err('placementUserId')"></app-field-error>
             </label>
-            <label class="associate-profile-form__field" *ngIf="placementFreeText && !placementAssociates">
-              <span>{{ 'epinRegister.join.placementId' | translate }} <small>({{ 'epinRegister.join.optional' | translate }})</small></span>
-              <input class="associate-profile-form__input" formControlName="placementUserId" />
-            </label>
             <label class="associate-profile-form__field"><span>{{ 'epinRegister.join.position' | translate }} <span class="associate-profile-form__req" *ngIf="sponsorRequired || placementAssociates">*</span></span>
               <select class="associate-profile-form__input" formControlName="position">
                 <option value="">{{ 'epinRegister.join.selectPosition' | translate }}</option>
@@ -235,8 +231,6 @@ export class AssociateProfileFormComponent implements OnInit, OnChanges {
   @Input() presetPlacementUserId = '';
   @Input() lockPlacement = false;
   /** Resolves a sponsor userId to a display name; join and admin use different endpoints. */
-  /** ePIN join: plain optional Placement ID box (no picker list available). */
-  @Input() placementFreeText = false;
   @Input() sponsorLookup: ((userId: string) => Observable<{ name: string } | null>) | null = null;
   /** Field errors from the server, keyed by control name. */
   @Input() serverErrors: Record<string, string> = {};

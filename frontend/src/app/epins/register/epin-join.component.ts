@@ -41,7 +41,7 @@ import { AssociateProfileFormComponent, AssociateProfileValue } from '../../shar
       </div>
 
       <app-associate-profile-form *ngIf="!result" [showTransactionPassword]="true" [busy]="busy" [error]="error"
-        [serverErrors]="serverErrors" [sponsorLookup]="sponsorLookup" [placementFreeText]="true" (submitted)="submit($event)" (cancelled)="back()">
+        [serverErrors]="serverErrors" [sponsorLookup]="sponsorLookup" (submitted)="submit($event)" (cancelled)="back()">
         <div class="epin-join__seal">
           <div class="epin-join__seal-row">
             <span class="epin-join__eyebrow">{{ 'epinRegister.join.pinNo' | translate }}</span>
