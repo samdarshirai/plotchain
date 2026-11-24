@@ -42,6 +42,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -290,6 +292,76 @@ class DashboardServiceTest {
         assertThat(response.legVolumeSummary().leftLegVolume()).isEqualByComparingTo("0");
         assertThat(response.legVolumeSummary().rightLegVolume()).isEqualByComparingTo("0");
         assertThat(response.cycleCountdown().cycleNumber()).isEqualTo(1);
+    }
+
+    // Royalty pct is for the closed cycle the amount comes from: its own business only, i.e. the
+    // cycle before it (priorCarryLeft/Right) is stripped, as CycleService#creditRoyalty does.
+    private DashboardResponse dashboardWithClosedCycles(
+        String left, String right, String priorCarryLeft, String priorCarryRight, BigDecimal plan) {
+        UUID associateId = UUID.randomUUID();
+        Associate associate = new Associate();
+        associate.setId(associateId);
+        associate.setRankId(UUID.randomUUID());
+        associate.setKycStatus(KycStatus.VERIFIED);
+
+        Cycle open = new Cycle();
+        open.setId(UUID.randomUUID());
+        open.setStatus(CycleStatus.OPEN);
+        open.setPeriodStart(LocalDate.now().minusDays(5));
+        open.setPeriodEnd(LocalDate.now().plusDays(10));
+        Cycle closed = new Cycle();
+        closed.setId(UUID.randomUUID());
+        closed.setStatus(CycleStatus.CLOSED);
+        closed.setPeriodStart(LocalDate.now().minusDays(20));
+        closed.setPeriodEnd(LocalDate.now().minusDays(6));
+        Cycle prior = new Cycle();
+        prior.setId(UUID.randomUUID());
+        prior.setStatus(CycleStatus.CLOSED);
+        prior.setPeriodStart(LocalDate.now().minusDays(40));
+        prior.setPeriodEnd(LocalDate.now().minusDays(21));
+
+        when(associateRepository.findById(associateId)).thenReturn(Optional.of(associate));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.OPEN)).thenReturn(Optional.of(open));
+        when(cycleRepository.findFirstByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED)).thenReturn(Optional.of(closed));
+        when(cycleRepository.findByStatusOrderByPeriodStartDesc(eq(CycleStatus.CLOSED), any(PageRequest.class)))
+            .thenReturn(new PageImpl<>(List.of(closed, prior)));
+        when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, closed.getId())).thenReturn(Optional.of(
+            new LegVolume(UUID.randomUUID(), associateId, closed.getId(),
+                new BigDecimal(left), new BigDecimal(right), BigDecimal.ZERO, BigDecimal.ZERO)));
+        when(legVolumeRepository.findByAssociateIdAndCycleId(associateId, prior.getId())).thenReturn(Optional.of(
+            new LegVolume(UUID.randomUUID(), associateId, prior.getId(),
+                BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal(priorCarryLeft), new BigDecimal(priorCarryRight))));
+        when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any()))
+            .thenReturn(Optional.of(compensationPlanVersion(plan)));
+        when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
+        lenient().when(ledgerEntryRepository.sumNetAmountByAssociateAndCycle(any(), any())).thenReturn(BigDecimal.ZERO);
+        lenient().when(saleRepository.countByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(0L);
+        lenient().when(saleRepository.sumAmountByAssociateIdAndCycleIdAndStatus(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+        lenient().when(cycleRepository.countByPeriodStartLessThanEqual(any())).thenReturn(2L);
+        stubUnconditionalCalls(associateId);
+        return dashboardService.getDashboard(associateId);
+    }
+
+    @Test
+    void royaltyBonusPctStripsTheCycleBeforeTheClosedOnesCarryIn() {
+        // closed L=300000 R=200000, prior carried 150000 into R -> own business min(300000, 50000) = 50000.
+        // Only the 50000 slab is stubbed (2.00); looking up on the unstripped 200000 would give 0.
+        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(
+            any(), eq(new BigDecimal("50000"))))
+            .thenReturn(Optional.of(new RoyaltyBonusRate(UUID.randomUUID(), UUID.randomUUID(), BigDecimal.ZERO, new BigDecimal("2.00"))));
+
+        DashboardResponse response = dashboardWithClosedCycles("300000", "200000", "0", "150000", new BigDecimal("7.00"));
+
+        assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("2.00");
+    }
+
+    @Test
+    void royaltyBonusPctIsZeroAndSkipsSlabLookupWhenClosedCycleHadNoOwnMatchedBusiness() {
+        // closed R=50000 is entirely carry-in from the prior cycle -> own matched volume 0.
+        DashboardResponse response = dashboardWithClosedCycles("100000", "50000", "0", "50000", new BigDecimal("7.00"));
+
+        assertThat(response.cycleIncome().royaltyBonusPct()).isEqualByComparingTo("0");
+        verify(royaltyBonusRateRepository, never()).findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(any(), any());
     }
 
     @Test
