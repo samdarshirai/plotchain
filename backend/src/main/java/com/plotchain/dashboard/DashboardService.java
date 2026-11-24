@@ -109,11 +109,29 @@ public class DashboardService {
         CompensationPlanVersion planVersion = compensationPlanVersionRepository
             .findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
             .orElseThrow(() -> new IllegalStateException("compensation_plan_version row missing - V8 migration seeds it"));
-        // Mirrors CycleService#creditRoyalty's own guard (matchedVolume <= 0 -> skip): a
-        // non-positive matched volume must never reach the slab lookup.
-        BigDecimal royaltyBonusPct = matchedVolume.compareTo(BigDecimal.ZERO) > 0
+        // The pct must describe the same cycle as royaltyBonus (the last CLOSED one), so it is
+        // recomputed the way CycleService#creditRoyalty did at close: that cycle's own business
+        // only (carry-in from the cycle before it stripped), then the slab lookup. Using the live
+        // open-cycle volume showed 0% beside a real amount once close consumed the matched volume.
+        BigDecimal royaltyMatched = BigDecimal.ZERO;
+        if (latestClosedCycle.isPresent()) {
+            List<Cycle> closedCycles = cycleRepository
+                .findByStatusOrderByPeriodStartDesc(CycleStatus.CLOSED, PageRequest.of(0, 2)).getContent();
+            Optional<LegVolume> closedLv = latestLegVolume;
+            Optional<LegVolume> priorLv = closedCycles.size() > 1
+                ? legVolumeRepository.findByAssociateIdAndCycleId(associateId, closedCycles.get(1).getId())
+                : Optional.empty();
+            if (closedLv.isPresent()) {
+                BigDecimal l = closedLv.get().getLeftLegVolume()
+                    .subtract(priorLv.map(LegVolume::getCarriedForwardLeft).orElse(BigDecimal.ZERO));
+                BigDecimal r = closedLv.get().getRightLegVolume()
+                    .subtract(priorLv.map(LegVolume::getCarriedForwardRight).orElse(BigDecimal.ZERO));
+                royaltyMatched = l.min(r);
+            }
+        }
+        BigDecimal royaltyBonusPct = royaltyMatched.compareTo(BigDecimal.ZERO) > 0
             ? royaltyBonusRateRepository
-                .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), matchedVolume)
+                .findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), royaltyMatched)
                 .map(RoyaltyBonusRate::getRoyaltyPct)
                 .orElse(BigDecimal.ZERO)
             : BigDecimal.ZERO;

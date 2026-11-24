@@ -39,6 +39,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -159,8 +160,11 @@ class DashboardServiceTest {
 
         CompensationPlanVersion planVersion = compensationPlanVersion(new BigDecimal("7.00"));
         when(compensationPlanVersionRepository.findFirstByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(any())).thenReturn(Optional.of(planVersion));
-        // matchedVolume = min(100000, 20000) = 20000 > 0 (closed carry only), exercises the real slab lookup.
-        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), new BigDecimal("20000")))
+        // Royalty pct follows the CLOSED cycle (same one royaltyBonus comes from): its own business
+        // min(300000, 200000) = 200000, no prior closed cycle so no carry-in to strip.
+        when(cycleRepository.findByStatusOrderByPeriodStartDesc(eq(CycleStatus.CLOSED), any(PageRequest.class)))
+            .thenReturn(new PageImpl<>(List.of(closedCycle)));
+        when(royaltyBonusRateRepository.findFirstByPlanVersionIdAndVolumeThresholdLessThanEqualOrderByVolumeThresholdDesc(planVersion.getId(), new BigDecimal("200000")))
             .thenReturn(Optional.of(new RoyaltyBonusRate(UUID.randomUUID(), planVersion.getId(), BigDecimal.ZERO, new BigDecimal("3.00"))));
 
         when(walletRepository.findById(associateId)).thenReturn(Optional.of(Wallet.zero(associateId)));
