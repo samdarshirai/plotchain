@@ -141,6 +141,29 @@ describe('LedgerRegisterComponent', () => {
     expect(badgeElement?.classList.contains('editable-table__badge--warning')).toBeTrue();
   });
 
+  it('DIRECT tab shows Buyer Name before Amount, Amount is the sale amount and Direct Income the commission', () => {
+    fixture.componentInstance.onIncomeTypeChange('DIRECT');
+    httpMock.expectOne(r => r.params.get('incomeType') === 'DIRECT').flush({
+      entries: [
+        { ...sampleEntry, id: 'l5', buyerName: 'Buyer One', saleAmount: 250000 },
+        { ...sampleEntry, id: 'l6', buyerName: null, saleAmount: 100000 }
+      ],
+      page: 0,
+      size: 20,
+      totalElements: 2
+    });
+    fixture.detectChanges();
+
+    const keys = fixture.componentInstance.registerColumns.map(c => c.key);
+    expect(keys.slice(keys.indexOf('dateTime'), keys.indexOf('dateTime') + 4)).toEqual(['dateTime', 'buyerName', 'amount', 'directIncome']);
+    const rows = fixture.nativeElement.querySelectorAll('.editable-table tbody tr');
+    const first: string = rows[0].textContent;
+    expect(first).toContain('Buyer One');
+    expect(first).toContain('250,000');
+    expect(first).toContain('10,000');
+    expect(rows[1].textContent).toContain('—');
+  });
+
   it('SPONSOR_MATCHING tab mirrors the associate columns, prefixed with Associate ID and Name', () => {
     fixture.componentInstance.onIncomeTypeChange('SPONSOR_MATCHING');
     httpMock.expectOne(r => r.params.get('incomeType') === 'SPONSOR_MATCHING').flush({

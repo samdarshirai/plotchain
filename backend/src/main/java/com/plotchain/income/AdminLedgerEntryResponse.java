@@ -35,4 +35,8 @@ public record AdminLedgerEntryResponse(
     AssociateLedgerEntryResponse.LegBreakdown legBreakdown,
     // SPONSOR_MATCHING rows only (null otherwise).
     String sponseeUserId,
-    BigDecimal sponseeMatchingAmount) {}
+    BigDecimal sponseeMatchingAmount,
+    // DIRECT rows only (null otherwise): the sale amount the income was computed on, and the
+    // buyer's name (null for legacy sales with no recorded buyer).
+    String buyerName,
+    BigDecimal saleAmount) {}

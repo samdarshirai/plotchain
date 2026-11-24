@@ -140,6 +140,74 @@ class LedgerServiceTest {
     }
 
     @Test
+    void adminListDirectRowCarriesBuyerNameAndSaleAmount() {
+        UUID sponsorId = UUID.randomUUID(), buyerId = UUID.randomUUID(), saleId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        LedgerEntry direct = newEntry(UUID.randomUUID(), sponsorId, cycleId, saleId);
+        direct.setIncomeType(IncomeType.DIRECT);
+        com.plotchain.sales.Sale sale = new com.plotchain.sales.Sale();
+        sale.setId(saleId);
+        sale.setAssociateId(buyerId);
+        sale.setBuyerAssociateId(buyerId);
+        sale.setAmount(new BigDecimal("1000000.00"));
+
+        when(ledgerEntryRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(direct), PageRequest.of(0, 20), 1));
+        when(associateRepository.findAllById(List.of(sponsorId))).thenReturn(List.of(newAssociate(sponsorId, "PC1", "Sponsor")));
+        when(associateRepository.findAllById(List.of(buyerId))).thenReturn(List.of(newAssociate(buyerId, "PC2", "Buyer One")));
+        when(cycleRepository.findAllById(List.of(cycleId)))
+            .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
+        when(saleRepository.findAllById(List.of(saleId))).thenReturn(List.of(sale));
+
+        AdminLedgerEntryResponse row = service.adminList(null, null, null, null, null, null, 0, 20, null).entries().get(0);
+
+        assertThat(row.buyerName()).isEqualTo("Buyer One");
+        assertThat(row.saleAmount()).isEqualByComparingTo("1000000.00");
+    }
+
+    @Test
+    void adminListDirectRowLeavesBuyerNameNullForLegacySaleWithNoRecordedBuyer() {
+        UUID sponsorId = UUID.randomUUID(), saleId = UUID.randomUUID(), cycleId = UUID.randomUUID();
+        LedgerEntry direct = newEntry(UUID.randomUUID(), sponsorId, cycleId, saleId);
+        direct.setIncomeType(IncomeType.DIRECT);
+        com.plotchain.sales.Sale sale = new com.plotchain.sales.Sale();
+        sale.setId(saleId);
+        sale.setAssociateId(sponsorId);
+        sale.setAmount(new BigDecimal("500000.00"));
+
+        when(ledgerEntryRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(direct), PageRequest.of(0, 20), 1));
+        when(associateRepository.findAllById(List.of(sponsorId))).thenReturn(List.of(newAssociate(sponsorId, "PC1", "Sponsor")));
+        when(cycleRepository.findAllById(List.of(cycleId)))
+            .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
+        when(saleRepository.findAllById(List.of(saleId))).thenReturn(List.of(sale));
+
+        AdminLedgerEntryResponse row = service.adminList(null, null, null, null, null, null, 0, 20, null).entries().get(0);
+
+        assertThat(row.buyerName()).isNull();
+        assertThat(row.saleAmount()).isEqualByComparingTo("500000.00");
+    }
+
+    @Test
+    void adminListDirectRowLeavesBuyerAndSaleAmountNullWhenSaleLookupMisses() {
+        UUID sponsorId = UUID.randomUUID(), saleId = UUID.randomUUID(), cycleId = UUID.randomUUID();
+        LedgerEntry direct = newEntry(UUID.randomUUID(), sponsorId, cycleId, saleId);
+        direct.setIncomeType(IncomeType.DIRECT);
+
+        when(ledgerEntryRepository.search(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(direct), PageRequest.of(0, 20), 1));
+        when(associateRepository.findAllById(List.of(sponsorId))).thenReturn(List.of(newAssociate(sponsorId, "PC1", "Sponsor")));
+        when(cycleRepository.findAllById(List.of(cycleId)))
+            .thenReturn(List.of(newCycle(cycleId, LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 16))));
+        when(saleRepository.findAllById(List.of(saleId))).thenReturn(List.of());
+
+        AdminLedgerEntryResponse row = service.adminList(null, null, null, null, null, null, 0, 20, null).entries().get(0);
+
+        assertThat(row.buyerName()).isNull();
+        assertThat(row.saleAmount()).isNull();
+    }
+
+    @Test
     void adminListWithSearchUsesMatchingAssociateIdsAndShortCircuitsWhenNoneMatch() {
         UUID id = UUID.randomUUID();
         when(associateRepository.findIdsBySearch("jane")).thenReturn(List.of(id));

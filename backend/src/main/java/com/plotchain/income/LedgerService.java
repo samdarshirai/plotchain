@@ -89,13 +89,22 @@ public class LedgerService {
         Map<UUID, LedgerEntry> sponseeEntries = sponseeMatchingEntries(content);
         Map<UUID, Associate> sponsees = associatesById(List.copyOf(sponseeEntries.values()));
 
+        Map<UUID, com.plotchain.sales.Sale> directSales = directSales(content);
+        List<UUID> buyerIds = directSales.values().stream()
+            .map(com.plotchain.sales.Sale::getBuyerAssociateId).filter(java.util.Objects::nonNull).distinct().toList();
+        Map<UUID, Associate> buyers = buyerIds.isEmpty() ? new HashMap<>()
+            : associateRepository.findAllById(buyerIds).stream().collect(Collectors.toMap(Associate::getId, a -> a));
+
         List<AdminLedgerEntryResponse> entries = content.stream()
             .map(e -> {
                 LedgerEntry src = sponseeEntries.get(e.getSourceRef());
                 Associate sponsee = src == null ? null : sponsees.get(src.getAssociateId());
+                com.plotchain.sales.Sale sale = directSales.get(e.getSourceRef());
+                Associate buyer = sale == null || sale.getBuyerAssociateId() == null ? null : buyers.get(sale.getBuyerAssociateId());
                 return toAdminResponse(e, associatesById.get(e.getAssociateId()), cyclesById.get(e.getCycleId()),
                     breakdowns.get(e.getSourceRef()),
-                    sponsee == null ? null : sponsee.getUserId(), src == null ? null : src.getGrossAmount());
+                    sponsee == null ? null : sponsee.getUserId(), src == null ? null : src.getGrossAmount(),
+                    buyer == null ? null : buyer.getName(), sale == null ? null : sale.getAmount());
             })
             .toList();
         return new AdminLedgerPageResponse(entries, page, size, result.getTotalElements());
@@ -261,13 +270,13 @@ public class LedgerService {
     // corresponding fields null rather than failing the whole page -- this is a read-only audit
     // view, not a strict-consistency write path (Flow step 6).
     private AdminLedgerEntryResponse toAdminResponse(LedgerEntry entry, Associate associate, Cycle cycle) {
-        return toAdminResponse(entry, associate, cycle, null, null, null);
+        return toAdminResponse(entry, associate, cycle, null, null, null, null, null);
     }
 
     private AdminLedgerEntryResponse toAdminResponse(
             LedgerEntry entry, Associate associate, Cycle cycle,
             AssociateLedgerEntryResponse.LegBreakdown legBreakdown,
-            String sponseeUserId, BigDecimal sponseeMatchingAmount) {
+            String sponseeUserId, BigDecimal sponseeMatchingAmount, String buyerName, BigDecimal saleAmount) {
         return new AdminLedgerEntryResponse(
             entry.getId(),
             entry.getAssociateId(),
@@ -288,7 +297,9 @@ public class LedgerService {
             entry.getFulfilmentRemark(),
             legBreakdown,
             sponseeUserId,
-            sponseeMatchingAmount);
+            sponseeMatchingAmount,
+            buyerName,
+            saleAmount);
     }
 
     // Same "leave field null on a lookup miss" behavior as toAdminResponse above (Flow step 6)

@@ -505,6 +505,7 @@
     "columnDateTime": "Date & Time",
     "columnAssociateId": "Associate ID",
     "columnAssociateName": "Name",
+    "columnBuyerName": "Buyer Name",
     "columnAmount": "Amount",
     "columnRoyaltyIncome": "Royalty Income",
     "columnRewards": "Rewards",

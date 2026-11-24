@@ -26,6 +26,9 @@ export interface AdminLedgerEntry {
   legBreakdown?: LegBreakdown | null;
   sponseeUserId?: string | null;
   sponseeMatchingAmount?: number | null;
+  // DIRECT rows only: buyer name (null for legacy sales) and the sale amount the income is computed on.
+  buyerName?: string | null;
+  saleAmount?: number | null;
 }
 
 export interface LegBreakdown {

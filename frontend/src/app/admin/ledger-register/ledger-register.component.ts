@@ -235,7 +235,8 @@ export class LedgerRegisterComponent implements OnInit {
       case 'DIRECT':
         return [
           text('dateTime', 'DateTime', e => this.fmtDate(e.createdAt, DATE_TIME_FORMAT)),
-          text('amount', 'Amount', e => this.money(e.grossAmount)),
+          text('buyerName', 'BuyerName', e => e.buyerName ?? '—'),
+          text('amount', 'Amount', e => e.saleAmount == null ? '—' : this.money(e.saleAmount)),
           text('directIncome', 'DirectIncome', e => this.money(e.grossAmount))
         ];
       case 'MATCHING':
