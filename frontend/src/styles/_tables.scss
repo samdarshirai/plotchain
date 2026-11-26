@@ -145,9 +145,9 @@ th {
 
 // Every table fits its container on desktop: no sideways scroll. Cell text wraps between words
 // instead; buttons and badges stay on one line. !important because many screen rules set
-// min-width / nowrap on tables and cells. Phones keep each screen's own stacked-card or scroll layout.
+// min-width / nowrap on tables and cells. Phones scroll the table sideways (block below).
 // ponytail: !important override, drop the per-screen min-width/nowrap rules if this sticks.
-@media (min-width: 769px) {
+@media (min-width: 1200px) {
   table {
     min-width: 0 !important;
     max-width: 100%;
@@ -191,91 +191,36 @@ th {
   border-top: 2px solid var(--border-subtle);
 }
 
-// Project rule: tables never scroll sideways. table-fit.ts adds .table--stacked to any table wider
-// than its container; each row becomes a card of label/value pairs (labels from data-label, copied
-// from the column headers). !important because screen rules style cells by position and width.
-table.table--stacked {
-  display: block;
+// Phones and narrow tablets: tables keep their natural column widths and scroll sideways inside
+// themselves (display:block makes the table its own scroll container, so no wrapper is needed).
+// !important because screen rules set table-layout / width / min-width on tables and cells.
+@media (max-width: 1199px) {
+  table {
+    position: relative; // contains absolutely-positioned sr-only spans so they do not widen the page
+    display: block !important;
+    width: 100% !important;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  th,
+  td {
+    white-space: nowrap !important;
+  }
+}
+
+// Opt-in for a table too wide for any desktop (view-cancelled-plot, 23 columns): scrolls at every width.
+table[data-scroll] {
+  position: relative;
+  display: block !important;
   width: 100% !important;
-  min-width: 0 !important;
   max-width: 100%;
+  overflow-x: auto;
 
-  > thead {
-    display: none !important;
-  }
-
-  > tbody,
-  > tfoot {
-    display: block;
-  }
-
-  > tbody > tr,
-  > tfoot > tr {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-    gap: 0.75rem 1.25rem;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  > tbody > tr:last-child,
-  > tfoot > tr:last-child {
-    border-bottom: none;
-  }
-
-  > tbody > tr > td,
-  > tfoot > tr > td {
-    display: flex !important;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    padding: 0 !important;
-    border: none !important;
-    background: none !important;
-    text-align: left !important;
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-  }
-
-  // colspan rows (empty state, group headings) span the whole card.
-  > tbody > tr > td[colspan] {
-    grid-column: 1 / -1;
-  }
-
-  > tbody > tr > td[data-label]::before,
-  > tfoot > tr > td[data-label]::before {
-    content: attr(data-label);
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-
-  // First column (period, name, ID) heads the card.
-  // S No (.table__sno) keeps its own label and sits above; the next cell heads the card.
-  > tbody > tr > td:first-child:not([colspan]):not(.table__sno),
-  > tbody > tr > td.table__sno + td:not([colspan]),
-  > tfoot > tr > td:first-child:not([colspan]):not(.table__sno),
-  > tfoot > tr > td.table__sno + td:not([colspan]) {
-    grid-column: 1 / -1;
-    font-weight: 600;
-  }
-
-  > tbody > tr > td:first-child:not(.table__sno)::before,
-  > tbody > tr > td.table__sno + td::before,
-  > tfoot > tr > td:first-child:not(.table__sno)::before,
-  > tfoot > tr > td.table__sno + td::before {
-    display: none;
-  }
-
-  // Empty cells and blank badges are dropped.
-  td:empty,
-  td:has(> .editable-table__badge:empty) {
-    display: none !important;
+  th,
+  td {
+    white-space: nowrap !important;
   }
 }
 

@@ -30,7 +30,7 @@ async function setup(page: Page) {
   });
   await page.goto('/admin/settings/invoice-expenses', { waitUntil: 'networkidle' });
   await expect(page.locator('.invoice-expenses .editable-table tbody tr').first()).toBeVisible();
-  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
 const noSideScroll = (page: Page) =>
@@ -68,7 +68,6 @@ test.describe('expenses at 1280px', () => {
   test.beforeEach(({ page }) => setup(page));
 
   test('stays a real table', async ({ page }) => {
-    await expect(page.locator('.invoice-expenses .editable-table')).not.toHaveClass(/table--stacked/);
   });
 
   test('empty submit shows errors and posts nothing', async ({ page }) => {

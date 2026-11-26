@@ -4,7 +4,6 @@ import { ActivatedRoute } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AssociateDownlineComponent } from './associate-downline.component';
 import { MyTeamService } from './my-team.service';
-import { fitTable } from '../shared/utils/table-fit';
 
 describe('AssociateDownlineComponent', () => {
   const row = (userId: string, extra = {}) => ({ id: userId, userId, name: 'Kid ' + userId, designation: null, kycStatus: 'VERIFIED', status: 'ACTIVE', joinedAt: '2026-01-01T00:00:00Z', sponsorUserId: 'VP1', sponsorName: 'Vee Pee', position: 'L', phone: '9999999999', activatedAt: '2026-01-05T00:00:00Z', ...extra });
@@ -51,20 +50,5 @@ describe('AssociateDownlineComponent', () => {
     listFor.and.returnValue(throwError(() => ({ status: 500 })));
     c.componentInstance.loadPage(0);
     expect(c.componentInstance.loadError).toBeTrue();
-  });
-
-  it('fits a 390px phone with no sideways scroll', () => {
-    const c = setup('me', of({ associates: [row('VP2'), row('VP3')], page: 0, size: 20, totalElements: 2 }));
-    const host: HTMLElement = c.nativeElement;
-    const box = document.createElement('div');
-    box.style.cssText = 'width:390px;overflow:hidden;display:block';
-    document.body.appendChild(box);
-    box.appendChild(host);
-    c.detectChanges();
-    const table = host.querySelector('table') as HTMLTableElement;
-    fitTable(table);
-    expect(table.scrollWidth).toBeLessThanOrEqual(table.clientWidth + 1);
-    expect(table.offsetWidth).toBeLessThanOrEqual(box.clientWidth + 1);
-    box.remove();
   });
 });

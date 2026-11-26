@@ -1,12 +1,9 @@
 # Plotchain project rules
 
-## Tables never scroll sideways
+## Tables: scroll on mobile, fit on desktop
 
-No table in the app may need a horizontal scrollbar, at any screen width (phone, tablet, laptop).
-
-- Don't give tables or cells a fixed `min-width`, and don't wrap a table in `overflow-x: auto` to make it fit.
-- A table that can't fit its columns switches to stacked cards automatically: `frontend/src/app/shared/utils/table-fit.ts` (started in `AppComponent`) adds `.table--stacked` to any table wider than its container. The card styles are in `frontend/src/styles/_tables.scss`. Card labels come from each cell's `data-label`, and are copied from the column headers if missing.
-- Opt-out: a table with the `data-no-stack` attribute is never stacked (admin ePIN register). It must then fit by wrapping text and tightening padding/font in its own SCSS.
-- Write tables as a normal `<thead>` + `<tbody>` (or use `app-editable-table`) so the stacked mode can label cells.
-- Headers break only between words. Keep money and IDs on one line in table mode.
-- Check every new or changed table at 390px, 800px and 1280px: the table's container must have `scrollWidth <= clientWidth`, and so must the page.
+- Phones/narrow tablets (<=1199px): tables keep their real columns and scroll left/right inside themselves. `frontend/src/styles/_tables.scss` makes every `table` `display:block; overflow-x:auto` with nowrap cells. No wrapper div is needed and the page itself must never scroll sideways.
+- Desktop (>=1200px): no table may need a horizontal scrollbar. Don't give tables or cells a fixed `min-width` or wrap them in `overflow-x: auto`; text wraps and padding tightens (see the desktop block in `_tables.scss`).
+- A table too wide for any desktop (e.g. view-cancelled-plot, 23 columns) may opt in to scrolling at every width with the `data-scroll` attribute. Use sparingly.
+- Write tables as a normal `<thead>` + `<tbody>` (or use `app-editable-table`). Keep money and IDs on one line.
+- Check every new or changed table at 390px (table may scroll, page must not: page `scrollWidth <= clientWidth`) and at 800px and 1280px (table container `scrollWidth <= clientWidth`).

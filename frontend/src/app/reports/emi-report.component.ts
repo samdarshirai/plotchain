@@ -10,7 +10,7 @@ import { CycleOption, Leg, ReportsService } from './reports.service';
 import { TableToolsComponent } from '../shared/components/table-tools/table-tools.component';
 
 // Pending EMI of everyone in my downline (same columns as the admin Pending EMI screen).
-// Reuses the admin screen's styles; table-fit.ts stacks the table into cards when it can't fit.
+// Reuses the admin screen's styles; the table scrolls sideways on phones.
 @Component({
   selector: 'app-emi-report',
   standalone: true,

@@ -241,7 +241,7 @@ type Panel =
       <div class="epin-register__list">
           <div class="epin-register__table-wrap">
             <app-table-tools filename="epin-register"></app-table-tools>
-            <table class="epin-register__table" data-no-stack>
+            <table class="epin-register__table">
               <thead>
                 <tr>
                   <th class="table__sno">{{ 'common.serialNo' | translate }}</th>

@@ -32,7 +32,7 @@ async function openAssociate(page: Page, path: string, seen: string[]) {
   await page.route(/\/api\/associates\/me\/income-summary/, r => { seen.push(r.request().url()); return r.fulfill({ json: [summaryRow(closed2), summaryRow(closed1)] }); });
   await page.route(/\/api\/associates\/me\/ledger/, r => r.fulfill({ json: { entries: [], page: 0, size: 20, totalElements: 0, totalGrossAmount: 0 } }));
   await page.goto(path, { waitUntil: 'networkidle' });
-  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
 for (const width of [390, 800, 1280]) {

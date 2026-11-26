@@ -2,7 +2,7 @@ import { expect, test, Page } from '@playwright/test';
 import { audit } from './table-audit';
 
 // Plot Transfer, Plot Cancel and View Cancelled Plots with one realistic, fully populated row.
-// Rule (CLAUDE.md): no table scrolls sideways at 390 / 800 / 1280px, stacked cells keep their labels.
+// Rule (CLAUDE.md): page never scrolls sideways at 390 / 800 / 1280px; phones scroll inside the table, desktop never.
 // The API is mocked and the session is a fake admin JWT, so only the frontend dev server is needed
 // (set ASSOCIATE_USER/ASSOCIATE_PASSWORD to skip the backend-backed global setup).
 
@@ -37,7 +37,7 @@ async function setup(page: Page, bookings: unknown[]) {
 async function open(page: Page, screen: string) {
   await page.goto(`/admin/settings/${screen}`, { waitUntil: 'networkidle' });
   await expect(page.locator('.add-plot-emi__table tbody tr')).toHaveCount(1);
-  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
 for (const width of [390, 800, 1280]) {

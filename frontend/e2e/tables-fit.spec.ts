@@ -2,8 +2,8 @@ import { expect, test, Page } from '@playwright/test';
 import { ROLES } from './routes';
 import { audit } from './table-audit';
 
-// Project rule (CLAUDE.md): no table scrolls sideways. At every width each visible table must fit its
-// container and the page, no table may sit in a horizontal scroller, and a stacked table must keep its labels.
+// Project rule (CLAUDE.md): tables scroll sideways inside themselves on phones (<=1199px) and never on desktop.
+// At every width the page must not scroll sideways and no table's container may overflow; from 1200px the table itself must fit.
 // Needs the full stack up: npm run test:mobile
 
 async function login(page: Page, request: any, role: (typeof ROLES)[number]) {
@@ -28,7 +28,7 @@ for (const role of ROLES) for (const width of [390, 800, 1280]) {
     for (const route of role.routes) {
       test(`${route} tables fit`, async ({ page }) => {
         await page.goto(route, { waitUntil: 'networkidle' });
-        await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
+        await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
         expect(await page.evaluate(audit)).toEqual([]);
       });
     }
@@ -45,7 +45,7 @@ for (const width of [1280, 1366, 1440]) {
     test.beforeEach(({ page, request }) => login(page, request, ROLES[0]));
 
     for (const screen of ['sales-register', 'associate-directory', 'kyc-queue']) {
-      test(`${screen} is not stacked`, async ({ page }) => {
+      test(`${screen} stays a real table`, async ({ page }) => {
         await page.route('**/api/admin/sales?*', r => r.fulfill({ json: {
           sales: [{ id: 's1', projectName: 'A Residential Project With A Rather Long Name', associateUserId: 'VP00001', associateName: 'Sponsor With A Longer Display Name', plotNo: 'A-101', buyerAssociateUserId: 'VP00002', buyerPlacementUserId: 'VP00003', buyerName: 'Buyer With A Longer Display Name',
             buyerPhone: '9876543210', amount: 1500000, legCredited: 'L', note: 'A long note', status: 'RECORDED', recordedAt: '2026-10-01T12:00:00Z' }],
@@ -62,8 +62,7 @@ for (const width of [1280, 1366, 1440]) {
         await page.route('**/api/admin/kyc/counts', r => r.fulfill({ json: { pending: 1, verified: 1, rejected: 1 } }));
         await page.goto(`/admin/settings/${screen}`, { waitUntil: 'networkidle' });
         await expect(page.locator(`.${screen} .editable-table tbody tr`)).toHaveCount(1);
-        await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
-        await expect(page.locator(`.${screen} .editable-table`)).not.toHaveClass(/table--stacked/);
+        await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
         const cramped = await page.locator(`.${screen} .editable-table tbody tr:first-child td`).evaluateAll(tds =>
           tds.map((td, i) => ({ i, w: td.clientWidth, over: td.scrollWidth - td.clientWidth }))
             .filter(c => c.w === 0 || c.over > 1));
@@ -85,7 +84,7 @@ for (const width of [1280, 1366, 1440]) {
       localStorage.setItem('plotchain.auth.role', 'ASSOCIATE');
     }));
 
-    test('is not stacked', async ({ page }) => {
+    test('stays a real table', async ({ page }) => {
       await page.route('**/api/**', r => r.fulfill({ json: { name: 'Associate' } }));
       await page.route('**/api/company/setup-state', r => r.fulfill({ json: { launchedAt: '2026-01-01T00:00:00Z' } }));
       await page.route('**/api/associates/me/downline?*', r => r.fulfill({ json: {
@@ -95,8 +94,7 @@ for (const width of [1280, 1366, 1440]) {
         page: 0, size: 100, totalElements: 1 } }));
       await page.goto('/my-tree/team', { waitUntil: 'networkidle' });
       await expect(page.locator('.associate-directory .editable-table tbody tr')).toHaveCount(1);
-      await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
-      await expect(page.locator('.associate-directory .editable-table')).not.toHaveClass(/table--stacked/);
+      await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       const cramped = await page.locator('.associate-directory .editable-table tbody tr:first-child td').evaluateAll(tds =>
         tds.map((td, i) => ({ i, w: td.clientWidth, over: td.scrollWidth - td.clientWidth }))
           .filter(c => c.w === 0 || c.over > 1));
@@ -116,7 +114,7 @@ for (const width of [1280, 1366, 1440]) {
       localStorage.setItem('plotchain.auth.admin.role', 'ADMIN');
     }));
 
-    test('is not stacked', async ({ page }) => {
+    test('stays a real table', async ({ page }) => {
       await page.route('**/api/**', r => r.fulfill({ json: { name: 'Admin' } }));
       await page.route('**/api/company/setup-state', r => r.fulfill({ json: { launchedAt: '2026-01-01T00:00:00Z' } }));
       await page.route('**/api/admin/advance-loans', r => r.fulfill({ json: [{
@@ -126,8 +124,7 @@ for (const width of [1280, 1366, 1440]) {
       await page.route('**/api/associates', r => r.fulfill({ json: [] }));
       await page.goto('/admin/settings/advance-loans', { waitUntil: 'networkidle' });
       await expect(page.locator('.invoice-loans .editable-table tbody tr')).toHaveCount(1);
-      await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
-      await expect(page.locator('.invoice-loans .editable-table')).not.toHaveClass(/table--stacked/);
+      await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       // The fixed-width layout (one line per row, ellipsis) is what keeps the real, longer data from overflowing into cards.
       await expect(page.locator('.invoice-loans .editable-table')).toHaveCSS('table-layout', 'fixed');
       const cramped = await page.locator('.invoice-loans .editable-table tbody tr:first-child td').evaluateAll(tds =>
@@ -148,7 +145,7 @@ for (const width of [1280, 1366, 1440]) {
       localStorage.setItem('plotchain.auth.admin.role', 'ADMIN');
     }));
 
-    test('is not stacked', async ({ page }) => {
+    test('stays a real table', async ({ page }) => {
       await page.route('**/api/**', r => r.fulfill({ json: { name: 'Admin' } }));
       await page.route('**/api/company/setup-state', r => r.fulfill({ json: { launchedAt: '2026-01-01T00:00:00Z' } }));
       await page.route('**/api/admin/loan-repayments*', r => r.fulfill({ json: [{
@@ -157,8 +154,7 @@ for (const width of [1280, 1366, 1440]) {
         bankName: 'State Bank Of India', txnNo: 'TXN-0012345678', recordedAt: '2026-10-01T12:34:56Z' }] }));
       await page.goto('/admin/settings/payment-details', { waitUntil: 'networkidle' });
       await expect(page.locator('.invoice-payments .editable-table tbody tr')).toHaveCount(1);
-      await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
-      await expect(page.locator('.invoice-payments .editable-table')).not.toHaveClass(/table--stacked/);
+      await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       await expect(page.locator('.invoice-payments .editable-table')).toHaveCSS('table-layout', 'fixed');
       const cramped = await page.locator('.invoice-payments .editable-table tbody tr:first-child td').evaluateAll(tds =>
         tds.map((td, i) => ({ i, w: td.clientWidth })).filter(c => c.w === 0));

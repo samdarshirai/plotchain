@@ -1791,39 +1791,44 @@
   table-layout: fixed;
 }
 
-.payout-approval .editable-table th:nth-child(1),
-.payout-approval .editable-table td:nth-child(1) {
-  width: 14%;
-}
-
 .payout-approval .editable-table th:nth-child(2),
 .payout-approval .editable-table td:nth-child(2) {
-  width: 8%;
+  width: 14%;
 }
 
 .payout-approval .editable-table th:nth-child(3),
 .payout-approval .editable-table td:nth-child(3) {
-  width: 9%;
+  width: 8%;
 }
 
 .payout-approval .editable-table th:nth-child(4),
 .payout-approval .editable-table td:nth-child(4) {
-  width: 16%;
+  width: 9%;
 }
 
 .payout-approval .editable-table th:nth-child(5),
 .payout-approval .editable-table td:nth-child(5) {
-  width: 11%;
+  width: 16%;
 }
 
 .payout-approval .editable-table th:nth-child(6),
 .payout-approval .editable-table td:nth-child(6) {
-  width: 12%;
+  width: 11%;
 }
 
 .payout-approval .editable-table th:nth-child(7),
 .payout-approval .editable-table td:nth-child(7) {
-  width: 30%;
+  width: 12%;
+}
+
+.payout-approval .editable-table th:nth-child(1),
+.payout-approval .editable-table td:nth-child(1) {
+  width: 4%;
+}
+
+.payout-approval .editable-table th:nth-child(8),
+.payout-approval .editable-table td:nth-child(8) {
+  width: 26%;
 }
 
 .payout-approval .editable-table thead th {
@@ -1839,7 +1844,7 @@
 }
 
 // Amount (2nd) -- ledger typography, same idiom Sales Register/Ledger Register use for money
-.payout-approval .editable-table td:nth-child(2) {
+.payout-approval .editable-table td:nth-child(3) {
   font-family: var(--font-mono);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -1849,7 +1854,7 @@
 
 // Status (3rd) -- can't be per-value colored (plain-text cell, see DESIGN.md's Implementation
 // constraint, same platform limitation the other three screens document); uniform ledger treatment
-.payout-approval .editable-table td:nth-child(3) {
+.payout-approval .editable-table td:nth-child(4) {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 600;
@@ -1860,13 +1865,13 @@
 }
 
 // Reason (4th) -- plain prose when present, em-dash placeholder when null
-.payout-approval .editable-table td:nth-child(4) {
+.payout-approval .editable-table td:nth-child(5) {
   font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
 // Bank Reference (5th) -- treated as a code/reference value, mono
-.payout-approval .editable-table td:nth-child(5) {
+.payout-approval .editable-table td:nth-child(6) {
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   color: var(--text-muted);
@@ -1874,7 +1879,7 @@
 }
 
 // Requested At (6th)
-.payout-approval .editable-table td:nth-child(6) {
+.payout-approval .editable-table td:nth-child(7) {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
   font-size: 0.8125rem;
@@ -1883,7 +1888,7 @@
 
 // Actions (7th) -- top-aligned so a two-group action stack doesn't center-sag against a
 // single-line static tag in a neighbouring row
-.payout-approval .editable-table td:nth-child(7) {
+.payout-approval .editable-table td:nth-child(8) {
   vertical-align: top;
   padding-top: 0.875rem;
 }
@@ -2317,8 +2322,8 @@
   margin: 0;
 }
 
-// No card chrome padding: the table sits directly on the page at full width. It never scrolls
-// sideways -- table-fit.ts stacks it into cards when its columns don't fit (see CLAUDE.md).
+// No card chrome padding: the table sits directly on the page at full width. It scrolls
+// sideways on phones and fits on desktop (see CLAUDE.md).
 .income-statement__table {
   width: 100%;
   background: var(--surface-card);
@@ -2682,7 +2687,7 @@
 
 // Reward tier table: columns are 1 #, 2 Matching Volume, 3 Designation, 4 Reward, 5-6 leg remaining,
 // 7 Status. Figures line up on the right; stacked-card mode keeps its own layout.
-.income-statement[data-income-type='REWARD'] .editable-table:not(.table--stacked) {
+.income-statement[data-income-type='REWARD'] .editable-table {
   thead th:is(:nth-child(2), :nth-child(5), :nth-child(6)),
   tbody td:not(.editable-table__empty):is(:nth-child(2), :nth-child(5), :nth-child(6)) {
     text-align: right;
@@ -2704,10 +2709,6 @@
   border-top: 2px solid var(--border-subtle);
 }
 
-// Stacked-card mode (table--stacked, see table-fit.ts): the Total row keeps its shading.
-.income-statement:not([data-income-type='REWARD']) .table--stacked tbody tr:last-child {
-  background: var(--surface-raised);
-}
 @media (max-width: 768px) {
   .income-statement {
     padding: 1rem;
@@ -6442,8 +6443,8 @@ button.tree-explorer__vacant-card {
   max-width: 40rem;
 }
 
-.final-report table:not(.table--stacked) td.table-number,
-.final-report table:not(.table--stacked) td.final-report__cycle {
+.final-report table td.table-number,
+.final-report table td.final-report__cycle {
   white-space: nowrap !important; // beats the desktop td wrap rule in _tables.scss; wide tables stack instead
 }
 

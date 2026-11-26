@@ -61,7 +61,7 @@ const isoDate = (d: Date): string => {
       <div class="add-plot-emi__list" [attr.aria-busy]="loading">
         <div class="add-plot-emi__scroll">
           <app-table-tools filename="cancelled-plot"></app-table-tools>
-          <table class="add-plot-emi__table" [attr.aria-label]="'admin.viewCancelledPlot.title' | translate">
+          <table class="add-plot-emi__table" data-scroll [attr.aria-label]="'admin.viewCancelledPlot.title' | translate">
             <thead>
               <tr>
                 <th scope="col" class="table__sno"><span class="material-symbols-outlined th-icon" aria-hidden="true">tag</span>{{ 'admin.viewBookedPlot.col.sNo' | translate }}</th>

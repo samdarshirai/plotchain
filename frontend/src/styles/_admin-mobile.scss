@@ -94,7 +94,7 @@
     flex-wrap: wrap;
   }
 
-  // Table stacks into cards when it doesn't fit (table-fit.ts).
+  // Table scrolls sideways on phones (_tables.scss).
   .projects-plots .projects-plots__table--book {
     table-layout: auto;
   }

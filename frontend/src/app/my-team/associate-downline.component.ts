@@ -13,8 +13,8 @@ const PAGE_SIZE = 100000; // show all rows; backend caps at this
 const dateTime = (iso: string | null) => formatIst(iso);
 
 // View Associate Downline, shared by associates (scope 'me') and admins (scope 'admin').
-// Reuses the .associate-directory__* global styles (styles/_admin.scss); the table stacks into
-// cards on narrow screens via table-fit.
+// Reuses the .associate-directory__* global styles (styles/_admin.scss); the table scrolls sideways
+// on narrow screens.
 @Component({
   selector: 'app-associate-downline',
   standalone: true,

@@ -24,7 +24,7 @@ async function open(page: Page) {
   await page.route('**/api/admin/sales?*', r => r.fulfill({ json: { sales: [sale, voided], page: 0, size: 100, totalElements: 2 } }));
   await page.goto('/admin/settings/sales-register', { waitUntil: 'networkidle' });
   await expect(page.locator('.sales-register .editable-table tbody tr')).toHaveCount(2);
-  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // let table-fit settle
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
 for (const width of [390, 800, 1280]) {

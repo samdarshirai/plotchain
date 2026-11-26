@@ -16,11 +16,8 @@ export function audit(): string[] {
       const ox = getComputedStyle(el).overflowX;
       if ((ox === 'auto' || ox === 'scroll') && el.scrollWidth > el.clientWidth + 1) bad.push(`${name}: scrolls inside .${el.className}`);
     }
-    if (t.classList.contains('table--stacked')) {
-      const unlabeled = Array.from(t.querySelectorAll('tbody tr')).some(r =>
-        r.children.length > 1 && Array.from(r.children).some(td => !td.hasAttribute('colspan') && !td.hasAttribute('data-label') && !td.classList.contains('table__sno')) && t.tHead);
-      if (unlabeled) bad.push(`${name}: stacked cell without data-label`);
-    }
+    // Desktop: the table itself must fit. Phones (<=1199px): it may scroll inside itself, only the page must not.
+    if (window.innerWidth > 1199 && !t.hasAttribute('data-scroll') && t.scrollWidth > t.clientWidth + 1) bad.push(`${name}: table ${t.scrollWidth} > ${t.clientWidth}`);
   });
   const d = document.documentElement;
   if (d.scrollWidth > d.clientWidth) bad.push(`page ${d.scrollWidth} > ${d.clientWidth}`);

@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TranslateModule } from '@ngx-translate/core';
 import { FinalReportComponent } from './final-report.component';
-import { fitTable } from '../../shared/utils/table-fit';
 import { FinalReport, FinalReportTable } from '../models/final-report.model';
 
 describe('FinalReportComponent', () => {
@@ -142,7 +141,6 @@ describe('FinalReportComponent', () => {
       document.body.appendChild(host);
       const t = host.querySelector('table') as HTMLTableElement;
       const filter = host.querySelector('.final-report__filter') as HTMLElement;
-      fitTable(t);
       const box = t.closest('.card') as HTMLElement;
       expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth);
       expect(filter.scrollWidth).toBeLessThanOrEqual(filter.clientWidth);
@@ -150,9 +148,6 @@ describe('FinalReportComponent', () => {
       const total = t.querySelector('tbody tr:last-child td') as HTMLElement;
       expect(total.textContent).toContain('admin.finalReport.totalRow');
       expect(total.getAttribute('data-label')).toBe('admin.finalReport.columnCycle');
-      if (width < 1280) {
-        expect(t.classList.contains('table--stacked')).toBeTrue();
-      }
       host.remove();
     });
   });

@@ -41,8 +41,7 @@ for (const width of [390, 1024, 1440, 1920]) {
     await expect(page.locator('.cycle-management__income-note')).toContainText('before TDS and admin deductions');
     const button = page.getByRole('button', { name: 'Credit Wallets', exact: true });
     await expect(button).toBeVisible();
-    if (width > 768) {
-      await expect(table).not.toHaveClass(/table--stacked/);
+    if (width > 1199) { // narrower widths scroll the table inside itself (CLAUDE.md)
       const card = page.locator('.cycle-management .card');
       expect(await card.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
       const aligned = await table.evaluate(el => {
@@ -56,8 +55,6 @@ for (const width of [390, 1024, 1440, 1920]) {
       await expect(button).toBeInViewport();
       const clipped = await button.evaluate(el => el.scrollWidth > el.clientWidth);
       expect(clipped).toBe(false);
-    } else {
-      await expect(table.locator('thead')).toBeHidden();
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
     await page.screenshot({ path: testInfo.outputPath('cycle-management.png'), fullPage: true });
