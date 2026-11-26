@@ -8,7 +8,7 @@ expenses and refunds, so they can see total payout and what % of business was pa
 
 ## Goals
 - Admin screen "Final Report" under Finance, cycle picker.
-- Shows: total business, net commission (by income type), expenses (one line per expense type), total payout,
+- Shows: total business, gross commission (by income type), expenses (one line per expense type), total payout,
   payout %, refunds on separate lines.
 - Expenses come from the `expense_type` table, summed per type over the cycle's dates. No hardcoded type names for expenses.
 
@@ -23,7 +23,7 @@ expenses and refunds, so they can see total payout and what % of business was pa
 ## Decisions (user)
 - Approach A: new backend endpoint + own screen.
 - Commission = **net** (sum of net amounts for the cycle, same as `totalNet`).
-- Payout % = (net commission + expenses) / total business.
+- Payout % = (gross commission + expenses) / total business.
 - Refunds shown separately, outside the %.
 
 ## Approaches considered
@@ -48,7 +48,7 @@ expenses and refunds, so they can see total payout and what % of business was pa
 
 ## Revision 2026-11-26 (user, after first build): one table, per-cycle rows
 - Screen is ONE table, one row per cycle (newest first), no cycle picker. Last row = Total over all rows.
-- Columns: Cycle, Total Business, Net Commission, one column per expense type (from DB; union of names), Total Payout, Payout %, then one column per refund type.
+- Columns: Cycle, Total Business, Gross Commission, one column per expense type (from DB; union of names), Total Payout, Payout %, then one column per refund type.
 - Total row sums every money column. Payout % in the Total row is recomputed from the totals (totalPayout x 100 / totalBusiness), never summed.
 - Server does all math. New endpoint `GET /api/admin/cycles/final-report` replaces `GET /api/admin/cycles/{id}/final-report` (removed, along with its security matcher and tests).
 - Response: `{ expenseTypes: string[], refundTypes: string[], rows: CycleFinalReportResponse[], total: CycleFinalReportResponse }`; `total` has null cycleId/periodStart/periodEnd/status and empty incomeTypeTotals. Every row/total carries `expenses` and `refunds` with an entry for every name in `expenseTypes`/`refundTypes` (0 if none), same order.
@@ -60,3 +60,6 @@ expenses and refunds, so they can see total payout and what % of business was pa
 - Server does the math: `GET /api/admin/cycles/final-report?cycleIds=a,b,c`. Param absent = all cycles; present but empty = no cycles (empty rows, zero total). Unknown ids are ignored. `expenseTypes`/`refundTypes` = union over the selected cycles only.
 - The filter's option list (all cycles, labelled "start – end|ongoing") comes from the first, unfiltered load and stays stable while filtering. Add `allCycles: [{cycleId, periodStart, periodEnd, status}]` to the response (always the full list, newest first) so the frontend needs no second endpoint.
 - Selection is not persisted.
+
+## Revision 3 2026-11-26 (user): gross commission
+- Commission shown AND used is **gross** (`totalGross`), not net. Total Payout = gross commission + expenses; Payout % = Total Payout x 100 / Total Business. This supersedes the earlier "net commission" decision. JSON field `netCommission` renamed `grossCommission`.

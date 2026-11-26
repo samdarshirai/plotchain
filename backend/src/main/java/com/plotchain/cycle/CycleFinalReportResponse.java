@@ -11,7 +11,7 @@ public record CycleFinalReportResponse(
     LocalDate periodEnd,
     CycleStatus status,
     BigDecimal totalBusiness,
-    BigDecimal netCommission,
+    BigDecimal grossCommission,
     List<CycleIncomeTypeTotal> incomeTypeTotals,
     List<NamedAmount> expenses,
     BigDecimal totalExpenses,

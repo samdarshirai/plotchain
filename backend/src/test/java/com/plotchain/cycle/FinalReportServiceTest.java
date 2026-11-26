@@ -34,9 +34,9 @@ class FinalReportServiceTest {
             0, Integer.MAX_VALUE, ids.length));
     }
 
-    private void cycle(UUID id, LocalDate start, LocalDate end, long net, long business, ExpenseTypeTotal... exp) {
+    private void cycle(UUID id, LocalDate start, LocalDate end, long gross, long business, ExpenseTypeTotal... exp) {
         when(cycleService.getDetail(id)).thenReturn(new CycleDetailResponse(id, start, end, CycleStatus.CLOSED,
-            List.of(), BigDecimal.valueOf(net), BigDecimal.valueOf(business), BigDecimal.valueOf(net), BigDecimal.ZERO));
+            List.of(), BigDecimal.valueOf(gross - 1000), BigDecimal.valueOf(business), BigDecimal.valueOf(gross), BigDecimal.ZERO));
         when(expenseRepository.sumByTypeBetween(start, end)).thenReturn(List.of(exp));
     }
 
@@ -47,10 +47,10 @@ class FinalReportServiceTest {
     void padsMissingTypesAndSumsTotalRow() {
         UUID a = UUID.randomUUID(), b = UUID.randomUUID();
         cycles(b, a);
-        // a: 250000 net + 40000 expenses = 290000 on 1,000,000 -> 29%
+        // a: 250000 gross + 40000 expenses = 290000 on 1,000,000 -> 29%
         cycle(a, D1, D2, 250000, 1000000, row("Salary", 10000), row("Trip Expense", 30000),
             row("Plot Cancellation Refund", 5000));
-        // b: 200000 net + 20000 = 220000 on 800000 -> 27.5%
+        // b: 200000 gross + 20000 = 220000 on 800000 -> 27.5%
         cycle(b, D3, D4, 200000, 800000, row("Office", 20000), row("Plot Transfer Refund", 7000));
 
         var t = service.getFinalReportTable(null);
@@ -72,7 +72,7 @@ class FinalReportServiceTest {
         assertThat(total.status()).isNull();
         assertThat(total.incomeTypeTotals()).isEmpty();
         assertThat(total.totalBusiness()).isEqualByComparingTo("1800000");
-        assertThat(total.netCommission()).isEqualByComparingTo("450000");
+        assertThat(total.grossCommission()).isEqualByComparingTo("450000");
         assertThat(total.expenses()).extracting(e -> e.amount().intValue()).containsExactly(20000, 10000, 30000);
         assertThat(total.refunds()).extracting(e -> e.amount().intValue()).containsExactly(5000, 7000);
         assertThat(total.totalExpenses()).isEqualByComparingTo("60000");

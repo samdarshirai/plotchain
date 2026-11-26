@@ -12,7 +12,7 @@ export interface FinalReport {
   periodEnd: string | null;
   status: CycleStatus;
   totalBusiness: number;
-  netCommission: number;
+  grossCommission: number;
   incomeTypeTotals: CycleIncomeTypeTotal[];
   expenses: NamedAmount[];
   totalExpenses: number;

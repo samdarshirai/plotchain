@@ -1006,7 +1006,7 @@
       "subtitle": "Per-cycle total business, commission, expenses, payout and refunds, with a Total row. Refunds are not part of total expenses, payout or payout %.",
       "loadError": "Something went wrong loading the final report. Please try again.",
       "totalBusiness": "Total Business",
-      "netCommission": "Net Commission",
+      "grossCommission": "Gross Commission",
       "totalPayout": "Total Payout",
       "payoutPercent": "Payout %",
       "columnCycle": "Cycle",

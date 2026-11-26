@@ -44,7 +44,7 @@ public class FinalReportService {
         List<String> rt = List.copyOf(refundTypes);
 
         List<CycleFinalReportResponse> rows = raw.stream().map(r -> new CycleFinalReportResponse(
-            r.cycleId(), r.periodStart(), r.periodEnd(), r.status(), r.totalBusiness(), r.netCommission(),
+            r.cycleId(), r.periodStart(), r.periodEnd(), r.status(), r.totalBusiness(), r.grossCommission(),
             r.incomeTypeTotals(), pad(et, r.expenses()), r.totalExpenses(), r.totalPayout(),
             r.payoutPercent(), pad(rt, r.refunds()), r.totalRefunds())).toList();
 
@@ -52,7 +52,7 @@ public class FinalReportService {
         BigDecimal payout = rows.stream().map(CycleFinalReportResponse::totalPayout).reduce(BigDecimal.ZERO, BigDecimal::add);
         CycleFinalReportResponse total = new CycleFinalReportResponse(null, null, null, null,
             business,
-            rows.stream().map(CycleFinalReportResponse::netCommission).reduce(BigDecimal.ZERO, BigDecimal::add),
+            rows.stream().map(CycleFinalReportResponse::grossCommission).reduce(BigDecimal.ZERO, BigDecimal::add),
             List.of(),
             et.stream().map(n -> new NamedAmount(n, columnSum(rows, n, false))).toList(),
             rows.stream().map(CycleFinalReportResponse::totalExpenses).reduce(BigDecimal.ZERO, BigDecimal::add),
@@ -93,11 +93,11 @@ public class FinalReportService {
         }
 
         BigDecimal totalExpenses = sum(expenses);
-        BigDecimal totalPayout = d.totalNet().add(totalExpenses);
+        BigDecimal totalPayout = d.totalGross().add(totalExpenses);
         BigDecimal percent = percent(totalPayout, d.totalBusiness());
 
         return new CycleFinalReportResponse(d.id(), d.periodStart(), d.periodEnd(), d.status(),
-            d.totalBusiness(), d.totalNet(), d.incomeTypeTotals(), expenses, totalExpenses,
+            d.totalBusiness(), d.totalGross(), d.incomeTypeTotals(), expenses, totalExpenses,
             totalPayout, percent, refunds, sum(refunds));
     }
 

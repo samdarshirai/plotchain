@@ -37,7 +37,7 @@ import { formatInr } from '../../shared/utils/plot-grid.util';
           <thead><tr>
             <th>{{ 'admin.finalReport.columnCycle' | translate }}</th>
             <th class="table-number">{{ 'admin.finalReport.totalBusiness' | translate }}</th>
-            <th class="table-number">{{ 'admin.finalReport.netCommission' | translate }}</th>
+            <th class="table-number">{{ 'admin.finalReport.grossCommission' | translate }}</th>
             <th class="table-number" *ngFor="let n of d.expenseTypes">{{ n }}</th>
             <th class="table-number">{{ 'admin.finalReport.totalPayout' | translate }}</th>
             <th class="table-number">{{ 'admin.finalReport.payoutPercent' | translate }}</th>
@@ -56,7 +56,7 @@ import { formatInr } from '../../shared/utils/plot-grid.util';
         <ng-template #cells let-r let-label="label">
           <td class="final-report__cycle" [attr.data-label]="'admin.finalReport.columnCycle' | translate">{{ label }}</td>
           <td class="table-number" [attr.data-label]="'admin.finalReport.totalBusiness' | translate">{{ inr(r.totalBusiness) }}</td>
-          <td class="table-number" [attr.data-label]="'admin.finalReport.netCommission' | translate">{{ inr(r.netCommission) }}</td>
+          <td class="table-number" [attr.data-label]="'admin.finalReport.grossCommission' | translate">{{ inr(r.grossCommission) }}</td>
           <td class="table-number" *ngFor="let e of r.expenses" [attr.data-label]="e.name">{{ inr(e.amount) }}</td>
           <td class="table-number" [attr.data-label]="'admin.finalReport.totalPayout' | translate">{{ inr(r.totalPayout) }}</td>
           <td class="table-number final-report__payout-percent" [attr.data-label]="'admin.finalReport.payoutPercent' | translate">{{ r.payoutPercent | number:'1.2-2' }}%</td>

@@ -12,7 +12,7 @@ describe('FinalReportComponent', () => {
 
   const report = (over: Partial<FinalReport> = {}): FinalReport => ({
     cycleId: 'c1', periodStart: '2026-11-01', periodEnd: '2026-11-15', status: 'CLOSED',
-    totalBusiness: 1000000, netCommission: 250000, incomeTypeTotals: [],
+    totalBusiness: 1000000, grossCommission: 250000, incomeTypeTotals: [],
     expenses: [{ name: 'Salary', amount: 10000 }, { name: 'Trip Expense', amount: 40000 }],
     totalExpenses: 50000, totalPayout: 300000, payoutPercent: 30,
     refunds: [{ name: 'Plot Cancellation Refund', amount: 30000 }],
@@ -66,7 +66,7 @@ describe('FinalReportComponent', () => {
     load();
     const heads = Array.from(el().querySelectorAll('thead th')).map(h => h.textContent!.trim());
     expect(heads).toEqual([
-      'admin.finalReport.columnCycle', 'admin.finalReport.totalBusiness', 'admin.finalReport.netCommission',
+      'admin.finalReport.columnCycle', 'admin.finalReport.totalBusiness', 'admin.finalReport.grossCommission',
       'Salary', 'Trip Expense', 'admin.finalReport.totalPayout', 'admin.finalReport.payoutPercent',
       'Plot Cancellation Refund'
     ]);

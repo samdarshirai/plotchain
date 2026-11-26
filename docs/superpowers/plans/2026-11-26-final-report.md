@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Admin "Final Report" screen (Finance menu) showing, per cycle: total business, net commission, per-expense-type expenses, total payout, payout %, and refunds on separate lines.
+**Goal:** Admin "Final Report" screen (Finance menu) showing, per cycle: total business, gross commission, per-expense-type expenses, total payout, payout %, and refunds on separate lines.
 
 **Architecture:** New `FinalReportService` in `com.plotchain.cycle` reuses `CycleService.getDetail` for closing totals and adds a per-expense-type sum (DB `expense_type` left-joined to `expense`) over the cycle's dates. New endpoint `GET /api/admin/cycles/{id}/final-report`. New standalone Angular component at `/admin/settings/final-report` with a cycle picker.
 
@@ -12,8 +12,8 @@
 
 ## Global Constraints
 
-- Commission = **net** (`CycleDetailResponse.totalNet`).
-- Payout % = (net commission + total expenses) / total business, scale 2, `RoundingMode.HALF_UP`; 0 when total business is 0.
+- Commission = **gross** (`CycleDetailResponse.totalGross`; changed from net by user 2026-11-26).
+- Payout % = (gross commission + total expenses) / total business, scale 2, `RoundingMode.HALF_UP`; 0 when total business is 0.
 - Refunds (types "Plot Cancellation Refund", "Plot Transfer Refund") are listed separately and are NOT in total expenses, total payout or payout %.
 - Expense window = `[periodStart, periodEnd or LocalDate.now()]` inclusive (same as existing trip expense).
 - Expense names come from `expense_type` rows (DB), never a hardcoded list; refund types are the only names matched in code.
@@ -49,7 +49,7 @@
   - `public interface ExpenseTypeTotal { String getName(); BigDecimal getTotal(); }` (Spring projection, package `com.plotchain.expense`)
   - `ExpenseRepository.List<ExpenseTypeTotal> sumByTypeBetween(LocalDate from, LocalDate to)`: JPQL `SELECT t.name AS name, COALESCE(SUM(e.amount), 0) AS total FROM ExpenseType t LEFT JOIN Expense e ON e.expenseTypeId = t.id AND e.expenseDate BETWEEN :from AND :to GROUP BY t.name ORDER BY t.name` (every type, zero rows included).
   - `public record NamedAmount(String name, BigDecimal amount)` nested in `CycleFinalReportResponse`.
-  - `public record CycleFinalReportResponse(UUID cycleId, LocalDate periodStart, LocalDate periodEnd, CycleStatus status, BigDecimal totalBusiness, BigDecimal netCommission, List<CycleIncomeTypeTotal> incomeTypeTotals, List<NamedAmount> expenses, BigDecimal totalExpenses, BigDecimal totalPayout, BigDecimal payoutPercent, List<NamedAmount> refunds, BigDecimal totalRefunds)`
+  - `public record CycleFinalReportResponse(UUID cycleId, LocalDate periodStart, LocalDate periodEnd, CycleStatus status, BigDecimal totalBusiness, BigDecimal grossCommission, List<CycleIncomeTypeTotal> incomeTypeTotals, List<NamedAmount> expenses, BigDecimal totalExpenses, BigDecimal totalPayout, BigDecimal payoutPercent, List<NamedAmount> refunds, BigDecimal totalRefunds)`
   - `FinalReportService.CycleFinalReportResponse getFinalReport(UUID cycleId)` (constructor: `CycleService`, `ExpenseRepository`).
   - `GET /api/admin/cycles/{id}/final-report` → `CycleFinalReportResponse`.
 - Consumes: `CycleService.getDetail(UUID)` → `CycleDetailResponse` (fields `totalNet`, `totalBusiness`, `incomeTypeTotals`, `periodStart`, `periodEnd`, `status`, `id`).
@@ -81,7 +81,7 @@
 **Interfaces:**
 - Consumes: `CycleManagementService.list(status: '', page: 0, size: 100): Observable<CyclePage>` for the picker; `GET /api/admin/cycles/{id}/final-report`.
 - Produces:
-  - `FinalReport` interface mirroring `CycleFinalReportResponse` (`cycleId, periodStart, periodEnd: string|null, status: CycleStatus, totalBusiness, netCommission, incomeTypeTotals: CycleIncomeTypeTotal[], expenses: NamedAmount[], totalExpenses, totalPayout, payoutPercent, refunds: NamedAmount[], totalRefunds`), `NamedAmount { name: string; amount: number }`.
+  - `FinalReport` interface mirroring `CycleFinalReportResponse` (`cycleId, periodStart, periodEnd: string|null, status: CycleStatus, totalBusiness, grossCommission, incomeTypeTotals: CycleIncomeTypeTotal[], expenses: NamedAmount[], totalExpenses, totalPayout, payoutPercent, refunds: NamedAmount[], totalRefunds`), `NamedAmount { name: string; amount: number }`.
   - `FinalReportService.get(cycleId: string): Observable<FinalReport>`.
   - `FinalReportComponent` selector `app-final-report`, route `final-report` with `data: { sectionKey: 'finalReport' }`; nav item `{ key: 'finalReport', labelKey: 'settings.sections.finalReport', path: '/admin/settings/final-report' }` placed right after `cycleManagement` in `finance`.
 
@@ -91,7 +91,7 @@
   - routes spec: `final-report` child has `data` equal `{ sectionKey: 'finalReport' }`.
   - component spec: loads cycles, auto-selects the first, calls `get`; renders payout % as text (e.g. `30.00%`); renders every expense row incl. a 0 one; refunds render in a separate section with their own total and are absent from the payout total cell; empty `refunds` array renders without error; changing the picker calls `get` with the new id; HTTP error shows `app-inline-banner`.
 - [ ] **Step 2: Run** `cd frontend && npx ng test --watch=false --include='src/app/admin/final-report/**/*.spec.ts' --include='src/app/admin-nav-categories.model.spec.ts' --include='src/app/app.routes.spec.ts'` → FAIL.
-- [ ] **Step 3: Implement** the model, service, component (standalone; imports `CommonModule, FormsModule, TranslateModule, InlineBannerComponent`; money via `formatInr` from `shared/utils/plot-grid.util`; cycle `<select>` labelled like `ledger-register` does with `periodStart – periodEnd|ongoing`). Layout: summary block (business, net commission, total expenses, total payout, payout %), income-by-type table, expenses table, refunds table. Tables are plain `<table><thead><tbody>` with `data-label` cells; own SCSS prefix `final-report__`; styles in the component (or `_admin.scss` if that is where sibling screens put theirs) with no `min-width`/`overflow-x`.
+- [ ] **Step 3: Implement** the model, service, component (standalone; imports `CommonModule, FormsModule, TranslateModule, InlineBannerComponent`; money via `formatInr` from `shared/utils/plot-grid.util`; cycle `<select>` labelled like `ledger-register` does with `periodStart – periodEnd|ongoing`). Layout: summary block (business, gross commission, total expenses, total payout, payout %), income-by-type table, expenses table, refunds table. Tables are plain `<table><thead><tbody>` with `data-label` cells; own SCSS prefix `final-report__`; styles in the component (or `_admin.scss` if that is where sibling screens put theirs) with no `min-width`/`overflow-x`.
 - [ ] **Step 4: Wire** route, nav item, `en.json` + `hi.json` strings (en: "Final Report"; hi: "अंतिम रिपोर्ट"). Keep key sets identical in both files.
 - [ ] **Step 5: Run** the Step 2 command → PASS; then `npx ng build` (type check) → no errors.
 - [ ] **Step 6: Width check** at 390px, 800px, 1280px for the three tables and the page (`scrollWidth <= clientWidth`). Use a component spec that sets host width and asserts `.table--stacked` handling is not blocked, or the repo's existing e2e width helper if one exists (`frontend/e2e`); report what was checked.
