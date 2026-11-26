@@ -469,8 +469,8 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
   }
 
   private buildRoyaltyColumns(): void {
-    const keys = ['Date', 'NewLeftBusiness', 'NewRightBusiness', 'NewMatchingBusiness', 'RoyaltyBase', 'SlabPct', 'RoyaltyBonus'];
-    const rowKeys = ['date', 'newLeft', 'newRight', 'newMatching', 'royaltyBase', 'slabPct', 'royaltyBonus'];
+    const keys = ['Date', 'NewLeftBusiness', 'NewRightBusiness', 'RoyaltyBase', 'SlabPct', 'RoyaltyBonus'];
+    const rowKeys = ['date', 'newLeft', 'newRight', 'royaltyBase', 'slabPct', 'royaltyBonus'];
     this.translate
       .get(keys.map(k => 'incomeStatement.column' + k))
       .pipe(takeUntil(this.destroyed$))
@@ -767,15 +767,13 @@ export class IncomeStatementComponent implements OnInit, OnDestroy {
         date: `${this.formatDate(entry.cyclePeriodStart, DATE_FORMAT)} – ${this.formatEndDate(entry.cyclePeriodEnd, DATE_FORMAT)}`,
         newLeft: n(entry.legBreakdown?.newLeft),
         newRight: n(entry.legBreakdown?.newRight),
-        newMatching: n(entry.legBreakdown?.matchingBusiness),
         royaltyBase: n(this.royaltyBase(entry)),
         slabPct: this.slabPct(entry),
         royaltyBonus: this.formatCurrency(entry.grossAmount)
       }));
-      this.statementRows = this.withTotal(this.statementRows, ['date', 'newLeft', 'newRight', 'newMatching', 'royaltyBase', 'slabPct', 'royaltyBonus'], {
+      this.statementRows = this.withTotal(this.statementRows, ['date', 'newLeft', 'newRight', 'royaltyBase', 'slabPct', 'royaltyBonus'], {
         newLeft: this.sum(e => e.legBreakdown?.newLeft),
         newRight: this.sum(e => e.legBreakdown?.newRight),
-        newMatching: this.sum(e => e.legBreakdown?.matchingBusiness),
         royaltyBonus: this.sum(e => e.grossAmount)
       });
       return;

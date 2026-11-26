@@ -559,7 +559,7 @@ describe('IncomeStatementComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.statementColumns.map(c => c.label)).toEqual([
-      'Date', 'New Left Business', 'New Right Business', 'New Matching Business', 'Royalty Base', 'Slab %', 'Royalty Bonus'
+      'Date', 'New Left Business', 'New Right Business', 'Royalty Base', 'Slab %', 'Royalty Bonus'
     ]);
     const cells: string[] = Array.from(fixture.nativeElement.querySelectorAll('.editable-table tbody tr:first-child td'))
       .map((td: any) => td.textContent.trim());
