@@ -22,4 +22,13 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
         """)
     BigDecimal sumAmountByTypeNameBetween(
         @Param("typeName") String typeName, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    // Final Report: every expense type with its total in [from, to]; types with no expenses give 0.
+    @Query("""
+        SELECT t.name AS name, COALESCE(SUM(e.amount), 0) AS total
+        FROM com.plotchain.expensetype.ExpenseType t
+        LEFT JOIN Expense e ON e.expenseTypeId = t.id AND e.expenseDate BETWEEN :from AND :to
+        GROUP BY t.name ORDER BY t.name
+        """)
+    List<ExpenseTypeTotal> sumByTypeBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
 }

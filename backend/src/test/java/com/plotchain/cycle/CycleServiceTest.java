@@ -152,7 +152,7 @@ class CycleServiceTest {
         when(ledgerEntryRepository.sumNetAmountByCycle(cycle.getId())).thenReturn(BigDecimal.valueOf(170));
         when(ledgerEntryRepository.sumGrossAmount(null, null, cycle.getId(), null, null, null)).thenReturn(BigDecimal.valueOf(200));
         when(saleRepository.sumAmountByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED)).thenReturn(BigDecimal.valueOf(5000));
-        when(expenseRepository.sumAmountByTypeNameBetween("Trip", cycle.getPeriodStart(), cycle.getPeriodEnd()))
+        when(expenseRepository.sumAmountByTypeNameBetween("Trip Expense", cycle.getPeriodStart(), cycle.getPeriodEnd()))
             .thenReturn(BigDecimal.valueOf(40));
 
         for (IncomeType type : List.of(IncomeType.DIRECT, IncomeType.MATCHING, IncomeType.SPONSOR_MATCHING, IncomeType.ROYALTY, IncomeType.REWARD)) {

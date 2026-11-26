@@ -21,7 +21,7 @@ describe('ADMIN_NAV_CATEGORIES', () => {
       ['masterProjects', 'projectsPlots'],
       ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'plotCancel', 'viewPlotEmi', 'emiReport', 'viewTransferredPlots', 'viewCancelledPlot', 'salesRegister'],
       ['associateDirectory', 'associateDownline', 'treeExplorer', 'kycQueue'],
-      ['ledgerRegister', 'cycleManagement', 'payoutApproval', 'expenseTypes'],
+      ['ledgerRegister', 'cycleManagement', 'finalReport', 'payoutApproval', 'expenseTypes'],
       ['paymentDetails', 'invoiceExpenses', 'advanceLoans'],
       ['companyProfile', 'branding', 'paymentsKyc', 'compensation'],
       ['auditLog', 'adminStats'],

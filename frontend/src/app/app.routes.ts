@@ -24,6 +24,7 @@ import { AssociateDirectoryComponent } from './admin/associate-directory/associa
 import { TreeExplorerComponent } from './admin/tree-explorer/tree-explorer.component';
 import { KycQueueComponent } from './admin/kyc-queue/kyc-queue.component';
 import { SalesRegisterComponent } from './admin/sales-register/sales-register.component';
+import { FinalReportComponent } from './admin/final-report/final-report.component';
 import { CycleManagementComponent } from './admin/cycle-management/cycle-management.component';
 import { LedgerRegisterComponent } from './admin/ledger-register/ledger-register.component';
 import { MasterProjectsComponent } from './admin/master-projects/master-projects.component';
@@ -132,6 +133,7 @@ export const routes: Routes = [
       { path: 'kyc-queue', component: KycQueueComponent, data: { sectionKey: 'kycQueue' } },
       { path: 'sales-register', component: SalesRegisterComponent, data: { sectionKey: 'salesRegister' } },
       { path: 'cycle-management', component: CycleManagementComponent, data: { sectionKey: 'cycleManagement' } },
+      { path: 'final-report', component: FinalReportComponent, data: { sectionKey: 'finalReport' } },
       { path: 'ledger-register', component: LedgerRegisterComponent, data: { sectionKey: 'ledgerRegister' } },
       { path: 'e-pin-register', component: EPinRegisterComponent, data: { sectionKey: 'epinRegister' } },
       { path: 'payout-approval', component: PayoutApprovalComponent, data: { sectionKey: 'payoutApproval' } },

@@ -77,6 +77,7 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     items: [
       { key: 'ledgerRegister', labelKey: 'settings.sections.ledgerRegister', path: '/admin/settings/ledger-register' },
       { key: 'cycleManagement', labelKey: 'settings.sections.cycleManagement', path: '/admin/settings/cycle-management' },
+      { key: 'finalReport', labelKey: 'settings.sections.finalReport', path: '/admin/settings/final-report' },
       { key: 'payoutApproval', labelKey: 'settings.sections.payoutApproval', path: '/admin/settings/payout-approval' },
       { key: 'expenseTypes', labelKey: 'settings.sections.expenseTypes', path: '/admin/settings/expense-types' }
     ]

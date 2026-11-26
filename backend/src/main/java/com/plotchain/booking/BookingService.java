@@ -668,7 +668,7 @@ public class BookingService {
         return toResponse(booking, installments);
     }
 
-    static final String REFUND_EXPENSE_TYPE = "Plot Cancellation Refund";
+    public static final String REFUND_EXPENSE_TYPE = "Plot Cancellation Refund";
     private static final java.util.regex.Pattern CANCEL_SUFFIX = java.util.regex.Pattern.compile("^(.*) New(\\d+)$");
 
     // "A-12" -> "A-12 New1" -> "A-12 New2": the counter goes up on every cancel of the same plot.
@@ -701,7 +701,7 @@ public class BookingService {
             null, null, note), actorId);
     }
 
-    static final String TRANSFER_REFUND_EXPENSE_TYPE = "Plot Transfer Refund";
+    public static final String TRANSFER_REFUND_EXPENSE_TYPE = "Plot Transfer Refund";
 
     private static BigDecimal pct(BigDecimal amount, BigDecimal chargePct) {
         return amount.multiply(chargePct).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);

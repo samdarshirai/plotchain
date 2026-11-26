@@ -970,6 +970,21 @@
       "loadError": "Something went wrong loading the sales register. Please try again.",
       "emptyState": "No sales match these filters."
     },
+    "finalReport": {
+      "eyebrow": "Admin · Final Report",
+      "title": "Final Report",
+      "subtitle": "Per-cycle total business, commission, expenses, payout and refunds, with a Total row. Refunds are not part of total expenses, payout or payout %.",
+      "loadError": "Something went wrong loading the final report. Please try again.",
+      "totalBusiness": "Total Business",
+      "netCommission": "Net Commission",
+      "totalPayout": "Total Payout",
+      "payoutPercent": "Payout %",
+      "columnCycle": "Cycle",
+      "totalRow": "Total",
+      "filterLabel": "Cycles",
+      "selectAll": "Select all",
+      "clear": "Clear"
+    },
     "cycleManagement": {
       "grossIncomeNote": "आय के आंकड़े टीडीएस और प्रशासनिक कटौतियों से पहले के हैं।",
       "eyebrow": "Admin · Closing Report",
@@ -1947,6 +1962,7 @@
       "adminStats": "एडमिन आँकड़े",
       "salesRegister": "Direct Sponsor Sales",
       "cycleManagement": "Closing Report",
+      "finalReport": "अंतिम रिपोर्ट",
       "ledgerRegister": "Income Statement",
       "payoutApproval": "Payout Approval",
       "masterProjects": "प्रोजेक्ट्स",

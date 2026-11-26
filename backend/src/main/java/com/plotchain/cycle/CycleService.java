@@ -113,6 +113,8 @@ public class CycleService {
     // "trigger/monitor/re-run" (spec lines 95-97). Plain findById, no row lock: this is a
     // read-only view, unlike close()'s findByIdForUpdate, which exists solely to serialize
     // concurrent writers against the same cycle.
+    private static final String TRIP_EXPENSE_TYPE = "Trip Expense";
+
     public CycleDetailResponse getDetail(UUID id) {
         Cycle cycle = cycleRepository.findById(id)
             .orElseThrow(() -> new CycleNotFoundException(id));
@@ -127,7 +129,7 @@ public class CycleService {
         BigDecimal totalGross = ledgerEntryRepository.sumGrossAmount(null, null, cycle.getId(), null, null, null);
         BigDecimal totalBusiness = saleRepository.sumAmountByCycleIdAndStatus(cycle.getId(), SaleStatus.RECORDED);
         BigDecimal tripExpense = expenseRepository.sumAmountByTypeNameBetween(
-            "Trip", cycle.getPeriodStart(),
+            TRIP_EXPENSE_TYPE, cycle.getPeriodStart(),
             cycle.getPeriodEnd() == null ? LocalDate.now() : cycle.getPeriodEnd());
 
         return new CycleDetailResponse(

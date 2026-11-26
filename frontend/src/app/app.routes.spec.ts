@@ -209,6 +209,13 @@ describe('routes', () => {
       expect(cycleManagementChild!.data).toEqual({ sectionKey: 'cycleManagement' });
     });
 
+    it('has a final-report child stamped with sectionKey finalReport', () => {
+      const settingsRoute = routes.find(r => r.path === 'admin/settings');
+      const child = settingsRoute!.children!.find(c => c.path === 'final-report');
+      expect(child).toBeTruthy();
+      expect(child!.data).toEqual({ sectionKey: 'finalReport' });
+    });
+
     it('has a ledger-register child stamped with sectionKey ledgerRegister', () => {
       const settingsRoute = routes.find(r => r.path === 'admin/settings');
       const ledgerRegisterChild = settingsRoute!.children!.find(c => c.path === 'ledger-register');

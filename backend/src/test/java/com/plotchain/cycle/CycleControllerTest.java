@@ -38,6 +38,7 @@ class CycleControllerTest {
 
     @MockBean AssociateRepository associateRepository;
     @MockBean CycleService cycleService;
+    @MockBean FinalReportService finalReportService;
     @MockBean com.plotchain.wallet.WalletCreditingService walletCreditingService;
 
     private String tokenFor(AssociateRole role) {
@@ -218,5 +219,58 @@ class CycleControllerTest {
         mockMvc.perform(post("/api/admin/cycles/{id}/credit-wallets", cycleId)
                 .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
             .andExpect(status().isConflict());
+    }
+
+    @Test
+    void finalReportTableReturnsRowsAndTotalForAdminToken() throws Exception {
+        var bd = java.math.BigDecimal.valueOf(100);
+        var row = new CycleFinalReportResponse(UUID.randomUUID(), java.time.LocalDate.of(2026, 11, 1), null,
+            CycleStatus.OPEN, bd, bd, List.of(),
+            List.of(new CycleFinalReportResponse.NamedAmount("Salary", bd)), bd, bd,
+            new java.math.BigDecimal("30.00"),
+            List.of(new CycleFinalReportResponse.NamedAmount("Plot Cancellation Refund", bd)), bd);
+        when(finalReportService.getFinalReportTable(isNull())).thenReturn(new FinalReportTableResponse(
+            List.of("Salary"), List.of("Plot Cancellation Refund"), List.of(row), row,
+            List.of(new FinalReportTableResponse.CycleOption(row.cycleId(), row.periodStart(), null, CycleStatus.OPEN))));
+
+        mockMvc.perform(get("/api/admin/cycles/final-report")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.expenseTypes[0]").value("Salary"))
+            .andExpect(jsonPath("$.refundTypes[0]").value("Plot Cancellation Refund"))
+            .andExpect(jsonPath("$.rows[0].payoutPercent").value(30.00))
+            .andExpect(jsonPath("$.rows[0].expenses[0].name").value("Salary"))
+            .andExpect(jsonPath("$.total.refunds[0].amount").value(100))
+            .andExpect(jsonPath("$.allCycles[0].cycleId").value(row.cycleId().toString()))
+            .andExpect(jsonPath("$.allCycles[0].status").value("OPEN"));
+    }
+
+    @Test
+    void finalReportParsesCycleIdsParam() throws Exception {
+        UUID a = UUID.randomUUID(), b = UUID.randomUUID();
+        when(finalReportService.getFinalReportTable(any())).thenReturn(null);
+        String token = tokenFor(AssociateRole.ADMIN);
+
+        mockMvc.perform(get("/api/admin/cycles/final-report?cycleIds=" + a + "," + b)
+            .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+        verify(finalReportService).getFinalReportTable(List.of(a, b));
+
+        mockMvc.perform(get("/api/admin/cycles/final-report?cycleIds=")
+            .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+        verify(finalReportService).getFinalReportTable(List.of());
+    }
+
+    @Test
+    void finalReportMalformedCycleIdIsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/admin/cycles/final-report?cycleIds=nope")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ADMIN)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void finalReportIsForbiddenForNonAdmin() throws Exception {
+        mockMvc.perform(get("/api/admin/cycles/final-report")
+                .header("Authorization", "Bearer " + tokenFor(AssociateRole.ASSOCIATE)))
+            .andExpect(status().isForbidden());
     }
 }

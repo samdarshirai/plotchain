@@ -1000,6 +1000,21 @@
       "loadError": "Something went wrong loading the sales register. Please try again.",
       "emptyState": "No sales match these filters."
     },
+    "finalReport": {
+      "eyebrow": "Admin · Final Report",
+      "title": "Final Report",
+      "subtitle": "Per-cycle total business, commission, expenses, payout and refunds, with a Total row. Refunds are not part of total expenses, payout or payout %.",
+      "loadError": "Something went wrong loading the final report. Please try again.",
+      "totalBusiness": "Total Business",
+      "netCommission": "Net Commission",
+      "totalPayout": "Total Payout",
+      "payoutPercent": "Payout %",
+      "columnCycle": "Cycle",
+      "totalRow": "Total",
+      "filterLabel": "Cycles",
+      "selectAll": "Select all",
+      "clear": "Clear"
+    },
     "cycleManagement": {
       "grossIncomeNote": "Income figures are shown before TDS and admin deductions.",
       "eyebrow": "Admin · Closing Report",
@@ -2038,6 +2053,7 @@
       "adminStats": "Admin Stats",
       "salesRegister": "Direct Sponsor Sales",
       "cycleManagement": "Closing Report",
+      "finalReport": "Final Report",
       "ledgerRegister": "Income Statement",
       "epinRegister": "e-Pin Register",
       "payoutApproval": "Payout Approval",
