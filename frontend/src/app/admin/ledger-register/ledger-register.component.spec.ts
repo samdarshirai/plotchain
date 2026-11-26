@@ -164,6 +164,29 @@ describe('LedgerRegisterComponent', () => {
     expect(rows[1].textContent).toContain('—');
   });
 
+  it('ROYALTY tab shows Royalty Base and Slab % instead of New Matching Business', () => {
+    fixture.componentInstance.onIncomeTypeChange('ROYALTY');
+    httpMock.expectOne(r => r.params.get('incomeType') === 'ROYALTY').flush({
+      entries: [
+        { ...sampleEntry, id: 'r1', incomeType: 'ROYALTY', grossAmount: 30,
+          legBreakdown: { newLeft: 1000, newRight: 600, matchingBusiness: 900 } },
+        { ...sampleEntry, id: 'r2', incomeType: 'ROYALTY', grossAmount: 0,
+          legBreakdown: { newLeft: 0, newRight: 0, matchingBusiness: 0 } }
+      ],
+      page: 0,
+      size: 20,
+      totalElements: 2
+    });
+    fixture.detectChanges();
+
+    const keys = fixture.componentInstance.registerColumns.map(c => c.key);
+    expect(keys.slice(keys.indexOf('date'), keys.indexOf('date') + 6)).toEqual(['date', 'newLeft', 'newRight', 'royaltyBase', 'slabPct', 'royaltyBonus']);
+    expect(keys).not.toContain('newMatching');
+    const rows = fixture.nativeElement.querySelectorAll('.editable-table tbody tr');
+    expect(rows[0].textContent).toContain('600');
+    expect(rows[0].textContent).toContain('5%');
+  });
+
   it('SPONSOR_MATCHING tab mirrors the associate columns, prefixed with Associate ID and Name', () => {
     fixture.componentInstance.onIncomeTypeChange('SPONSOR_MATCHING');
     httpMock.expectOne(r => r.params.get('incomeType') === 'SPONSOR_MATCHING').flush({

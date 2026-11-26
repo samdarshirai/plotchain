@@ -22,7 +22,7 @@ const DATE_FORMAT = 'dd MMM yyyy';
 const DATE_TIME_FORMAT = 'dd MMM yyyy, hh:mm:ss a';
 const MATCHING_KEYS = ['bflb', 'bfrb', 'nlb', 'nrb', 'tlb', 'trb', 'clb', 'crb'];
 // Entry-mode columns summed into the Total row; bf/total/calc leg columns are balances, not additive.
-const ENTRY_SUM_KEYS = ['amount', 'directIncome', 'matchingIncome', 'sponsorMatchingIncome', 'royaltyBonus', 'reward', 'grossAmount', 'newLeft', 'newRight', 'newMatching', 'matchingBusiness', 'nlb', 'nrb'];
+const ENTRY_SUM_KEYS = ['amount', 'directIncome', 'matchingIncome', 'sponsorMatchingIncome', 'royaltyBonus', 'reward', 'grossAmount', 'newLeft', 'newRight', 'royaltyBase', 'matchingBusiness', 'nlb', 'nrb'];
 
 // One column of the per-income-type layout. Labels reuse the associate Income Statement's i18n
 // keys so both screens read the same.
@@ -227,6 +227,18 @@ export class LedgerRegisterComponent implements OnInit {
     return `${this.fmtDate(e.cyclePeriodStart)} – ${this.fmtEnd(e.cyclePeriodEnd)}`;
   }
 
+  // Royalty is paid on this cycle's matched volume (carry-in excluded): min(new left, new right).
+  private royaltyBase(e: AdminLedgerEntry): number {
+    const b = e.legBreakdown;
+    return b ? Math.min(b.newLeft, b.newRight) : 0;
+  }
+
+  // Slab % is not stored on the row; gross = base x slab %, so it is recovered as gross / base.
+  private slabPct(e: AdminLedgerEntry): string {
+    const base = this.royaltyBase(e);
+    return base > 0 ? `${parseFloat(((e.grossAmount / base) * 100).toFixed(2))}%` : '';
+  }
+
   // Per-income-type layout, mirroring the associate Income Statement (income-statement.component.ts).
   private specsFor(type: string): ColumnSpec[] {
     const n = (v: number | undefined | null) => String(v ?? 0);
@@ -258,7 +270,8 @@ export class LedgerRegisterComponent implements OnInit {
           text('date', 'Date', e => this.cyclePeriod(e)),
           text('newLeft', 'NewLeftBusiness', e => n(e.legBreakdown?.newLeft)),
           text('newRight', 'NewRightBusiness', e => n(e.legBreakdown?.newRight)),
-          text('newMatching', 'NewMatchingBusiness', e => n(e.legBreakdown?.matchingBusiness)),
+          text('royaltyBase', 'RoyaltyBase', e => n(this.royaltyBase(e))),
+          text('slabPct', 'SlabPct', e => this.slabPct(e)),
           text('royaltyBonus', 'RoyaltyBonus', e => this.money(e.grossAmount))
         ];
       case 'REWARD':
