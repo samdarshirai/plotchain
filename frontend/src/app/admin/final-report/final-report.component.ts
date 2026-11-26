@@ -23,19 +23,15 @@ import { formatInr } from '../../shared/utils/plot-grid.util';
         {{ 'admin.finalReport.loadError' | translate }}
       </app-inline-banner>
 
-      <section class="card final-report__filter" *ngIf="options.length">
-        <div class="final-report__filter-head">
-          <span class="final-report__filter-label">{{ 'admin.finalReport.filterLabel' | translate }}</span>
-          <button type="button" class="btn btn--ghost final-report__select-all" (click)="selectAll()">{{ 'admin.finalReport.selectAll' | translate }}</button>
-          <button type="button" class="btn btn--ghost final-report__clear" (click)="clear()">{{ 'admin.finalReport.clear' | translate }}</button>
-        </div>
-        <div class="final-report__filter-list">
-          <label class="final-report__filter-option" *ngFor="let o of options">
-            <input type="checkbox" [checked]="selected.has(o.cycleId)" (change)="toggle(o.cycleId)" />
-            <span>{{ period(o) }}</span>
-          </label>
-        </div>
-      </section>
+      <div class="final-report__filter" *ngIf="options.length">
+        <label>
+          {{ 'admin.finalReport.filterLabel' | translate }}
+          <select (change)="onCycleChange($any($event.target).value)">
+            <option value="" [selected]="!cycleId">{{ 'admin.finalReport.allCycles' | translate }}</option>
+            <option *ngFor="let o of options" [value]="o.cycleId" [selected]="o.cycleId === cycleId">{{ period(o) }}</option>
+          </select>
+        </label>
+      </div>
       <section class="card final-report__table-card" *ngIf="data as d">
         <table class="final-report__table">
           <thead><tr>
@@ -77,7 +73,7 @@ export class FinalReportComponent implements OnInit {
 
   data: FinalReportTable | null = null;
   options: FinalReportCycleOption[] = [];
-  selected = new Set<string>();
+  cycleId = ''; // '' = all cycles
   loadError = false;
   inr = formatInr;
 
@@ -86,32 +82,16 @@ export class FinalReportComponent implements OnInit {
       next: d => {
         this.data = d;
         this.options = d.allCycles ?? [];
-        this.selected = new Set(this.options.map(o => o.cycleId));
       },
       error: () => (this.loadError = true)
     });
   }
 
-  toggle(id: string): void {
-    if (!this.selected.delete(id)) this.selected.add(id);
-    this.refetch();
-  }
-
-  selectAll(): void {
-    this.selected = new Set(this.options.map(o => o.cycleId));
-    this.refetch();
-  }
-
-  clear(): void {
-    this.selected = new Set();
-    this.refetch();
-  }
-
-  private refetch(): void {
+  onCycleChange(id: string): void {
+    this.cycleId = id;
     this.loadError = false;
-    // keep option order (newest first), not click order
-    const ids = this.options.map(o => o.cycleId).filter(id => this.selected.has(id));
-    this.reportService.getAll(ids).subscribe({
+    // "All cycles" omits the param (= all); a cycle sends just its id
+    this.reportService.getAll(id ? [id] : undefined).subscribe({
       next: d => (this.data = d),
       error: () => (this.loadError = true)
     });

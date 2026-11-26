@@ -39,8 +39,8 @@ describe('FinalReportComponent', () => {
     httpMock.expectOne(r => r.url === URL && r.params.get('cycleIds') === ids).flush(t);
     fixture.detectChanges();
   };
-  const boxes = () => Array.from(el().querySelectorAll('.final-report__filter input[type=checkbox]')) as HTMLInputElement[];
-  const click = (sel: string) => { (el().querySelector(sel) as HTMLElement).click(); };
+  const select = () => el().querySelector('.final-report__filter select') as HTMLSelectElement;
+  const pick = (value: string) => { select().value = value; select().dispatchEvent(new Event('change')); };
   const el = (): HTMLElement => fixture.nativeElement;
   const rows = () => Array.from(el().querySelectorAll('tbody tr'));
 
@@ -94,38 +94,28 @@ describe('FinalReportComponent', () => {
     expect(el().textContent).toContain('admin.finalReport.loadError');
   });
 
-  it('selects all cycles by default and the first call sends no cycleIds', () => {
+  it('defaults to All cycles, lists every cycle, and the first call sends no cycleIds', () => {
     load();
-    expect(boxes().length).toBe(2);
-    expect(boxes().every(b => b.checked)).toBeTrue();
-    expect(el().querySelector('.final-report__filter')!.textContent).toContain('admin.cycleManagement.ongoing');
+    expect(select().value).toBe('');
+    expect(select().options.length).toBe(3);
+    expect(select().textContent).toContain('admin.cycleManagement.ongoing');
   });
 
-  it('unchecking one cycle refetches with the remaining ids', () => {
+  it('picking one cycle refetches with just that id', () => {
     load();
-    boxes()[0].click();
+    pick('c1');
     refetch('c1', table({ rows: [report()] }));
     expect(rows().length).toBe(2);
-    expect(boxes().map(b => b.checked)).toEqual([false, true]);
+    expect(select().options.length).toBe(3);
   });
 
-  it('Clear sends an empty cycleIds and renders only the Total row', () => {
+  it('going back to All cycles refetches without cycleIds', () => {
     load();
-    click('.final-report__clear');
-    refetch('', table({ rows: [], expenseTypes: [], refundTypes: [] }));
-    expect(rows().length).toBe(1);
-    expect(rows()[0].textContent).toContain('admin.finalReport.totalRow');
-    expect(boxes().length).toBe(2);
-    expect(boxes().every(b => !b.checked)).toBeTrue();
-  });
-
-  it('Select all restores every cycle', () => {
-    load();
-    click('.final-report__clear');
-    refetch('', table({ rows: [] }));
-    click('.final-report__select-all');
-    refetch('c2,c1', table());
-    expect(boxes().every(b => b.checked)).toBeTrue();
+    pick('c1');
+    refetch('c1', table({ rows: [report()] }));
+    pick('');
+    httpMock.expectOne(r => r.url === URL && !r.params.has('cycleIds')).flush(table());
+    fixture.detectChanges();
     expect(rows().length).toBe(3);
   });
 

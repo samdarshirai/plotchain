@@ -981,9 +981,8 @@
       "payoutPercent": "Payout %",
       "columnCycle": "Cycle",
       "totalRow": "Total",
-      "filterLabel": "Cycles",
-      "selectAll": "Select all",
-      "clear": "Clear"
+      "filterLabel": "Cycle",
+      "allCycles": "All cycles"
     },
     "cycleManagement": {
       "grossIncomeNote": "आय के आंकड़े टीडीएस और प्रशासनिक कटौतियों से पहले के हैं।",
