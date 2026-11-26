@@ -3,29 +3,29 @@ import { ADMIN_NAV_CATEGORIES, findNavCategoryForUrl } from './admin-nav-categor
 describe('ADMIN_NAV_CATEGORIES', () => {
   it('listsTheMockupCategoriesInOrderWithTheirIcons', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => [category.key, category.icon])).toEqual([
-      ['masterData', 'database'],
-      ['network', 'group'],
       ['epin', 'pin'],
+      ['masterData', 'database'],
+      ['inventory', 'domain'],
+      ['network', 'group'],
       ['finance', 'point_of_sale'],
       ['invoice', 'receipt_long'],
-      ['inventory', 'domain'],
-      ['communication', 'forum'],
       ['setup', 'tune'],
-      ['system', 'admin_panel_settings']
+      ['system', 'admin_panel_settings'],
+      ['communication', 'forum']
     ]);
   });
 
   it('groupsEverySettingsScreenUnderTheirCategory', () => {
     expect(ADMIN_NAV_CATEGORIES.map(category => category.items.map(item => item.key))).toEqual([
-      ['masterProjects', 'projectsPlots'],
-      ['associateDirectory', 'associateDownline', 'treeExplorer', 'kycQueue'],
       ['epinRegister'],
+      ['masterProjects', 'projectsPlots'],
+      ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'plotCancel', 'viewPlotEmi', 'emiReport', 'viewTransferredPlots', 'viewCancelledPlot', 'salesRegister'],
+      ['associateDirectory', 'associateDownline', 'treeExplorer', 'kycQueue'],
       ['ledgerRegister', 'cycleManagement', 'payoutApproval', 'expenseTypes'],
       ['paymentDetails', 'invoiceExpenses', 'advanceLoans'],
-      ['bookNewPlot', 'addPlotEmi', 'viewBookedPlot', 'viewConfirmedPlot', 'plotTransfer', 'plotCancel', 'viewPlotEmi', 'emiReport', 'viewTransferredPlots', 'viewCancelledPlot', 'salesRegister'],
-      ['supportTickets', 'news'],
       ['companyProfile', 'branding', 'paymentsKyc', 'compensation'],
-      ['auditLog', 'adminStats']
+      ['auditLog', 'adminStats'],
+      ['supportTickets', 'news']
     ]);
   });
 

@@ -25,12 +25,38 @@ export interface AdminNavCategory {
 
 export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
   {
+    key: 'epin',
+    labelKey: 'nav.categories.epin',
+    icon: 'pin',
+    items: [
+      { key: 'epinRegister', labelKey: 'settings.sections.epinRegister', path: '/admin/settings/e-pin-register' }
+    ]
+  },
+  {
     key: 'masterData',
     labelKey: 'nav.categories.masterData',
     icon: 'database',
     items: [
       { key: 'masterProjects', labelKey: 'settings.sections.masterProjects', path: '/admin/settings/master-projects' },
       { key: 'projectsPlots', labelKey: 'settings.sections.projectsPlots', path: '/admin/settings/plots' }
+    ]
+  },
+  {
+    key: 'inventory',
+    labelKey: 'nav.categories.inventory',
+    icon: 'domain',
+    items: [
+      { key: 'bookNewPlot', labelKey: 'nav.plotBooking.bookNewPlot', path: '/admin/settings/book-plot' },
+      { key: 'addPlotEmi', labelKey: 'nav.plotBooking.addPlotEmi', path: '/admin/settings/add-plot-emi' },
+      { key: 'viewBookedPlot', labelKey: 'nav.plotBooking.viewBookedPlot', path: '/admin/settings/view-booked-plot' },
+      { key: 'viewConfirmedPlot', labelKey: 'nav.plotBooking.viewConfirmedPlot', path: '/admin/settings/view-confirmed-plot' },
+      { key: 'plotTransfer', labelKey: 'nav.plotBooking.plotTransfer', path: '/admin/settings/plot-transfer' },
+      { key: 'plotCancel', labelKey: 'nav.plotBooking.plotCancel', path: '/admin/settings/plot-cancel' },
+      { key: 'viewPlotEmi', labelKey: 'nav.plotBooking.viewPlotEmi', path: '/admin/settings/view-plot-emi' },
+      { key: 'emiReport', labelKey: 'nav.plotBooking.emiReport', path: '/admin/settings/emi-report' },
+      { key: 'viewTransferredPlots', labelKey: 'nav.plotBooking.viewTransferredPlots', path: '/admin/settings/view-transferred-plot' },
+      { key: 'viewCancelledPlot', labelKey: 'nav.plotBooking.viewCancelledPlot', path: '/admin/settings/view-cancelled-plot' },
+      { key: 'salesRegister', labelKey: 'nav.plotBooking.salesRegister', path: '/admin/settings/sales-register' }
     ]
   },
   {
@@ -42,14 +68,6 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
       { key: 'associateDownline', labelKey: 'settings.sections.associateDownline', path: '/admin/settings/associate-downline' },
       { key: 'treeExplorer', labelKey: 'settings.sections.treeExplorer', path: '/admin/settings/tree-explorer' },
       { key: 'kycQueue', labelKey: 'settings.sections.kycQueue', path: '/admin/settings/kyc-queue' }
-    ]
-  },
-  {
-    key: 'epin',
-    labelKey: 'nav.categories.epin',
-    icon: 'pin',
-    items: [
-      { key: 'epinRegister', labelKey: 'settings.sections.epinRegister', path: '/admin/settings/e-pin-register' }
     ]
   },
   {
@@ -74,33 +92,6 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     ]
   },
   {
-    key: 'inventory',
-    labelKey: 'nav.categories.inventory',
-    icon: 'domain',
-    items: [
-      { key: 'bookNewPlot', labelKey: 'nav.plotBooking.bookNewPlot', path: '/admin/settings/book-plot' },
-      { key: 'addPlotEmi', labelKey: 'nav.plotBooking.addPlotEmi', path: '/admin/settings/add-plot-emi' },
-      { key: 'viewBookedPlot', labelKey: 'nav.plotBooking.viewBookedPlot', path: '/admin/settings/view-booked-plot' },
-      { key: 'viewConfirmedPlot', labelKey: 'nav.plotBooking.viewConfirmedPlot', path: '/admin/settings/view-confirmed-plot' },
-      { key: 'plotTransfer', labelKey: 'nav.plotBooking.plotTransfer', path: '/admin/settings/plot-transfer' },
-      { key: 'plotCancel', labelKey: 'nav.plotBooking.plotCancel', path: '/admin/settings/plot-cancel' },
-      { key: 'viewPlotEmi', labelKey: 'nav.plotBooking.viewPlotEmi', path: '/admin/settings/view-plot-emi' },
-      { key: 'emiReport', labelKey: 'nav.plotBooking.emiReport', path: '/admin/settings/emi-report' },
-      { key: 'viewTransferredPlots', labelKey: 'nav.plotBooking.viewTransferredPlots', path: '/admin/settings/view-transferred-plot' },
-      { key: 'viewCancelledPlot', labelKey: 'nav.plotBooking.viewCancelledPlot', path: '/admin/settings/view-cancelled-plot' },
-      { key: 'salesRegister', labelKey: 'nav.plotBooking.salesRegister', path: '/admin/settings/sales-register' }
-    ]
-  },
-  {
-    key: 'communication',
-    labelKey: 'nav.categories.communication',
-    icon: 'forum',
-    items: [
-      { key: 'supportTickets', labelKey: 'settings.sections.supportTickets', path: '/admin/settings/support-tickets' },
-      { key: 'news', labelKey: 'settings.sections.news', path: '/admin/settings/news' }
-    ]
-  },
-  {
     key: 'setup',
     labelKey: 'nav.categories.setup',
     icon: 'tune',
@@ -118,6 +109,15 @@ export const ADMIN_NAV_CATEGORIES: AdminNavCategory[] = [
     items: [
       { key: 'auditLog', labelKey: 'settings.sections.auditLog', path: '/admin/settings/audit-log' },
       { key: 'adminStats', labelKey: 'settings.sections.adminStats', path: '/admin/settings/admin-stats' }
+    ]
+  },
+  {
+    key: 'communication',
+    labelKey: 'nav.categories.communication',
+    icon: 'forum',
+    items: [
+      { key: 'supportTickets', labelKey: 'settings.sections.supportTickets', path: '/admin/settings/support-tickets' },
+      { key: 'news', labelKey: 'settings.sections.news', path: '/admin/settings/news' }
     ]
   }
 ];
