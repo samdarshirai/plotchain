@@ -40,6 +40,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -576,23 +577,18 @@ class SaleServiceTest {
         verify(saleRepository).searchRegister(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(PageRequest.of(0, 20)));
     }
 
-    // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
-    // "Associate own view -- GET /api/associates/me/sales"): getMySales() resolves the caller's
-    // self-plus-downline ID set first, then filters Sale rows by it.
+    // getMySales() returns only sales where the caller is the direct sponsor (sale.sponsor_id),
+    // never the downline's sales.
     @Test
-    void getMySalesResolvesSelfAndDownlineIdsThenFiltersSalesByThem() {
-        List<UUID> selfAndDownlineIds = List.of(ASSOCIATE_ID, UUID.randomUUID());
-        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(selfAndDownlineIds);
+    void getMySalesFiltersSalesBySponsorIdAndNeverLooksUpTheDownline() {
         Sale sale = recordedSale(UUID.randomUUID(), PLOT_ID);
-        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
-            eq(selfAndDownlineIds), any(), any(), eq(PageRequest.of(0, 20))))
+        when(saleRepository.findBySponsorIdOrderByRecordedAtDesc(
+            eq(ASSOCIATE_ID), any(), any(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(sale), PageRequest.of(0, 20), 1));
 
         AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, null, null, 0, 20, null, null, null, null);
 
-        verify(associateRepository).findSelfAndDownline(ASSOCIATE_ID);
-        verify(saleRepository).findByAssociateIdInOrderByRecordedAtDesc(
-            eq(selfAndDownlineIds), any(), any(), eq(PageRequest.of(0, 20)));
+        verify(associateRepository, never()).findSelfAndDownline(any());
         assertThat(response.totalElements()).isEqualTo(1);
         assertThat(response.page()).isEqualTo(0);
         assertThat(response.size()).isEqualTo(20);
@@ -602,27 +598,44 @@ class SaleServiceTest {
     }
 
     @Test
-    void getMySalesWithFiltersUsesTheAdminRegisterQueryAndSearchNeverLeavesTheTree() {
-        UUID other = UUID.randomUUID();
-        List<UUID> tree = List.of(ASSOCIATE_ID, other);
-        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(tree);
-        // search matches one tree member and one outsider
-        when(associateRepository.findIdsBySearch("jane")).thenReturn(List.of(other, UUID.randomUUID()));
-        when(saleRepository.searchRegisterByAssociates(
-            eq(List.of(other)), eq(SaleStatus.RECORDED), any(), any(), isNull(), eq("A1"), eq(PageRequest.of(0, 20))))
+    void getMySalesWithSearchNarrowsByMatchedBuyersWithinTheSponsorsSales() {
+        UUID match = UUID.randomUUID();
+        when(associateRepository.findIdsBySearch("jane")).thenReturn(List.of(match));
+        when(saleRepository.searchRegisterBySponsor(
+            eq(ASSOCIATE_ID), eq(true), eq(List.of(match)), eq(SaleStatus.RECORDED), any(), any(), isNull(), eq("A1"), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         saleService.getMySales(ASSOCIATE_ID, null, null, 0, 20, SaleStatus.RECORDED, null, "A1", "jane");
 
-        verify(saleRepository).searchRegisterByAssociates(
-            eq(List.of(other)), eq(SaleStatus.RECORDED), any(), any(), isNull(), eq("A1"), eq(PageRequest.of(0, 20)));
+        verify(saleRepository).searchRegisterBySponsor(
+            eq(ASSOCIATE_ID), eq(true), eq(List.of(match)), eq(SaleStatus.RECORDED), any(), any(), isNull(), eq("A1"), eq(PageRequest.of(0, 20)));
     }
 
     @Test
-    void getMySalesReturnsAnEmptyPageWhenTheCallerHasNoSalesInTheirSubtree() {
-        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
-        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
-            eq(List.of(ASSOCIATE_ID)), any(), any(), eq(PageRequest.of(0, 20))))
+    void getMySalesWithFiltersButNoSearchDoesNotRestrictByBuyer() {
+        when(saleRepository.searchRegisterBySponsor(
+            eq(ASSOCIATE_ID), eq(false), any(), eq(SaleStatus.RECORDED), any(), any(), isNull(), isNull(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        saleService.getMySales(ASSOCIATE_ID, null, null, 0, 20, SaleStatus.RECORDED, null, null, null);
+
+        verify(associateRepository, never()).findIdsBySearch(any());
+    }
+
+    @Test
+    void getMySalesReturnsAnEmptyPageWhenSearchMatchesNobody() {
+        when(associateRepository.findIdsBySearch("zzz")).thenReturn(List.of());
+
+        AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, null, null, 0, 20, null, null, null, "zzz");
+
+        assertThat(response.sales()).isEmpty();
+        verify(saleRepository, never()).searchRegisterBySponsor(any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getMySalesReturnsAnEmptyPageWhenTheCallerHasNoSponsoredSales() {
+        when(saleRepository.findBySponsorIdOrderByRecordedAtDesc(
+            eq(ASSOCIATE_ID), any(), any(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of()));
 
         AssociateSalePageResponse response = saleService.getMySales(ASSOCIATE_ID, null, null, 0, 20, null, null, null, null);
@@ -655,8 +668,7 @@ class SaleServiceTest {
         com.plotchain.projects.Project project = new com.plotchain.projects.Project(
             projectId, "Viraj Greens Ph II", "Patna", null, null, Instant.now());
 
-        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
-        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(), any(), any(Pageable.class)))
+        when(saleRepository.findBySponsorIdOrderByRecordedAtDesc(eq(ASSOCIATE_ID), any(), any(), any(Pageable.class)))
             .thenReturn(new PageImpl<>(List.of(sale)));
         when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of(plot));
         when(projectRepository.findAllById(List.of(projectId))).thenReturn(List.of(project));
@@ -683,8 +695,7 @@ class SaleServiceTest {
         sale.setStatus(SaleStatus.RECORDED);
         sale.setRecordedAt(Instant.now());
 
-        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
-        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(), any(), any(Pageable.class)))
+        when(saleRepository.findBySponsorIdOrderByRecordedAtDesc(eq(ASSOCIATE_ID), any(), any(), any(Pageable.class)))
             .thenReturn(new PageImpl<>(List.of(sale)));
         when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of());
         when(associateRepository.findAllById(List.of(ASSOCIATE_ID))).thenReturn(List.of(associateWithPosition("L")));
@@ -711,8 +722,7 @@ class SaleServiceTest {
         sale.setStatus(SaleStatus.RECORDED);
         sale.setRecordedAt(Instant.now());
 
-        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
-        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(), any(), any(Pageable.class)))
+        when(saleRepository.findBySponsorIdOrderByRecordedAtDesc(eq(ASSOCIATE_ID), any(), any(), any(Pageable.class)))
             .thenReturn(new PageImpl<>(List.of(sale)));
         when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of());
         when(projectRepository.findAllById(List.of(PROJECT_ID))).thenReturn(List.of(projectFixture()));
@@ -741,8 +751,7 @@ class SaleServiceTest {
         sale.setStatus(SaleStatus.RECORDED);
         sale.setRecordedAt(Instant.now());
 
-        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
-        when(saleRepository.findByAssociateIdInOrderByRecordedAtDesc(eq(List.of(ASSOCIATE_ID)), any(), any(), any(Pageable.class)))
+        when(saleRepository.findBySponsorIdOrderByRecordedAtDesc(eq(ASSOCIATE_ID), any(), any(), any(Pageable.class)))
             .thenReturn(new PageImpl<>(List.of(sale)));
         // Plot lookup comes back empty (as if the Plot were deleted) -- projectName must still resolve.
         when(plotRepository.findAllById(List.of(plotId))).thenReturn(List.of());

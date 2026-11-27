@@ -65,9 +65,35 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
     // Spring Data derived query -- no @Query needed, unlike searchRegister's optional-filter
     // shape, since this always has exactly one non-optional filter (the ID set) and a fixed
     // sort order. ORDER BY recordedAt DESC: same newest-first convention as searchRegister.
-    @Query("SELECT s FROM Sale s WHERE s.associateId IN :associateIds AND s.recordedAt >= :from AND s.recordedAt < :to ORDER BY s.recordedAt DESC")
-    Page<Sale> findByAssociateIdInOrderByRecordedAtDesc(@Param("associateIds") List<UUID> associateIds,
+    // Direct-sponsor-sales screen: only sales where the caller is the direct sponsor
+    // (sale.sponsor_id), not the whole downline.
+    @Query("SELECT s FROM Sale s WHERE s.sponsorId = :sponsorId AND s.recordedAt >= :from AND s.recordedAt < :to ORDER BY s.recordedAt DESC")
+    Page<Sale> findBySponsorIdOrderByRecordedAtDesc(@Param("sponsorId") UUID sponsorId,
             @Param("from") java.time.Instant from, @Param("to") java.time.Instant to, Pageable pageable);
+
+    // Same filters as searchRegister, restricted to one direct sponsor. restrictToAssociates=false
+    // ignores associateIds (pass any non-empty list); true narrows to those buyer associates.
+    @Query("""
+        SELECT s FROM Sale s
+        WHERE s.sponsorId = :sponsorId
+        AND (:restrictToAssociates = false OR s.associateId IN :associateIds)
+        AND (:status IS NULL OR s.status = :status)
+        AND (CAST(:recordedFrom AS timestamp) IS NULL OR s.recordedAt >= :recordedFrom)
+        AND (CAST(:recordedToExclusive AS timestamp) IS NULL OR s.recordedAt < :recordedToExclusive)
+        AND (:cycleId IS NULL OR s.cycleId = :cycleId)
+        AND (:plotNo IS NULL OR s.plotId IN (SELECT p.id FROM Plot p WHERE p.plotNo = :plotNo))
+        ORDER BY s.recordedAt DESC
+        """)
+    Page<Sale> searchRegisterBySponsor(
+        @Param("sponsorId") UUID sponsorId,
+        @Param("restrictToAssociates") boolean restrictToAssociates,
+        @Param("associateIds") java.util.Collection<UUID> associateIds,
+        @Param("status") SaleStatus status,
+        @Param("recordedFrom") Instant recordedFrom,
+        @Param("recordedToExclusive") Instant recordedToExclusive,
+        @Param("cycleId") UUID cycleId,
+        @Param("plotNo") String plotNo,
+        Pageable pageable);
 
     // Sales unit 6 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
     // "Admin register -- GET /api/admin/sales"): all four filters are optional (null = "don't

@@ -264,29 +264,24 @@ public class SaleService {
     }
 
     // Sales unit 7 (docs/superpowers/specs/role-capability/2026-08-03-sales-domain-design.md,
-    // "Associate own view -- GET /api/associates/me/sales"): self + full descendant subtree,
+    // "Associate own view -- GET /api/associates/me/sales"): direct-sponsored sales only (sale.sponsor_id = caller),
     // view-only, paginated. associateId always comes from the caller's own JWT (see
     // AssociateSaleController) -- there is no path for one associate to view another's sales
     // through this method.
     public AssociateSalePageResponse getMySales(UUID associateId, java.time.LocalDate from, java.time.LocalDate to, int page, int size,
                                                 SaleStatus status, UUID cycleId, String plotNo, String search) {
-        List<UUID> selfAndDownlineIds = associateRepository.findSelfAndDownline(associateId);
         java.time.Instant fromInstant = from == null ? java.time.Instant.EPOCH : from.atStartOfDay().toInstant(java.time.ZoneOffset.UTC);
         java.time.Instant toExclusive = to == null ? java.time.Instant.parse("9999-01-01T00:00:00Z") : to.plusDays(1).atStartOfDay().toInstant(java.time.ZoneOffset.UTC);
 
         Page<Sale> result;
         if (status == null && cycleId == null && plotNo == null && search == null) {
-            result = saleRepository.findByAssociateIdInOrderByRecordedAtDesc(selfAndDownlineIds, fromInstant, toExclusive, PageRequest.of(page, size));
+            result = saleRepository.findBySponsorIdOrderByRecordedAtDesc(associateId, fromInstant, toExclusive, PageRequest.of(page, size));
         } else {
-            // Same filters as the admin register, but the text search can never leave the caller's tree.
-            List<UUID> ids = selfAndDownlineIds;
-            if (search != null) {
-                java.util.Set<UUID> matches = new java.util.HashSet<>(associateRepository.findIdsBySearch(search));
-                ids = selfAndDownlineIds.stream().filter(matches::contains).toList();
-            }
-            result = ids.isEmpty()
+            // Same filters as the admin register; the text search narrows by buyer but never widens past the caller's own sponsored sales.
+            List<UUID> matchIds = search == null ? List.of(associateId) : associateRepository.findIdsBySearch(search);
+            result = matchIds.isEmpty()
                 ? Page.empty(PageRequest.of(page, size))
-                : saleRepository.searchRegisterByAssociates(ids, status, fromInstant, toExclusive, cycleId, plotNo, PageRequest.of(page, size));
+                : saleRepository.searchRegisterBySponsor(associateId, search != null, matchIds, status, fromInstant, toExclusive, cycleId, plotNo, PageRequest.of(page, size));
         }
 
         List<SaleResponse> sales = toResponses(result.getContent());

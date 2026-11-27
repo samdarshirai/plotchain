@@ -213,23 +213,24 @@ class SaleRepositoryTest {
     }
 
     @Test
-    void findByAssociateIdInOrderByRecordedAtDescReturnsOnlyMatchingAssociatesNewestFirst() {
+    void findBySponsorIdOrderByRecordedAtDescReturnsOnlyThatSponsorsSalesNewestFirst() {
         UUID projectId = persistProject();
         UUID plotId = persistPlot(projectId);
         UUID cycleId = persistCycle();
-        UUID associateA = persistAssociate();
-        UUID associateB = persistAssociate();
-        UUID associateC = persistAssociate();
-        Instant earlier = Instant.parse("2026-01-10T00:00:00Z");
-        Instant later = Instant.parse("2026-01-20T00:00:00Z");
-        Sale earlierSale = persistSale(projectId, associateA, plotId, cycleId, SaleStatus.RECORDED, earlier);
-        Sale laterSale = persistSale(projectId, associateB, plotId, cycleId, SaleStatus.RECORDED, later);
-        // Not in the IN-list below -- must be excluded even though it's a real, persisted sale.
-        persistSale(projectId, associateC, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        UUID sponsor = persistAssociate();
+        UUID otherSponsor = persistAssociate();
+        UUID buyerA = persistAssociate();
+        UUID buyerB = persistAssociate();
+        Sale earlierSale = persistSale(projectId, buyerA, plotId, cycleId, SaleStatus.RECORDED, Instant.parse("2026-01-10T00:00:00Z"));
+        Sale laterSale = persistSale(projectId, buyerB, plotId, cycleId, SaleStatus.RECORDED, Instant.parse("2026-01-20T00:00:00Z"));
+        Sale otherSale = persistSale(projectId, buyerA, plotId, cycleId, SaleStatus.RECORDED, Instant.now());
+        earlierSale.setSponsorId(sponsor);
+        laterSale.setSponsorId(sponsor);
+        otherSale.setSponsorId(otherSponsor);
         entityManager.flush();
 
-        Page<Sale> result = saleRepository.findByAssociateIdInOrderByRecordedAtDesc(
-            List.of(associateA, associateB), Instant.EPOCH, Instant.parse("9999-01-01T00:00:00Z"), PageRequest.of(0, 20));
+        Page<Sale> result = saleRepository.findBySponsorIdOrderByRecordedAtDesc(
+            sponsor, Instant.EPOCH, Instant.parse("9999-01-01T00:00:00Z"), PageRequest.of(0, 20));
 
         assertThat(result.getContent()).extracting(Sale::getId)
             .containsExactly(laterSale.getId(), earlierSale.getId());
