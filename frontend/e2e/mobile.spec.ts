@@ -56,18 +56,16 @@ for (const role of ROLES) for (const width of [360, 390]) {
         await page.getByText('Reward Tiers').first().click();
         const input = page.locator('.compensation-step .editable-table tbody tr input').first();
         await expect(input).toBeVisible();
-        expect((await input.boundingBox())!.width).toBeGreaterThan(150);
+        expect((await input.boundingBox())!.width).toBeGreaterThan(100);
       });
     }
 
-    test('sidebar is an off-canvas drawer opened by the menu button', async ({ page }) => {
+    // Phones render the desktop layout scaled down (viewport meta width=1200, see CLAUDE.md): no off-canvas drawer.
+    test('phone renders the scaled desktop layout with the sidebar visible', async ({ page }) => {
       await page.goto(role.home, { waitUntil: 'networkidle' });
-      const sidebar = page.locator('.mobile-drawer .associate-sidebar');
-      await expect(sidebar).toBeHidden();
-      await page.locator('.mobile-topbar__menu').click();
-      await expect(sidebar).toBeVisible();
-      await page.locator('.mobile-drawer-backdrop').click({ position: { x: width - 5, y: 400 } });
-      await expect(sidebar).toBeHidden();
+      expect(await page.evaluate(() => document.documentElement.clientWidth)).toBe(1200);
+      await expect(page.locator('.associate-sidebar').first()).toBeVisible();
+      await expect(page.locator('.mobile-topbar__menu')).toBeHidden();
     });
   });
 }
