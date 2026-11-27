@@ -624,23 +624,21 @@ a.seal-card__chip:hover {
 }
 
 @media (max-width: 1100px) {
-  // Two columns: this cycle on the left, lifetime on the right.
+  // Two columns: left-leg tiles on the left, right-leg tiles on the right.
   #dashboard-section-business-volume {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 
     > :nth-child(1) { grid-area: 1 / 1; }
-    > :nth-child(2) { grid-area: 2 / 1; }
-    > :nth-child(6) { grid-area: 3 / 1; }
-    > :nth-child(3) { grid-area: 1 / 2; }
+    > :nth-child(2) { grid-area: 1 / 2; }
+    > :nth-child(3) { grid-area: 2 / 1; }
     > :nth-child(4) { grid-area: 2 / 2; }
+    > :nth-child(6) { grid-area: 3 / 1; }
     > :nth-child(5) { grid-area: 3 / 2; }
   }
 
-  // Two columns: the team down the left, the money down the right.
+  // Two columns: left | right associates on row 1, the rest flow in pairs.
   #dashboard-section-network-income {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(5, auto);
-    grid-auto-flow: column;
   }
 }
 
