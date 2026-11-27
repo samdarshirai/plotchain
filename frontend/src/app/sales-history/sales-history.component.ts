@@ -45,7 +45,7 @@ export class SalesHistoryComponent implements OnInit {
     this.requestedPage = page;
     this.loading = true;
     this.loadError = false;
-    fetchAllPages((pg, size) => this.salesHistoryService.getMySales(pg, size, this.from, this.to)).subscribe({
+    fetchAllPages((pg, size) => this.salesHistoryService.getMySales(pg, size, this.from, this.to, 'downline')).subscribe({
       next: res => {
         if (page !== this.requestedPage) { return; }
         this.loading = false;

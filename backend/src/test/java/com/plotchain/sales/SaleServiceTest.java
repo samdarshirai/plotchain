@@ -633,6 +633,38 @@ class SaleServiceTest {
     }
 
     @Test
+    void getTreeSalesDownlineQueriesBuyersUnderTheCallerExcludingTheCaller() {
+        UUID child = UUID.randomUUID();
+        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID, child));
+        when(saleRepository.searchRegisterByAssociates(eq(List.of(child)), any(), any(), any(), any(), any(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        saleService.getTreeSales(ASSOCIATE_ID, false, null, null, 0, 20, null, null, null, null);
+
+        verify(saleRepository).searchRegisterByAssociates(eq(List.of(child)), any(), any(), any(), any(), any(), eq(PageRequest.of(0, 20)));
+    }
+
+    @Test
+    void getTreeSalesOwnQueriesOnlyTheCallerAndSkipsTheDownlineLookup() {
+        when(saleRepository.searchRegisterByAssociates(eq(List.of(ASSOCIATE_ID)), any(), any(), any(), any(), any(), eq(PageRequest.of(0, 20))))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        saleService.getTreeSales(ASSOCIATE_ID, true, null, null, 0, 20, null, null, null, null);
+
+        verify(associateRepository, never()).findSelfAndDownline(any());
+    }
+
+    @Test
+    void getTreeSalesReturnsAnEmptyPageWhenThereIsNoDownline() {
+        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
+
+        AssociateSalePageResponse response = saleService.getTreeSales(ASSOCIATE_ID, false, null, null, 0, 20, null, null, null, null);
+
+        assertThat(response.sales()).isEmpty();
+        verify(saleRepository, never()).searchRegisterByAssociates(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
     void getMySalesReturnsAnEmptyPageWhenTheCallerHasNoSponsoredSales() {
         when(saleRepository.findBySponsorIdOrderByRecordedAtDesc(
             eq(ASSOCIATE_ID), any(), any(), eq(PageRequest.of(0, 20))))

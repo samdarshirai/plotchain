@@ -8,8 +8,9 @@ import { AssociateSalePage } from './models/associate-sale-page.model';
 export class SalesHistoryService {
   private http = inject(HttpClient);
 
-  getMySales(page: number, size: number, from?: string, to?: string): Observable<AssociateSalePage> {
-    const params = range(new HttpParams().set('page', page).set('size', size), from, to);
+  getMySales(page: number, size: number, from?: string, to?: string, scope: 'sponsored' | 'downline' | 'own' = 'sponsored'): Observable<AssociateSalePage> {
+    let params = range(new HttpParams().set('page', page).set('size', size), from, to);
+    if (scope !== 'sponsored') { params = params.set('scope', scope); }
     return this.http.get<AssociateSalePage>('/api/associates/me/sales', { params });
   }
 }

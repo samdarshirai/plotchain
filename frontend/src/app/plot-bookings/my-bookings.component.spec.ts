@@ -32,13 +32,22 @@ describe('MyBookingsComponent', () => {
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
   });
-  afterEach(() => { http.match('/api/associates/me/cycles').forEach(r => r.flush([])); http.verify(); });
+  afterEach(() => { http.match('/api/associates/me/cycles').forEach(r => r.flush([])); http.match(r => r.url === '/api/associates/me/sales').forEach(r => r.flush({ sales: [], page: 0, size: 100, totalElements: 0 })); http.verify(); });
 
   it('renders a single page heading', () => {
     boot([]);
     const h1 = el().querySelectorAll('h1.my-bookings__title');
     expect(h1.length).toBe(1);
     expect(h1[0].textContent).toContain('plotBookings.myBookings.title');
+  });
+
+  it('also requests the caller\'s own bought sales (scope=own) and shows them in a second table', () => {
+    boot([]);
+    const req = http.expectOne(r => r.url === '/api/associates/me/sales' && r.params.get('scope') === 'own');
+    req.flush({ sales: [], page: 0, size: 100, totalElements: 0 });
+    fixture.detectChanges();
+    expect(el().querySelector('.my-bookings__sales-title')!.textContent).toContain('plotBookings.myBookings.salesTitle');
+    expect(el().querySelectorAll('app-booking-table').length).toBe(2);
   });
 
   it('renders a table row per booking in server order', () => {
