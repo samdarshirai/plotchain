@@ -109,6 +109,16 @@ export class SalesRegisterComponent implements OnInit {
   private recordedTo = '';
 
   ngOnInit(): void {
+    // get() waits for the translations to load; instant() before that left raw keys in the headers.
+    this.translate.get('admin.salesRegister.columnPlotNo').subscribe(() => this.buildColumns());
+    (this.mine
+      ? this.salesRegisterService.myCycles()
+      : this.cycleService.list('', 0, 100).pipe(map(r => r.cycles))
+    ).subscribe({ next: c => (this.cycles = c), error: () => undefined });
+    this.loadPage(0);
+  }
+
+  private buildColumns(): void {
     this.registerColumns = [
       { key: 'projectName', label: this.translate.instant('admin.salesRegister.columnProjectName'), type: 'text' },
       { key: 'plotNo', label: this.translate.instant('admin.salesRegister.columnPlotNo'), type: 'text' },
@@ -127,11 +137,6 @@ export class SalesRegisterComponent implements OnInit {
       },
       { key: 'recordedAt', label: this.translate.instant('admin.salesRegister.columnRecordedAt'), type: 'text' }
     ];
-    (this.mine
-      ? this.salesRegisterService.myCycles()
-      : this.cycleService.list('', 0, 100).pipe(map(r => r.cycles))
-    ).subscribe({ next: c => (this.cycles = c), error: () => undefined });
-    this.loadPage(0);
   }
 
   onCycleChange(value: string): void {
