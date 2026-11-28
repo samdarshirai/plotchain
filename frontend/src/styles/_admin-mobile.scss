@@ -464,3 +464,43 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
   .invoice-receipt__print { min-height: 44px; }
   .invoice-receipt__print { width: 100%; }
 }
+
+// Associate Directory below desktop: no scroll box. The table keeps its natural width and the page
+// itself scrolls sideways / pinch-zooms, so the user can zoom out to see all columns at once.
+// Deliberate exception to "page never scrolls sideways"; opt-in per screen. !important beats the
+// global `table { display:block; overflow-x:auto }` in _tables.scss.
+// The rest of the screen (header, tabs, filters) is sized to the table: `contain: inline-size`
+// zeroes their intrinsic width, so the page is exactly as wide as the table and every box matches it.
+@media (max-width: 1199px) {
+  .associate-directory {
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+  }
+
+  // app-root grows to the content so the top bar spans the full page width (it scrolls sideways with it).
+  app-root:has(.associate-directory) {
+    display: block;
+    min-width: max-content;
+  }
+
+  .associate-directory__header,
+  .associate-directory__list > :not(.associate-directory__table-wrap) {
+    contain: inline-size;
+  }
+
+  .associate-directory__table-wrap {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+
+    table {
+      display: table !important;
+      width: max-content !important;
+      min-width: 100%;
+      max-width: none;
+      table-layout: auto;
+      overflow: visible;
+    }
+  }
+}
