@@ -28,7 +28,8 @@ async function checkScreen(page: Page, route: string, screenshotPath: string, na
       if (style.backgroundColor === 'rgb(12, 10, 11)') { problems.push(`Ink table header: ${th.textContent}`); }
     }
     // .projects-plots__row-book is an outlined row action by design (fills on row hover), not a primary CTA.
-    for (const button of document.querySelectorAll('.brand-button:not(.brand-button--secondary):not(.brand-button--ghost):not(.brand-button--danger):not(.projects-plots__row-book)')) {
+    // .plot-cancel__detail / __danger have their own colours by design (d17afc0b).
+    for (const button of document.querySelectorAll('.brand-button:not(.brand-button--secondary):not(.brand-button--ghost):not(.brand-button--danger):not(.projects-plots__row-book):not(.plot-cancel__detail):not(.plot-cancel__danger)')) {
       if (!button.getBoundingClientRect().height) { continue; }
       if (getComputedStyle(button).backgroundColor !== 'rgb(92, 26, 42)') { problems.push(`incorrect primary CTA: ${button.textContent}`); }
     }
