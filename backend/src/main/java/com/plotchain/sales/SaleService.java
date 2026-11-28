@@ -288,12 +288,10 @@ public class SaleService {
         return new AssociateSalePageResponse(sales, page, size, result.getTotalElements());
     }
 
-    // my-sales screen: sales bought by everyone under the caller (own=false, caller excluded), or
-    // by the caller alone (own=true, the my-bookings screen's sales table).
-    public AssociateSalePageResponse getTreeSales(UUID associateId, boolean own, java.time.LocalDate from, java.time.LocalDate to, int page, int size,
+    // my-sales screen: sales bought by everyone under the caller (caller excluded).
+    public AssociateSalePageResponse getDownlineSales(UUID associateId, java.time.LocalDate from, java.time.LocalDate to, int page, int size,
                                                   SaleStatus status, UUID cycleId, String plotNo, String search) {
-        List<UUID> buyerIds = own ? List.of(associateId)
-            : associateRepository.findSelfAndDownline(associateId).stream().filter(id -> !id.equals(associateId)).toList();
+        List<UUID> buyerIds = associateRepository.findSelfAndDownline(associateId).stream().filter(id -> !id.equals(associateId)).toList();
         if (search != null) {
             List<UUID> matches = associateRepository.findIdsBySearch(search);
             buyerIds = buyerIds.stream().filter(matches::contains).toList();

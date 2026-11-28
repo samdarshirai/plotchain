@@ -4,10 +4,8 @@ import { TranslateModule } from '@ngx-translate/core';
 import { InlineBannerComponent } from '../shared/components/inline-banner/inline-banner.component';
 import { DateRangeComponent, last30Days } from '../shared/components/date-range/date-range.component';
 import { AssociateBookingPage, Booking } from './models/associate-booking-page.model';
-import { BookingTableComponent, bookingRow, saleRow } from './booking-table.component';
+import { BookingTableComponent, bookingRow } from './booking-table.component';
 import { PlotBookingsService } from './plot-bookings.service';
-import { SalesHistoryService } from '../sales-history/sales-history.service';
-import { AssociateSalePage } from '../sales-history/models/associate-sale-page.model';
 import { fetchAllPages } from '../shared/utils/fetch-all-pages';
 
 
@@ -34,18 +32,12 @@ import { fetchAllPages } from '../shared/utils/fetch-all-pages';
       <ng-container *ngIf="page">
         <p class="my-bookings__note">{{ 'plotBookings.bookingsNote' | translate }}</p>
         <app-booking-table [rows]="rows" [inline]="true" [label]="'plotBookings.myBookings.title' | translate"></app-booking-table>
-        <h2 class="my-bookings__sales-title">{{ 'plotBookings.myBookings.salesTitle' | translate }}</h2>
-        <app-booking-table *ngIf="sales" [rows]="saleRows" [inline]="true" [label]="'plotBookings.myBookings.salesTitle' | translate"></app-booking-table>
       </ng-container>
     </div>
   `
 })
 export class MyBookingsComponent implements OnInit {
   private service = inject(PlotBookingsService);
-  private salesService = inject(SalesHistoryService);
-
-  sales: AssociateSalePage | null = null;
-  get saleRows() { return (this.sales?.sales ?? []).map(saleRow); }
 
   page: AssociateBookingPage | null = null;
   from = last30Days().from;
@@ -65,11 +57,6 @@ export class MyBookingsComponent implements OnInit {
     this.requestedPage = p;
     this.loading = true;
     this.error = false;
-    // Sales I bought; a failure here just leaves the sales table empty, bookings still show.
-    fetchAllPages((pg, size) => this.salesService.getMySales(pg, size, this.from, this.to, 'own')).subscribe({
-      next: res => { if (p === this.requestedPage) { this.sales = res; } },
-      error: () => undefined
-    });
     fetchAllPages((pg, size) => this.service.getMyBookings(pg, size, this.from, this.to)).subscribe({
       next: res => {
         if (p !== this.requestedPage) { return; }

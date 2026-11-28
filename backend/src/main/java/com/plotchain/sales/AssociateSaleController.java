@@ -42,7 +42,7 @@ public class AssociateSaleController {
             @RequestParam(required = false) UUID cycleId,
             @RequestParam(required = false) String plotNo,
             @RequestParam(required = false) String search,
-            // sponsored (default) = sales I sponsored; downline = bought by everyone under me; own = bought by me.
+            // sponsored (default) = sales I sponsored; downline = bought by everyone under me.
             @RequestParam(defaultValue = "sponsored") String scope
     ) {
         if (from != null && to != null && from.isAfter(to)) {
@@ -55,7 +55,7 @@ public class AssociateSaleController {
         String q = search == null || search.isBlank() ? null : search.trim();
         return switch (scope) {
             case "sponsored" -> saleService.getMySales(associateId, from, to, page, size, status, cycleId, plot, q);
-            case "downline", "own" -> saleService.getTreeSales(associateId, scope.equals("own"), from, to, page, size, status, cycleId, plot, q);
+            case "downline" -> saleService.getDownlineSales(associateId, from, to, page, size, status, cycleId, plot, q);
             default -> throw new org.springframework.web.server.ResponseStatusException(
                 org.springframework.http.HttpStatus.BAD_REQUEST, "unknown scope");
         };

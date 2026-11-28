@@ -633,32 +633,22 @@ class SaleServiceTest {
     }
 
     @Test
-    void getTreeSalesDownlineQueriesBuyersUnderTheCallerExcludingTheCaller() {
+    void getDownlineSalesDownlineQueriesBuyersUnderTheCallerExcludingTheCaller() {
         UUID child = UUID.randomUUID();
         when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID, child));
         when(saleRepository.searchRegisterByAssociates(eq(List.of(child)), any(), any(), any(), any(), any(), eq(PageRequest.of(0, 20))))
             .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        saleService.getTreeSales(ASSOCIATE_ID, false, null, null, 0, 20, null, null, null, null);
+        saleService.getDownlineSales(ASSOCIATE_ID, null, null, 0, 20, null, null, null, null);
 
         verify(saleRepository).searchRegisterByAssociates(eq(List.of(child)), any(), any(), any(), any(), any(), eq(PageRequest.of(0, 20)));
     }
 
     @Test
-    void getTreeSalesOwnQueriesOnlyTheCallerAndSkipsTheDownlineLookup() {
-        when(saleRepository.searchRegisterByAssociates(eq(List.of(ASSOCIATE_ID)), any(), any(), any(), any(), any(), eq(PageRequest.of(0, 20))))
-            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
-
-        saleService.getTreeSales(ASSOCIATE_ID, true, null, null, 0, 20, null, null, null, null);
-
-        verify(associateRepository, never()).findSelfAndDownline(any());
-    }
-
-    @Test
-    void getTreeSalesReturnsAnEmptyPageWhenThereIsNoDownline() {
+    void getDownlineSalesReturnsAnEmptyPageWhenThereIsNoDownline() {
         when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
 
-        AssociateSalePageResponse response = saleService.getTreeSales(ASSOCIATE_ID, false, null, null, 0, 20, null, null, null, null);
+        AssociateSalePageResponse response = saleService.getDownlineSales(ASSOCIATE_ID, null, null, 0, 20, null, null, null, null);
 
         assertThat(response.sales()).isEmpty();
         verify(saleRepository, never()).searchRegisterByAssociates(any(), any(), any(), any(), any(), any(), any());

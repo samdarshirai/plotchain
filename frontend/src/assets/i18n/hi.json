@@ -155,7 +155,7 @@
     "networkLegendIdle": "निष्क्रिय"
   },
   "salesHistory": {
-    "title": "मेरी बिक्री",
+    "title": "मेरी डाउनलाइन बिक्री",
     "subtitle": "Recorded sales of everyone under you in the tree.",
     "columnBuyerName": "Buyer",
     "columnBuyerPhone": "Phone",
@@ -190,7 +190,7 @@
     "table": {"compare": "तुलना", "empty": "दिखाने के लिए कोई डेटा नहीं।", "bookingDate": "बुकिंग तिथि", "sponsorId": "स्पॉन्सर आईडी", "sponsorName": "स्पॉन्सर का नाम", "associateId": "खरीदार आईडी", "name": "नाम", "project": "प्रोजेक्ट", "plotType": "प्लॉट प्रकार", "plotNo": "प्लॉट नं.", "rate": "दर", "area": "क्षेत्रफल", "price": "मूल्य", "mobile": "मोबाइल नं.", "roadSize": "सड़क का आकार", "extraPrice": "अतिरिक्त मूल्य", "totalPrice": "कुल मूल्य", "paid": "भुगतान राशि", "rest": "शेष राशि", "details": "विवरण", "detailsAction": "देखें", "close": "बंद करें"},
     "payments": {"paymentDate": "भुगतान तिथि", "amount": "राशि", "receiptNo": "रसीद नं", "mode": "भुगतान माध्यम", "instrumentNo": "चेक/डीडी/NEFT/RTGS नं", "date": "तिथि", "empty": "अभी कोई भुगतान नहीं।"},
     "compare": {"view": "तुलना देखें ↑", "title": "{{count}} प्लॉट की तुलना", "clear": "सभी हटाएँ", "remove": "{{plot}} हटाएँ", "select": "{{plot}} की तुलना करें", "payments": "भुगतान", "addPlot": "प्लॉट जोड़ें (प्लॉट या खरीदार आईडी लिखें)", "maxNote": "अधिकतम 4 प्लॉट की तुलना हो सकती है। नया जोड़ने के लिए एक हटाएँ।", "status": {"ACTIVE": "सक्रिय", "CANCELLED": "रद्द", "CONFIRMED": "पुष्ट"}, "metric": {"total": "कुल मूल्य", "paid": "भुगतान किया", "rest": "शेष राशि", "payments": "भुगतान", "lastPaid": "अंतिम भुगतान", "nextDue": "अगली किस्त"}, "refund": "रिफंड {{amount}}", "pendingCount": "{{count}} लंबित", "overdue": "बकाया · {{count}} किस्त · {{amount}}", "paymentStatus": {"ENTERED": "लंबित", "PAID": "पुष्ट"}, "date": "तिथि", "col": {"status": "स्थिति"}},
-    "myBookings": { "title": "My Bookings", "salesTitle": "My Sales" },
+    "myBookings": { "title": "मेरी बिक्री" },
     "team": {
       "title": { "TEAM": "टीम द्वारा खरीदे गए प्लॉट", "LEFT": "लेफ्ट प्लॉट बुकिंग", "RIGHT": "राइट प्लॉट बुकिंग" },
       "subtitle": {
@@ -703,9 +703,9 @@
     "epinViewUsed": "उपयोग किए गए पिन देखें",
     "myTeam": "मेरी टीम",
     "associateDownline": "एसोसिएट डाउनलाइन देखें",
-    "mySales": "मेरी बिक्री",
+    "mySales": "मेरी डाउनलाइन बिक्री",
     "directSponsorSales": "Direct Sponsor Sales",
-    "myBookings": "My Bookings",
+    "myBookings": "मेरी बिक्री",
     "plotBookings": "प्लॉट बुकिंग",
     "viewPlot": "प्लॉट देखें",
     "teamPlots": "टीम द्वारा खरीदे गए प्लॉट",
