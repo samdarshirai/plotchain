@@ -19,7 +19,9 @@ async function checkScreen(page: Page, route: string, screenshotPath: string, na
   const violations = await page.evaluate(() => {
     const problems: string[] = [];
     const root = document.documentElement;
-    if (root.scrollWidth > root.clientWidth) { problems.push(`page overflows by ${root.scrollWidth - root.clientWidth}px`); }
+    // Associate Directory is deliberately zoomable below 1200px: the page scrolls sideways with the table.
+    const zoomable = location.pathname === '/admin/settings/associate-directory' && root.clientWidth < 1200;
+    if (!zoomable && root.scrollWidth > root.clientWidth) { problems.push(`page overflows by ${root.scrollWidth - root.clientWidth}px`); }
     for (const th of document.querySelectorAll('thead th')) {
       if (!th.getBoundingClientRect().height) { continue; }
       const style = getComputedStyle(th);

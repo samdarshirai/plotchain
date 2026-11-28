@@ -472,24 +472,24 @@ $table-stack-max: (invoice-loans: $invoice-loans-stack-max, invoice-payments: $i
 // The rest of the screen (header, tabs, filters) is sized to the table: `contain: inline-size`
 // zeroes their intrinsic width, so the page is exactly as wide as the table and every box matches it.
 @media (max-width: 1199px) {
-  .associate-directory {
+  .associate-directory--zoom {
     width: max-content;
     min-width: 100%;
     max-width: none;
   }
 
   // app-root grows to the content so the top bar spans the full page width (it scrolls sideways with it).
-  app-root:has(.associate-directory) {
+  app-root:has(.associate-directory--zoom) {
     display: block;
     min-width: max-content;
   }
 
-  .associate-directory__header,
-  .associate-directory__list > :not(.associate-directory__table-wrap) {
+  .associate-directory--zoom .associate-directory__header,
+  .associate-directory--zoom .associate-directory__list > :not(.associate-directory__table-wrap) {
     contain: inline-size;
   }
 
-  .associate-directory__table-wrap {
+  .associate-directory--zoom .associate-directory__table-wrap {
     border: 0;
     border-radius: 0;
     background: transparent;

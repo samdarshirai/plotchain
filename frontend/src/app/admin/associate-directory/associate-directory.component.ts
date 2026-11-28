@@ -30,7 +30,7 @@ const VIEWS: DirectoryView[] = ['all', 'green', 'red', 'left', 'right', 'byDate'
   standalone: true,
   imports: [TableToolsComponent, CommonModule, TranslateModule, InlineBannerComponent, NewAssociatePanelComponent, EditableTableComponent, TabBarComponent, FieldErrorComponent],
   template: `
-    <div class="associate-directory">
+    <div class="associate-directory associate-directory--zoom">
       <div class="associate-directory__header">
         <div class="associate-directory__intro">
           <div class="associate-directory__eyebrow">{{ 'admin.associateDirectory.eyebrow' | translate }}</div>

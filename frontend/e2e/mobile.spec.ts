@@ -27,6 +27,8 @@ for (const role of ROLES) for (const width of [360, 390]) {
 
     for (const route of role.routes) {
       test(`${route} has no horizontal page overflow`, async ({ page }) => {
+        // Associate Directory is deliberately zoomable: below 1200px the page scrolls sideways with the table.
+        test.skip(route === '/admin/settings/associate-directory', 'zoomable table screen');
         await page.goto(route, { waitUntil: 'networkidle' });
         expect(new URL(page.url()).pathname).toBe(route);
         const { scrollWidth, clientWidth } = await page.evaluate(() => ({

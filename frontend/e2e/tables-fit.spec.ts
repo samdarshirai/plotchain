@@ -27,6 +27,8 @@ for (const role of ROLES) for (const width of [390, 800, 1280]) {
 
     for (const route of role.routes) {
       test(`${route} tables fit`, async ({ page }) => {
+        // Associate Directory is deliberately zoomable below 1200px (page scrolls sideways with the table).
+        test.skip(route === '/admin/settings/associate-directory' && width < 1200, 'zoomable table screen');
         await page.goto(route, { waitUntil: 'networkidle' });
         await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
         expect(await page.evaluate(audit)).toEqual([]);
