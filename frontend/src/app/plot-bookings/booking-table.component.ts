@@ -10,7 +10,7 @@ import { TableToolsComponent } from '../shared/components/table-tools/table-tool
 
 export const MAX_COMPARE = 4;
 
-// One row shape for every Associate /plot-bookings table (team, left, right, mine, my-sales).
+// One row shape for every Associate /plot-bookings table (team, left, right, mine).
 export interface BookingRow {
   key: string;
   bookedAt: string;

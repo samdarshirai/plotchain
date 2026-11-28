@@ -3,9 +3,9 @@ import { ASSOCIATE_NAV_ITEMS } from './associate-nav-items.model';
 describe('ASSOCIATE_NAV_ITEMS', () => {
   const plotBookings = ASSOCIATE_NAV_ITEMS.find(i => i.key === 'plotBookings')!;
 
-  it('lists My Bookings under Plot Bookings, before My Sales', () => {
+  it('lists My Sales (bookings) under Plot Bookings, before Direct Sponsor Sales', () => {
     const keys = plotBookings.children!.map(c => c.key);
-    expect(keys).toEqual(['viewPlot', 'teamPlots', 'leftPlots', 'rightPlots', 'myBookings', 'mySales', 'directSponsorSales']);
+    expect(keys).toEqual(['viewPlot', 'teamPlots', 'leftPlots', 'rightPlots', 'myBookings', 'directSponsorSales']);
     const mine = plotBookings.children!.find(c => c.key === 'myBookings')!;
     expect(mine.path).toBe('/plot-bookings/mine');
     expect(mine.labelKey).toBe('nav.myBookings');

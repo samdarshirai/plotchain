@@ -127,7 +127,6 @@ describe('AppComponent', () => {
       const translations: { [key: string]: string } = {
         'nav.dashboard': 'Dashboard',
         'nav.myTree': 'Genealogy',
-        'nav.mySales': 'My Sales',
         'nav.plotBookings': 'Plot Bookings',
         'nav.epinRegister': 'e-Pin Register',
         'nav.myAccount': 'My Account',

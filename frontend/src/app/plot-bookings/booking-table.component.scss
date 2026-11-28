@@ -52,7 +52,7 @@ app-booking-table { display: contents; }
   app-date-range .date-range__field input { box-sizing: border-box; height: 40px; min-height: 40px; border-radius: 5px; font-size: 0.875rem; }
   max-width: 1480px; margin: 0 auto; padding: 1.5rem 2rem;
   h1 { margin: 0; font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--text-primary); }
-  > h1 + p, .my-bookings__note, .my-sales__subtitle { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); max-width: none; padding-right: max(0px, calc(100% - 46rem)); }
+  > h1 + p, .my-bookings__note { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--text-muted); max-width: none; padding-right: max(0px, calc(100% - 46rem)); }
 }
 @media (max-width: 767px) {
   .booking-page { padding-inline: 1rem; > app-date-range { flex-basis: 100%; width: auto; } app-date-range .date-range { flex-wrap: wrap; } app-date-range .date-range__field { flex-basis: 100%; } }

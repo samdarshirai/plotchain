@@ -22,14 +22,6 @@ describe('routes', () => {
     expect(dashboardRoute!.canActivate).toContain(associateOnlyGuard);
   });
 
-  it('guards the my-sales route with authGuard and associateOnlyGuard', () => {
-    const route = routes.find(r => r.path === 'plot-bookings/my-sales');
-
-    expect(route).toBeTruthy();
-    expect(route!.canActivate).toContain(authGuard);
-    expect(route!.canActivate).toContain(associateOnlyGuard);
-  });
-
   it('guards the my-bookings route with authGuard and associateOnlyGuard, lazily', () => {
     const route = routes.find(r => r.path === 'plot-bookings/mine');
 

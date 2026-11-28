@@ -33,7 +33,6 @@ import { EPinRegisterComponent } from './admin/epin-register/epin-register.compo
 import { PayoutApprovalComponent } from './admin/payout-approval/payout-approval.component';
 import { TermsOfServiceComponent } from './legal/terms-of-service.component';
 import { PrivacyPolicyComponent } from './legal/privacy-policy.component';
-import { SalesHistoryComponent } from './sales-history/sales-history.component';
 import { MyTreeComponent } from './my-tree/my-tree.component';
 import { MyAccountComponent } from './my-account/my-account.component';
 import { IncomeStatementComponent } from './income-statement/income-statement.component';
@@ -47,9 +46,9 @@ export const routes: Routes = [
   { path: 'terms', component: TermsOfServiceComponent },
   { path: 'privacy', component: PrivacyPolicyComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard, associateOnlyGuard] },
-  { path: 'plot-bookings/my-sales', component: SalesHistoryComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'plot-bookings/direct-sponsor-sales', loadComponent: () => import('./admin/sales-register/sales-register.component').then(m => m.SalesRegisterComponent), data: { scope: 'me' }, canActivate: [authGuard, associateOnlyGuard] },
-  { path: 'sales-history', redirectTo: 'plot-bookings/my-sales' }, // old bookmarks
+  { path: 'plot-bookings/my-sales', redirectTo: 'plot-bookings/team' }, // old bookmarks (screen removed; team shows the same people)
+  { path: 'sales-history', redirectTo: 'plot-bookings/team' }, // old bookmarks
   { path: 'my-tree', component: MyTreeComponent, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'my-tree/downline', loadComponent: () => import('./my-team/associate-downline.component').then(m => m.AssociateDownlineComponent), data: { scope: 'me' }, canActivate: [authGuard, associateOnlyGuard] },
   { path: 'my-tree/team', loadComponent: () => import('./my-team/my-team.component').then(m => m.MyTeamComponent), canActivate: [authGuard, associateOnlyGuard] },

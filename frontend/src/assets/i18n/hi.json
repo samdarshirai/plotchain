@@ -154,20 +154,6 @@
     "networkLegendActive": "सक्रिय",
     "networkLegendIdle": "निष्क्रिय"
   },
-  "salesHistory": {
-    "title": "मेरी डाउनलाइन बिक्री",
-    "subtitle": "Recorded sales of everyone under you in the tree.",
-    "columnBuyerName": "Buyer",
-    "columnBuyerPhone": "Phone",
-    "columnAmount": "Amount",
-    "columnAssociateId": "खरीदार आईडी",
-    "columnAssociateName": "Associate",
-    "columnLegCredited": "Leg",
-    "columnStatus": "Status",
-    "columnRecordedAt": "Recorded At",
-    "loadError": "Something went wrong loading your sales history. Please try again.",
-    "emptyState": "No sales to show yet."
-  },
   "reports": {
     "from": "से",
     "to": "तक",
@@ -703,7 +689,6 @@
     "epinViewUsed": "उपयोग किए गए पिन देखें",
     "myTeam": "मेरी टीम",
     "associateDownline": "एसोसिएट डाउनलाइन देखें",
-    "mySales": "मेरी डाउनलाइन बिक्री",
     "directSponsorSales": "Direct Sponsor Sales",
     "myBookings": "मेरी बिक्री",
     "plotBookings": "प्लॉट बुकिंग",

@@ -633,28 +633,6 @@ class SaleServiceTest {
     }
 
     @Test
-    void getDownlineSalesDownlineQueriesBuyersUnderTheCallerExcludingTheCaller() {
-        UUID child = UUID.randomUUID();
-        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID, child));
-        when(saleRepository.searchRegisterByAssociates(eq(List.of(child)), any(), any(), any(), any(), any(), eq(PageRequest.of(0, 20))))
-            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
-
-        saleService.getDownlineSales(ASSOCIATE_ID, null, null, 0, 20, null, null, null, null);
-
-        verify(saleRepository).searchRegisterByAssociates(eq(List.of(child)), any(), any(), any(), any(), any(), eq(PageRequest.of(0, 20)));
-    }
-
-    @Test
-    void getDownlineSalesReturnsAnEmptyPageWhenThereIsNoDownline() {
-        when(associateRepository.findSelfAndDownline(ASSOCIATE_ID)).thenReturn(List.of(ASSOCIATE_ID));
-
-        AssociateSalePageResponse response = saleService.getDownlineSales(ASSOCIATE_ID, null, null, 0, 20, null, null, null, null);
-
-        assertThat(response.sales()).isEmpty();
-        verify(saleRepository, never()).searchRegisterByAssociates(any(), any(), any(), any(), any(), any(), any());
-    }
-
-    @Test
     void getMySalesReturnsAnEmptyPageWhenTheCallerHasNoSponsoredSales() {
         when(saleRepository.findBySponsorIdOrderByRecordedAtDesc(
             eq(ASSOCIATE_ID), any(), any(), eq(PageRequest.of(0, 20))))

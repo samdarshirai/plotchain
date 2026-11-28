@@ -141,20 +141,6 @@
     "networkLegendActive": "Active",
     "networkLegendIdle": "Idle"
   },
-  "salesHistory": {
-    "title": "My Downline Sales",
-    "subtitle": "Recorded sales of everyone under you in the tree.",
-    "columnBuyerName": "Buyer",
-    "columnBuyerPhone": "Phone",
-    "columnAmount": "Amount",
-    "columnAssociateId": "Buyer ID",
-    "columnAssociateName": "Associate",
-    "columnLegCredited": "Leg",
-    "columnStatus": "Status",
-    "columnRecordedAt": "Recorded At",
-    "loadError": "Something went wrong loading your sales history. Please try again.",
-    "emptyState": "No sales to show yet."
-  },
   "reports": {
     "from": "From",
     "to": "To",
@@ -732,7 +718,6 @@
     "epinViewUsed": "View Used Pin",
     "myTeam": "My Team",
     "associateDownline": "View Associate Downline",
-    "mySales": "My Downline Sales",
     "directSponsorSales": "Direct Sponsor Sales",
     "myBookings": "My Sales",
     "plotBookings": "Plot Bookings",

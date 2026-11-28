@@ -41,9 +41,7 @@ public class AssociateSaleController {
             @RequestParam(required = false) SaleStatus status,
             @RequestParam(required = false) UUID cycleId,
             @RequestParam(required = false) String plotNo,
-            @RequestParam(required = false) String search,
-            // sponsored (default) = sales I sponsored; downline = bought by everyone under me.
-            @RequestParam(defaultValue = "sponsored") String scope
+            @RequestParam(required = false) String search
     ) {
         if (from != null && to != null && from.isAfter(to)) {
             throw new org.springframework.web.server.ResponseStatusException(
@@ -53,11 +51,6 @@ public class AssociateSaleController {
         size = Math.min(Math.max(size, 1), 100);
         String plot = plotNo == null || plotNo.isBlank() ? null : plotNo.trim();
         String q = search == null || search.isBlank() ? null : search.trim();
-        return switch (scope) {
-            case "sponsored" -> saleService.getMySales(associateId, from, to, page, size, status, cycleId, plot, q);
-            case "downline" -> saleService.getDownlineSales(associateId, from, to, page, size, status, cycleId, plot, q);
-            default -> throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.BAD_REQUEST, "unknown scope");
-        };
+        return saleService.getMySales(associateId, from, to, page, size, status, cycleId, plot, q);
     }
 }

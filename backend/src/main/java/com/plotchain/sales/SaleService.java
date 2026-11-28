@@ -288,23 +288,6 @@ public class SaleService {
         return new AssociateSalePageResponse(sales, page, size, result.getTotalElements());
     }
 
-    // my-sales screen: sales bought by everyone under the caller (caller excluded).
-    public AssociateSalePageResponse getDownlineSales(UUID associateId, java.time.LocalDate from, java.time.LocalDate to, int page, int size,
-                                                  SaleStatus status, UUID cycleId, String plotNo, String search) {
-        List<UUID> buyerIds = associateRepository.findSelfAndDownline(associateId).stream().filter(id -> !id.equals(associateId)).toList();
-        if (search != null) {
-            List<UUID> matches = associateRepository.findIdsBySearch(search);
-            buyerIds = buyerIds.stream().filter(matches::contains).toList();
-        }
-        if (buyerIds.isEmpty()) {
-            return new AssociateSalePageResponse(List.of(), page, size, 0);
-        }
-        java.time.Instant fromInstant = from == null ? java.time.Instant.EPOCH : from.atStartOfDay().toInstant(java.time.ZoneOffset.UTC);
-        java.time.Instant toExclusive = to == null ? java.time.Instant.parse("9999-01-01T00:00:00Z") : to.plusDays(1).atStartOfDay().toInstant(java.time.ZoneOffset.UTC);
-        Page<Sale> result = saleRepository.searchRegisterByAssociates(buyerIds, status, fromInstant, toExclusive, cycleId, plotNo, PageRequest.of(page, size));
-        return new AssociateSalePageResponse(toResponses(result.getContent()), page, size, result.getTotalElements());
-    }
-
     // dashboard-mockup spec §3.1 and 2026-08-23-admin-dashboard-mockup-design.md §3.1:
     // plotNo/projectName/associateUserId/associateName are all resolved here via batch lookups
     // (three IN-queries total, regardless of how many sales are being mapped) rather than a

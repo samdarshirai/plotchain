@@ -9,7 +9,7 @@ export const ADMIN_ROUTES = [
 
 export const ASSOCIATE_ROUTES = [
   '/dashboard', '/my-tree', '/my-tree/team', '/plot-bookings', '/plot-bookings/team', '/plot-bookings/left',
-  '/plot-bookings/mine', '/plot-bookings/right', '/plot-bookings/my-sales', '/e-pins/unlock', '/profile',
+  '/plot-bookings/mine', '/plot-bookings/right', '/e-pins/unlock', '/profile',
   '/profile/welcome-letter', '/profile/bank-details', '/profile/kyc', '/income-statement', '/income-statement/direct',
   '/income-statement/matching', '/income-statement/sponsor-matching', '/income-statement/royalty',
   '/income-statement/reward', '/reports/my-business', '/reports/emi', '/reports/emi-report', '/payout-history',
