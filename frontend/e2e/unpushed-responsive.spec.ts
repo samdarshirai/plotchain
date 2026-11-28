@@ -56,9 +56,6 @@ async function fitsInside(locator: Locator) {
 
 for (const width of [320, 390, 768, 1024, 1440]) {
   test.describe(`changed screens at ${width}px`, () => {
-    // Phones render the desktop layout scaled down (viewport meta width=1200, see CLAUDE.md), so the CSS layout
-    // width is 1200 below 768 and the phone-only rules (16px inputs) do not apply.
-    const layoutWidth = width < 768 ? 1200 : width;
     test.use({ viewport: { width, height: 800 }, isMobile: width < 768 });
     test.beforeEach(async ({ page }) => mockSession(page));
     for (const screen of ['admin-users', 'master-projects', 'news', 'expense-types']) {
@@ -73,9 +70,9 @@ for (const width of [320, 390, 768, 1024, 1440]) {
         await fitsInside(modal);
         const bounds = (await modal.boundingBox())!;
         expect(bounds.x).toBeGreaterThanOrEqual(0);
-        expect(bounds.x + bounds.width).toBeLessThanOrEqual(layoutWidth);
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
         const input = modal.locator('input:not([type=file])').first();
-        if (layoutWidth < 768) expect(await input.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
+        if (width < 768) expect(await input.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
         await page.setViewportSize({ width, height: 400 });
         await modal.locator(`.${screen}__modal-cancel`).click();
         await expect(modal).toBeHidden();
@@ -100,7 +97,7 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       const modal = page.locator('.projects-plots__modal');
       await expect(modal.locator('input[name=plotNo]')).toHaveValue('A-101');
       await fitsInside(modal);
-      if (layoutWidth < 768) expect(await modal.locator('input[name=plotNo]').evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
+      if (width < 768) expect(await modal.locator('input[name=plotNo]').evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
       await page.setViewportSize({ width, height: 400 });
       await modal.locator('button[type=button]').last().click();
       await expect(modal).toBeHidden();
